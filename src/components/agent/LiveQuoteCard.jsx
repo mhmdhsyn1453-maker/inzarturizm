@@ -13,7 +13,9 @@ import {
   Layers,
   ArrowRight,
   TrendingUp,
-  ShieldAlert
+  ShieldAlert,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { generateWhatsAppMessage } from '../../services/pdfService';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +26,7 @@ export default function LiveQuoteCard({
   onSaveQuote,
   isSaved,
   paxCount = 1,
+  onChangePaxCount,
   discountUSD = 0,
   onChangeDiscount,
   activeCurrency,
@@ -151,23 +154,55 @@ export default function LiveQuoteCard({
           </div>
         </div>
 
-        {/* Group Pax Multiplier */}
-        {paxCount > 1 && (
-          <div className="my-3 rounded-2xl bg-white p-3.5 border border-emerald-200 shadow-sm flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs font-semibold text-slate-700">
-                Grup Toplamı ({paxCount} Kişi):
+        {/* Group Pax Multiplier & Direct Stepper */}
+        <div className="my-3 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/70 p-3 border border-emerald-200/90 shadow-3xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-emerald-700 shrink-0" />
+            <div>
+              <span className="text-[11px] font-bold text-slate-700 block leading-tight">
+                Grup Kişi Sayısı:
               </span>
+              <span className="text-[10px] text-slate-400 font-medium">Toplam Yolcu</span>
             </div>
-            <div className="font-mono font-black text-emerald-900 text-base">
+
+            {/* Direct Interactive Stepper */}
+            {onChangePaxCount && (
+              <div className="flex items-center gap-1 bg-white px-1.5 py-0.5 rounded-xl border border-slate-200 shadow-3xs ml-1">
+                <button
+                  type="button"
+                  onClick={() => onChangePaxCount(Math.max(1, paxCount - 1))}
+                  className="h-5 w-5 rounded-md bg-slate-100 hover:bg-slate-200 active:scale-90 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill"
+                  title="1 Kişi Azalt"
+                >
+                  <Minus className="h-2.5 w-2.5" />
+                </button>
+                <span className="font-mono font-black text-xs text-slate-900 min-w-[18px] text-center select-none">
+                  {paxCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onChangePaxCount(Math.min(200, paxCount + 1))}
+                  className="h-5 w-5 rounded-md bg-emerald-700 hover:bg-emerald-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs"
+                  title="1 Kişi Artır"
+                >
+                  <Plus className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="text-right">
+            <div className="text-[10px] text-slate-500 font-bold">
+              Grup Toplamı ({paxCount} Kişi)
+            </div>
+            <div className="font-mono font-black text-emerald-950 text-base">
               {activeCurrency === 'USD' && `$${groupTotalUSD.toLocaleString('tr-TR')}`}
               {activeCurrency === 'TRY' && `${groupTotalTRY.toLocaleString('tr-TR')} ₺`}
               {activeCurrency === 'EUR' && `€${groupTotalEUR.toLocaleString('tr-TR')}`}
               {activeCurrency === 'SAR' && `${groupTotalSAR.toLocaleString('tr-TR')} SAR`}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Action Buttons */}
         <div className="space-y-2.5 pt-3 border-t border-emerald-100">
@@ -179,32 +214,21 @@ export default function LiveQuoteCard({
             className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 py-3.5 px-4 font-bold text-white shadow-lg shadow-emerald-800/20 text-sm transition-all transform active:scale-98 cursor-pointer spring-pill"
           >
             <FileText className="h-4 w-4" />
-            <span>Resmi A4 Teklif Mektubunu Aç & İndir</span>
+            <span>Teklif Mektubu</span>
           </button>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={handleWhatsAppShare}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 py-2.5 px-3 text-xs font-bold transition-all cursor-pointer"
-            >
-              <Send className="h-3.5 w-3.5 text-emerald-700" />
-              <span>WhatsApp Teklifi</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onSaveQuote}
-              className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-xs font-bold border transition-all cursor-pointer ${
-                isSaved
-                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-              }`}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-              <span>{isSaved ? 'Kaydedildi!' : 'Teklifi Kaydet'}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onSaveQuote}
+            className={`w-full flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-xs font-bold border transition-all cursor-pointer ${
+              isSaved
+                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-3xs'
+            }`}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            <span>{isSaved ? 'Teklif Başarıyla Kaydedildi' : 'Teklifi Sisteme Kaydet'}</span>
+          </button>
         </div>
 
         {/* Staff Discount Field */}

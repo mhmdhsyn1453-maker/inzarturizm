@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
+import SplashScreen from './components/common/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/TopBar';
@@ -15,40 +16,48 @@ import AppUpdateModal from './components/common/AppUpdateModal';
 
 export default function App() {
   const { currentUser, isAdmin } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState('wizard');
 
-  // If not logged in, render the luxury login screen
-  if (!currentUser) {
-    return <LoginScreen />;
-  }
-
   return (
-    <div className="flex min-h-screen bg-slate-100/70 text-slate-800 antialiased">
-      {/* Auto-Updater Modal for Desktop App */}
-      <AppUpdateModal />
+    <>
+      {/* 🚀 Brand Splash Screen on Initial App Launch */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
-      {/* Real-Time Hot Reload Notification Toast */}
-      <NotificationToast />
+      {/* If not logged in, render the luxury login screen */}
+      {!currentUser ? (
+        <LoginScreen />
+      ) : (
+        <div className="flex min-h-screen bg-slate-100/70 text-slate-800 antialiased">
+          {/* Auto-Updater Modal for Desktop App */}
+          <AppUpdateModal />
 
-      {/* Modern Collapsible Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+          {/* Real-Time Hot Reload Notification Toast */}
+          <NotificationToast />
 
-      {/* Main App Layout */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Sticky Topbar with Live Currency Tickers */}
-        <Topbar />
+          {/* Modern Collapsible Sidebar */}
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {/* Dynamic Page Content View */}
-        <main className="p-6 sm:p-8 flex-1 max-w-7xl w-full mx-auto animate-fade-scale">
-          {activeTab === 'wizard' && <AgentQuotationWizard setActiveTab={setActiveTab} />}
-          {activeTab === 'quotes' && <SavedQuotesList onEditQuote={(quote) => setActiveTab('wizard')} />}
-          {activeTab === 'announcements' && <AnnouncementsView />}
-          {activeTab === 'monthly_matrix' && isAdmin && <MonthlyMatrixManager />}
-          {activeTab === 'staff' && isAdmin && <StaffManager />}
-          {activeTab === 'logs' && isAdmin && <AuditLogView />}
-          {activeTab === 'profile' && <UserProfileView />}
-        </main>
-      </div>
-    </div>
+          {/* Main App Layout */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Sticky Topbar with Live Currency Tickers */}
+            <Topbar />
+
+            {/* Dynamic Page Content View (Flush with sidebar, full canvas) */}
+            <main className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex-1 w-full min-w-0">
+              <div key={activeTab} className="animate-fade-scale w-full min-w-0">
+                {activeTab === 'wizard' && <AgentQuotationWizard setActiveTab={setActiveTab} />}
+                {activeTab === 'quotes' && <SavedQuotesList onEditQuote={(quote) => setActiveTab('wizard')} />}
+                {activeTab === 'announcements' && <AnnouncementsView />}
+                {activeTab === 'monthly_matrix' && isAdmin && <MonthlyMatrixManager />}
+                {activeTab === 'staff' && isAdmin && <StaffManager />}
+                {activeTab === 'logs' && isAdmin && <AuditLogView />}
+                {activeTab === 'profile' && <UserProfileView />}
+              </div>
+            </main>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

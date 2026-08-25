@@ -31,7 +31,10 @@ import {
   Check,
   Crown,
   User,
-  Camera
+  Camera,
+  Eye,
+  EyeOff,
+  Copy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -43,6 +46,18 @@ export default function StaffManager() {
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'create' | 'detail'
   const [selectedStaffId, setSelectedStaffId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [visiblePasswords, setVisiblePasswords] = useState({});
+
+  const togglePasswordVisibility = (userId, e) => {
+    if (e) e.stopPropagation();
+    setVisiblePasswords(prev => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
+  const copyPasswordToClipboard = (password, e) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(password || '');
+    showAlert({ title: 'Kopyalandı', message: 'Kullanıcı şifresi panoya kopyalandı.', type: 'success' });
+  };
 
   // Create Form State
   const [createForm, setCreateForm] = useState({
@@ -161,10 +176,10 @@ export default function StaffManager() {
   // Delete Staff
   const handleDeleteUser = async (user) => {
     const confirmed = await showConfirm({
-      title: 'Kullanıcıyı Sil',
-      message: `${user.name} kullanıcısını sistemden tamamen silmek istediğinize emin misiniz?`,
-      details: 'Bu işlem geri alınamaz. Kullanıcı hesabı kalıcı olarak kaldırılacaktır.',
-      confirmText: 'Evet, Sil',
+      title: 'Personel Hesabını Kalıcı Olarak Sil',
+      message: `"${user.name}" (@${user.username}) kullanıcısını sistemden ve bulut veritabanından kalıcı olarak silmek istediğinize emin misiniz?`,
+      details: '⚠️ DİKKAT: Bu işlem geri alınamaz! Kullanıcının hesabı, şifresi ve yetkileri Supabase veritabanından tamamen silinecektir.',
+      confirmText: 'Evet, Kalıcı Olarak Sil',
       cancelText: 'Vazgeç',
       confirmVariant: 'danger'
     });
@@ -172,6 +187,7 @@ export default function StaffManager() {
     if (confirmed) {
       deleteStaff(user.id);
       if (viewMode === 'detail') setViewMode('list');
+      showAlert({ title: 'Personel Silindi', message: `"${user.name}" kullanıcısı başarıyla silindi.`, type: 'success' });
     }
   };
 
@@ -230,7 +246,7 @@ export default function StaffManager() {
                       </div>
                       {createForm.role === 'STAFF' && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
                     </div>
-                    <p className="text-[11px] text-slate-500">Teklif oluşturabilir, WhatsApp teklifi atabilir ve duyuruları görebilir.</p>
+                    <p className="text-[11px] text-slate-500">Teklif oluşturabilir, resmi teklif mektubu hazırlayabilir ve duyuruları görebilir.</p>
                   </button>
 
                   <button
@@ -507,8 +523,8 @@ export default function StaffManager() {
                       value={editForm.role}
                       onChange={(val) => setEditForm({ ...editForm, role: val })}
                       options={[
-                        { id: 'STAFF', label: 'Satış Personeli (STAFF)' },
-                        { id: 'ADMIN', label: 'Genel Merkez Yöneticisi (ADMIN)' },
+                        { id: 'STAFF', label: 'Satış Personeli' },
+                        { id: 'ADMIN', label: 'Genel Merkez Yöneticisi' },
                       ]}
                     />
                   </div>
@@ -546,17 +562,47 @@ export default function StaffManager() {
                   </div>
                 </div>
 
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                      <Lock className="h-3.5 w-3.5 text-emerald-700" />
+                      <span>Kullanıcının Mevcut Aktif Şifresi (Genel Merkez Görünümü)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={(e) => togglePasswordVisibility(selectedStaff.id, e)}
+                      className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-white border border-slate-200 px-2.5 py-1 rounded-xl shadow-3xs cursor-pointer"
+                    >
+                      {visiblePasswords[selectedStaff.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      <span>{visiblePasswords[selectedStaff.id] ? 'Gizle' : 'Şifreyi Gör'}</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3.5 py-2">
+                    <span className="font-mono text-sm font-bold text-slate-900 tracking-wider">
+                      {visiblePasswords[selectedStaff.id] ? (selectedStaff.password || 'Inzar2026!') : '••••••••••••'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => copyPasswordToClipboard(selectedStaff.password || 'Inzar2026!', e)}
+                      className="p-1.5 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                      title="Şifreyi Kopyala"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
                 <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1.5">
                   <label className="block text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
                     <Key className="h-3.5 w-3.5 text-amber-600" />
-                    <span>Şifreyi Sıfırla / Güncelle (İsteğe Bağlı)</span>
+                    <span>Şifreyi Değiştir / Yenile (İsteğe Bağlı)</span>
                   </label>
                   <input
-                    type="password"
-                    placeholder="Yeni şifre belirleyin..."
+                    type="text"
+                    placeholder="Yeni bir şifre girin..."
                     value={editForm.password}
                     onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
@@ -598,17 +644,15 @@ export default function StaffManager() {
                               ? 'bg-amber-100 text-amber-900'
                               : 'bg-slate-200 text-slate-700'
                           }`}>
-                            {q.statusLabel || 'Beklemede'}
+                            {q.statusLabel || q.status}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          {q.packageName} • {q.selectedMonthName || q.selectedMonth} • {q.makkahDays + q.madinahDays} Gün
-                        </p>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {q.packageName} • {q.paxCount} Kişi • {q.durationDays} Gün • <strong className="text-slate-900">${q.finalPriceUSD}</strong>
+                        </div>
                       </div>
-
-                      <div className="text-right font-mono">
-                        <div className="text-xs font-black text-emerald-800">${q.finalPriceUSD}</div>
-                        <div className="text-[10px] text-slate-400 font-sans">{new Date(q.createdAt || q.timestamp).toLocaleDateString('tr-TR')}</div>
+                      <div className="text-[10px] text-slate-400 font-mono text-right">
+                        {new Date(q.createdAt).toLocaleDateString('tr-TR')}
                       </div>
                     </div>
                   ))}
@@ -621,43 +665,41 @@ export default function StaffManager() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════
-          3. VIEW: MAIN STAFF LIST VIEW (LUXURY THEME)
+          3. VIEW: STAFF LIST TABLE (ADMIN OVERVIEW)
          ══════════════════════════════════════════════════════════════ */}
       {viewMode === 'list' && (
-        <div className="space-y-6">
-          {/* Top Banner */}
-          <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-700/60">
-                  <Users className="h-3.5 w-3.5 text-amber-400" />
-                  <span>KULLANICI & YETKİ YÖNETİMİ</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">
-                  Personel & Yönetici Kadrosu
-                </h2>
-                <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl">
-                  Genel Merkez yöneticilerini ve şube satış personellerini tanımlayın, yetkilerini duraklatın veya detaylı performanslarını inceleyin.
-                </p>
+        <div className="space-y-6 animate-fade-scale">
+          {/* Header Banner */}
+          <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-800/80 px-3 py-0.5 text-[11px] font-bold text-emerald-200 border border-emerald-700/60 mb-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
+                <span>GENEL MERKEZ YÖNETİM KONTROL PANELİ</span>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setViewMode('create')}
-                className="flex items-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 px-6 py-3 text-xs font-black text-slate-950 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer shrink-0"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span>Yeni Personel / Yönetici Tanımla</span>
-              </button>
+              <h2 className="text-2xl sm:text-3xl font-black font-display text-white">
+                Personel & Yetki Yönetimi
+              </h2>
+              <p className="text-xs text-emerald-200/90 max-w-xl">
+                Tüm şube ve genel merkez personellerini listeleyebilir, şifrelerini görüntüleyebilir veya yeni personel tanımlayabilirsiniz.
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('create')}
+              className="flex items-center gap-2 rounded-2xl bg-amber-400 hover:bg-amber-300 px-5 py-3 text-xs font-black text-slate-950 shadow-lg shadow-amber-400/20 transition-all cursor-pointer shrink-0"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Yeni Personel Tanımla</span>
+            </button>
           </div>
 
-          {/* Table Container */}
+          {/* List Card */}
           <div className="pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 font-display">Tanımlı Kullanıcılar ({users.length})</h3>
-                <p className="text-xs text-slate-500">Detaylı inceleme ve yetki düzenlemesi için personele tıklayınız.</p>
+                <h3 className="text-base font-bold text-slate-900 font-display">Kayıtlı Kullanıcılar</h3>
+                <p className="text-xs text-slate-500">Sistemde kayıtlı toplam <strong>{users.length}</strong> kullanıcı bulunmaktadır.</p>
               </div>
 
               {/* Search Box */}
@@ -686,6 +728,7 @@ export default function StaffManager() {
                       <th className="py-3 px-4 rounded-l-xl">Kullanıcı</th>
                       <th className="py-3 px-4">Şehir / Şube</th>
                       <th className="py-3 px-4">Yetki Rolü</th>
+                      <th className="py-3 px-4">Giriş Şifresi</th>
                       <th className="py-3 px-4">İletişim</th>
                       <th className="py-3 px-4">Durum</th>
                       <th className="py-3 px-4 text-right rounded-r-xl">İşlemler</th>
@@ -693,7 +736,6 @@ export default function StaffManager() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredUsers.map((user) => {
-                      const userQuotesCount = savedQuotes.filter(q => q.createdById === user.id || q.createdByName === user.name).length;
                       const isAdminRole = user.role?.toUpperCase() === 'ADMIN';
 
                       return (
@@ -740,6 +782,31 @@ export default function StaffManager() {
                             }`}>
                               {isAdminRole ? 'Genel Merkez' : 'Satış Personeli'}
                             </span>
+                          </td>
+
+                          {/* Şifre Görüntüleme & Kopyalama Sütunu */}
+                          <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 py-1 w-fit">
+                              <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
+                                {visiblePasswords[user.id] ? (user.password || 'Inzar2026!') : '••••••••'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => togglePasswordVisibility(user.id, e)}
+                                className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                                title={visiblePasswords[user.id] ? "Şifreyi Gizle" : "Şifreyi Göster"}
+                              >
+                                {visiblePasswords[user.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => copyPasswordToClipboard(user.password || 'Inzar2026!', e)}
+                                className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                                title="Şifreyi Kopyala"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
 
                           <td className="py-3.5 px-4 text-slate-600 text-[11px]">

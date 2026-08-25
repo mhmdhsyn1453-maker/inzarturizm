@@ -21,12 +21,17 @@ import {
   Camera,
   Trash2,
   Upload,
-  Crown
+  Crown,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { compressAvatarImage } from '../../services/imageUtils';
 
 export default function UserProfileView() {
-  const { currentUser, updateStaff, isAdmin } = useAuth();
+  const { currentUser, updateStaff, isAdmin, users } = useAuth();
   const { savedQuotes } = useData();
   const { showAlert } = useModal();
   const fileInputRef = useRef(null);
@@ -39,8 +44,15 @@ export default function UserProfileView() {
     phone: currentUser?.phone || '',
     email: currentUser?.email || '',
     avatarImage: currentUser?.avatarImage || null,
-    password: ''
   });
+
+  // Password Security Form State
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const [isSaved, setIsSaved] = useState(false);
 
@@ -49,20 +61,39 @@ export default function UserProfileView() {
   const approvedQuotes = userQuotes.filter(q => q.status === 'approved' || q.status === 'approved_revised');
   const totalVolumeUSD = userQuotes.reduce((acc, q) => acc + (q.finalPriceUSD * (q.paxCount || 1)), 0);
 
-  const handleImageChange = (e) => {
+  // Password Strength Calculation (0 to 4)
+  const calculateStrength = (pass) => {
+    if (!pass) return { score: 0, label: 'Henüz girilmedi', color: 'bg-slate-200', textCol: 'text-slate-400', percent: 0 };
+    let score = 0;
+    if (pass.length >= 6) score++;
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[!@#$%^&*(),.?":{}|<>\-_]/.test(pass)) score++;
+
+    if (score <= 1) {
+      return { score: 1, label: 'Zayıf', color: 'bg-rose-500', textCol: 'text-rose-600', percent: 25 };
+    } else if (score === 2 || score === 3) {
+      return { score: 2, label: 'Orta Güçte', color: 'bg-amber-500', textCol: 'text-amber-600', percent: 50 };
+    } else if (score === 4) {
+      return { score: 3, label: 'Güçlü', color: 'bg-blue-500', textCol: 'text-blue-600', percent: 75 };
+    } else {
+      return { score: 4, label: 'Çok Güçlü & Güvenli 💎', color: 'bg-emerald-500', textCol: 'text-emerald-700', percent: 100 };
+    }
+  };
+
+  const strength = calculateStrength(newPassword);
+
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showAlert({ title: 'Dosya Boyutu Yüksek', message: 'Lütfen 5MB altında bir profil resmi yükleyiniz.', type: 'error' });
-      return;
+    try {
+      const compressedDataUrl = await compressAvatarImage(file, 256, 0.85);
+      setForm(prev => ({ ...prev, avatarImage: compressedDataUrl }));
+    } catch (err) {
+      showAlert({ title: 'Görsel Hatası', message: err.message || 'Görsel işlenirken bir sorun oluştu.', type: 'error' });
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm(prev => ({ ...prev, avatarImage: reader.result }));
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleRemoveImage = () => {
@@ -74,7 +105,10 @@ export default function UserProfileView() {
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.username.trim()) return;
+    if (!form.name.trim() || !form.username.trim()) {
+      showAlert({ title: 'Eksik Bilgi', message: 'Ad Soyad ve Kullanıcı Adı boş bırakılamaz.', type: 'error' });
+      return;
+    }
 
     const payload = {
       name: form.name.trim(),
@@ -86,12 +120,39 @@ export default function UserProfileView() {
       avatarImage: form.avatarImage
     };
 
-    if (form.password.trim()) {
-      payload.password = form.password.trim();
+    // Password change validation
+    if (oldPassword || newPassword || confirmPassword) {
+      const activeUserRecord = users?.find(u => (currentUser?.id && u.id === currentUser.id) || (currentUser?.username && u.username.toLowerCase() === currentUser.username.toLowerCase()));
+      const currentStoredPass = String(activeUserRecord?.password || currentUser?.password || '').trim();
+
+      if (!oldPassword) {
+        showAlert({ title: 'Mevcut Şifre Gerekli', message: 'Şifrenizi değiştirmek için lütfen mevcut (eski) şifrenizi giriniz.', type: 'error' });
+        return;
+      }
+
+      if (oldPassword.trim() !== currentStoredPass) {
+        showAlert({ title: 'Hatalı Mevcut Şifre', message: 'Girdiğiniz mevcut (eski) şifre doğru değil.', type: 'error' });
+        return;
+      }
+
+      if (!newPassword || newPassword.length < 6) {
+        showAlert({ title: 'Yetersiz Şifre', message: 'Yeni şifreniz en az 6 karakter uzunluğunda olmalıdır.', type: 'error' });
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showAlert({ title: 'Şifreler Uyuşmuyor', message: 'Girdiğiniz yeni şifreler birbiriyle eşleşmiyor.', type: 'error' });
+        return;
+      }
+
+      payload.password = newPassword.trim();
     }
 
     updateStaff(currentUser.id, payload);
     setIsSaved(true);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
 
     confetti({
       particleCount: 50,
@@ -99,6 +160,7 @@ export default function UserProfileView() {
       origin: { y: 0.6 }
     });
 
+    showAlert({ title: 'Başarılı', message: 'Profil bilgileriniz ve şifreniz başarıyla güncellendi.', type: 'success' });
     setTimeout(() => setIsSaved(false), 3000);
   };
 
@@ -298,7 +360,7 @@ export default function UserProfileView() {
               </div>
             </div>
 
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">Telefon Numarası</label>
               <div className="relative">
                 <Phone className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
@@ -311,36 +373,133 @@ export default function UserProfileView() {
                 />
               </div>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">E-Posta Adresi</label>
-              <div className="relative">
-                <Mail className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="ornek@inzarturizm.com"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
-                />
-              </div>
-            </div>
           </div>
 
-          {/* Password Change Section */}
-          <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
-              <Lock className="h-4 w-4 text-amber-600" />
-              <span>Giriş Şifresini Güncelle (İsteğe Bağlı)</span>
+          {/* ══════════════════════════════════════════════════════════════
+              🔒 ADVANCED PASSWORD CHANGE & STRENGTH METER (3-STAGE)
+             ══════════════════════════════════════════════════════════════ */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/30 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
+                  <Key className="h-4 w-4 text-amber-700" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Güvenlik & Şifre Değiştirme</h4>
+                  <p className="text-[11px] text-slate-500">Şifrenizi değiştirmek için mevcut şifrenizi ve yeni şifrenizi giriniz.</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300">
+                256-Bit Güvenlik
+              </span>
             </div>
-            <p className="text-[11px] text-amber-800/80">Şifrenizi değiştirmek istemiyorsanız bu alanı boş bırakabilirsiniz.</p>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Yeni Şifre Giriniz..."
-              className="w-full max-w-sm bg-white border border-amber-300 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:outline-none"
-            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* 1. Eski Şifre */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">Mevcut (Eski) Şifreniz</label>
+                <div className="relative">
+                  <input
+                    type={showOldPass ? 'text' : 'password'}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="Mevcut şifreniz..."
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPass(!showOldPass)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                  >
+                    {showOldPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Yeni Şifre */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">Yeni Şifre</label>
+                <div className="relative">
+                  <input
+                    type={showNewPass ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Yeni şifreniz (min 6)..."
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                  >
+                    {showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Yeni Şifre Tekrarı */}
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">Yeni Şifre (Tekrar)</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPass ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Şifreyi tekrar yazın..."
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                  >
+                    {showConfirmPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 📊 Canlı Şifre Güvenlik & Güç Ölçeri */}
+            {newPassword.length > 0 && (
+              <div className="p-3 rounded-2xl bg-white border border-slate-200 space-y-2 animate-slide-down">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-600 flex items-center gap-1.5">
+                    <span>Şifre Gücü Seviyesi:</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${strength.textCol} font-extrabold bg-slate-100`}>
+                      {strength.label}
+                    </span>
+                  </span>
+                  <span className="font-mono text-slate-400 text-[11px]">%{strength.percent}</span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-300 ${strength.color}`} 
+                    style={{ width: `${strength.percent}%` }}
+                  />
+                </div>
+
+                {/* Match Indicator */}
+                {confirmPassword.length > 0 && (
+                  <div className={`text-[11px] font-bold flex items-center gap-1.5 pt-1 ${
+                    newPassword === confirmPassword ? 'text-emerald-700' : 'text-rose-600'
+                  }`}>
+                    {newPassword === confirmPassword ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Yeni şifreler eşleşiyor ✓</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+                        <span>Yeni şifreler henüz eşleşmedi!</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

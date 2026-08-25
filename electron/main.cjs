@@ -1,10 +1,21 @@
 const { app, BrowserWindow, shell, ipcMain } = require('electron');
-const { autoUpdater } = require('electron-updater');
 const path = require('path');
+
+let autoUpdater = null;
+try {
+  autoUpdater = require('electron-updater').autoUpdater;
+} catch (e) {
+  console.warn('[AutoUpdater module load failed]:', e.message);
+}
 
 let mainWindow = null;
 
-// Ensure single application instance
+// Catch unexpected errors
+process.on('uncaughtException', (error) => {
+  console.error('[Uncaught Exception]:', error);
+});
+
+// Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -24,69 +35,79 @@ function sendToWindow(channel, data) {
 }
 
 function setupAutoUpdater() {
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  if (!autoUpdater) return;
 
-  autoUpdater.on('checking-for-update', () => {
-    console.log('[AutoUpdater] Güncellemeler kontrol ediliyor...');
-    sendToWindow('updater:status', { status: 'checking' });
-  });
+  try {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
 
-  autoUpdater.on('update-available', (info) => {
-    console.log('[AutoUpdater] Yeni sürüm bulundu:', info.version);
-    sendToWindow('updater:status', { 
-      status: 'available', 
-      version: info.version, 
-      releaseNotes: info.releaseNotes 
+    autoUpdater.on('checking-for-update', () => {
+      sendToWindow('updater:status', { status: 'checking' });
     });
-  });
 
-  autoUpdater.on('update-not-available', () => {
-    console.log('[AutoUpdater] Sürüm güncel.');
-    sendToWindow('updater:status', { status: 'up-to-date' });
-  });
-
-  autoUpdater.on('download-progress', (progressObj) => {
-    sendToWindow('updater:progress', {
-      percent: progressObj.percent,
-      transferred: progressObj.transferred,
-      total: progressObj.total,
-      bytesPerSecond: progressObj.bytesPerSecond
+    autoUpdater.on('update-available', (info) => {
+      sendToWindow('updater:status', { 
+        status: 'available', 
+        version: info.version, 
+        releaseNotes: info.releaseNotes 
+      });
     });
-  });
 
-  autoUpdater.on('update-downloaded', (info) => {
-    console.log('[AutoUpdater] Güncelleme indirildi:', info.version);
-    sendToWindow('updater:status', { 
-      status: 'downloaded', 
-      version: info.version,
-      releaseNotes: info.releaseNotes 
+    autoUpdater.on('update-not-available', () => {
+      sendToWindow('updater:status', { status: 'up-to-date' });
     });
-  });
 
-  autoUpdater.on('error', (err) => {
-    console.error('[AutoUpdater Error]:', err?.message);
-    sendToWindow('updater:status', { status: 'error', error: err?.message });
-  });
+    autoUpdater.on('download-progress', (progressObj) => {
+      sendToWindow('updater:progress', {
+        percent: progressObj.percent,
+        transferred: progressObj.transferred,
+        total: progressObj.total,
+        bytesPerSecond: progressObj.bytesPerSecond
+      });
+    });
 
-  ipcMain.handle('updater:check', async () => {
-    if (!app.isPackaged) return { status: 'dev_mode' };
-    return await autoUpdater.checkForUpdates();
-  });
+    autoUpdater.on('update-downloaded', (info) => {
+      sendToWindow('updater:status', { 
+        status: 'downloaded', 
+        version: info.version,
+        releaseNotes: info.releaseNotes 
+      });
+    });
 
-  ipcMain.handle('updater:install', () => {
-    autoUpdater.quitAndInstall(false, true);
-  });
+    autoUpdater.on('error', (err) => {
+      console.warn('[AutoUpdater Notice]:', err?.message);
+      sendToWindow('updater:status', { status: 'error', error: err?.message });
+    });
+
+    ipcMain.handle('updater:check', async () => {
+      if (!app.isPackaged || !autoUpdater) return { status: 'dev_mode' };
+      try {
+        return await autoUpdater.checkForUpdates();
+      } catch (err) {
+        return { status: 'error', error: err.message };
+      }
+    });
+
+    ipcMain.handle('updater:install', () => {
+      if (autoUpdater) {
+        autoUpdater.quitAndInstall(false, true);
+      }
+    });
+  } catch (err) {
+    console.warn('[AutoUpdater Setup Failed]:', err.message);
+  }
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '../icon.ico');
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1100,
     minHeight: 700,
     title: 'İnzar Turizm - Umre Tarife & Teklif Yönetim Sistemi',
-    icon: path.join(__dirname, '../icon.ico'),
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
@@ -94,17 +115,17 @@ function createWindow() {
       webSecurity: true
     },
     show: false,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#f8fafc',
     autoHideMenuBar: true
   });
 
-  // Open external links in default system browser
+  // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  const isDev = !app.isPackaged;
+  const isDev = !app.isPackaged && process.env.NODE_ENV === 'development';
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5180');
@@ -116,15 +137,13 @@ function createWindow() {
     mainWindow.maximize();
     mainWindow.show();
 
-    // Check for updates after window displays (production only)
-    if (!isDev) {
+    if (!isDev && autoUpdater) {
       setTimeout(() => {
         autoUpdater.checkForUpdatesAndNotify().catch((err) => {
           console.warn('[AutoUpdater Initial Check Failed]:', err?.message);
         });
       }, 3000);
 
-      // Periodic check every 2 hours
       setInterval(() => {
         autoUpdater.checkForUpdates().catch(() => {});
       }, 2 * 60 * 60 * 1000);

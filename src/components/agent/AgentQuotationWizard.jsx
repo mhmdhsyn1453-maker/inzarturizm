@@ -29,9 +29,21 @@ import {
   XCircle,
   Car,
   Plane,
-  Navigation
+  Navigation,
+  Printer,
+  Download,
+  Send,
+  CheckCircle2,
+  Sparkles,
+  Users,
+  Clock,
+  Plus,
+  Minus,
+  Moon
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import QuotationLetterView from './QuotationLetterView';
+import { generateQuotationPdf, generateWhatsAppMessage, openQuotationInNewPage } from '../../services/pdfService';
 
 const TRANSFER_ROUTES = [
   { id: 'jedMek', label: 'Cidde - Mekke Otel', smallKey: 'jedMekSmall', bigKey: 'jedMekBig', routeCode: 'JED-MEK' },
@@ -52,8 +64,7 @@ const FIXED_EXPENSES_INFO = [
   { key: 'branchExpenseSAR', label: 'Şube Giderleri', desc: 'Şube ve İdari Genel Gider Payı' },
 ];
 
-import QuotationLetterView from './QuotationLetterView';
-import { openQuotationInNewPage } from '../../services/pdfService';
+
 
 const getInitialDraft = () => {
   try {
@@ -79,6 +90,8 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
   const [makkahOccupancy, setMakkahOccupancy] = useState(draft?.makkahOccupancy ?? 2); // 2, 3, 4, 1
   const [madinahDays, setMadinahDays] = useState(draft?.madinahDays ?? 4);
   const [madinahOccupancy, setMadinahOccupancy] = useState(draft?.madinahOccupancy ?? 2); // 2, 3, 4, 1
+  const [isMixedRoomMode, setIsMixedRoomMode] = useState(draft?.isMixedRoomMode ?? false);
+  const [mixedRooms, setMixedRooms] = useState(draft?.mixedRooms || { single: 1, double: 2, triple: 1, quad: 1 });
   const [paxCount, setPaxCount] = useState(draft?.paxCount ?? 2);
   const [discountUSD, setDiscountUSD] = useState(draft?.discountUSD ?? 0);
   const [applyProfitMargin, setApplyProfitMargin] = useState(draft?.applyProfitMargin ?? true);
@@ -113,6 +126,16 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
   const [activeCurrency, setActiveCurrency] = useState('USD');
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // 1-Second Live Clock Ticker
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Auto-Save Draft to LocalStorage
   useEffect(() => {
@@ -216,6 +239,10 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
     return months || [];
   }, [months]);
 
+  const activeMonth = useMemo(() => {
+    return activeMonthsList.find(m => m.id === selectedMonth) || activeMonthsList[0] || { id: 'jan', name: 'Ocak' };
+  }, [activeMonthsList, selectedMonth]);
+
   // Real-time Pricing Calculation
   const rawQuotation = useMemo(() => {
     if (!activePackage) return null;
@@ -227,6 +254,8 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
       makkahRoomOccupancy: makkahOccupancy,
       madinahDays,
       madinahRoomOccupancy: madinahOccupancy,
+      isMixedRoomMode,
+      mixedRooms,
       transfersSelection,
       fixedExpensesIncluded,
       currencies,
@@ -247,6 +276,8 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
     makkahOccupancy, 
     madinahDays, 
     madinahOccupancy, 
+    isMixedRoomMode,
+    mixedRooms,
     transfersSelection, 
     fixedExpensesIncluded, 
     currencies, 
@@ -268,18 +299,20 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
       selectedMonth,
       makkahDays,
       madinahDays,
-      transfersSelection,
-      fixedExpensesIncluded,
-      currencies,
-      applyProfitMargin
+      currencies
     );
-  }, [activePackage, selectedMonth, makkahDays, madinahDays, transfersSelection, fixedExpensesIncluded, currencies, applyProfitMargin]);
+  }, [activePackage, selectedMonth, makkahDays, madinahDays, currencies]);
 
   // Enriched full quotation
   const currentQuotation = useMemo(() => {
     if (!rawQuotation) return null;
+    const selectedMonthObj = months?.find(m => m.id === selectedMonth) || { label: 'Ocak (Sömestr Tatili)', name: 'Ocak' };
+    const selectedMonthLabel = selectedMonthObj?.label || selectedMonthObj?.name || 'Ocak (Sömestr Tatili)';
+
     return {
       ...rawQuotation,
+      selectedMonth,
+      selectedMonthLabel,
       pkgDetails: activePackage,
       roomMatrix,
       fixedExpensesIncluded,
@@ -290,7 +323,7 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
       notes,
       agentName: currentUser?.name || 'Acente Temsilcisi'
     };
-  }, [rawQuotation, activePackage, roomMatrix, fixedExpensesIncluded, transfersSelection, customerName, customerPhone, paxCount, notes, currentUser]);
+  }, [rawQuotation, activePackage, roomMatrix, fixedExpensesIncluded, transfersSelection, customerName, customerPhone, paxCount, notes, currentUser, months, selectedMonth]);
 
   const toggleFixedExpense = (key) => {
     setFixedExpensesIncluded(prev => ({
@@ -321,64 +354,129 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
     setTimeout(() => setIsSaved(false), 2500);
   };
 
-  // If user selected Letter View Mode, render the integrated full A4 Proposal Letter right inside the app
-  if (viewMode === 'letter') {
-    return (
-      <QuotationLetterView
-        quotation={currentQuotation}
-        onBackToForm={() => setViewMode('form')}
-        onSaveQuote={handleSaveQuote}
-        isSaved={isSaved}
-        activeCurrency={activeCurrency}
-      />
-    );
-  }
+  const handleDownloadPdf = async () => {
+    if (!currentQuotation) return;
+    try {
+      setIsDownloadingPdf(true);
+      await generateQuotationPdf('inzar-app-printable-letter', currentQuotation);
+    } catch (err) {
+      console.error('PDF download error:', err);
+      alert('PDF oluşturulamadı, Yazdır butonundan PDF Olarak Kaydet seçeneğini kullanabilirsiniz.');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start font-sans">
-      {/* Left 8 Columns: Configuration Form */}
-      <div className="lg:col-span-8 space-y-6 pb-24">
-        
-        {/* View Mode Switcher Tab Banner */}
-        <div className="pearl-card rounded-2xl p-2 bg-white/80 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setViewMode('form')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'form' 
-                  ? 'bg-emerald-700 text-white shadow-2xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <FileEdit className="h-3.5 w-3.5" />
-              <span>Teklif Formu & Ayarlar</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewMode('letter')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'letter' 
-                  ? 'bg-emerald-700 text-white shadow-2xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              <span>Resmi A4 Teklif Mektubu</span>
-            </button>
-          </div>
+    <div className="space-y-5 font-sans">
+      {/* 🚀 Robust Minimalist Top Toolbar with Zero Collision */}
+      <div className="flex flex-wrap items-center justify-between gap-3 min-h-[40px] mb-1">
+        {/* Sliding Pill Segmented Switcher */}
+        <div className="relative p-1 bg-white/95 rounded-full border border-slate-200/90 shadow-2xs flex items-center select-none w-64 sm:w-72 shrink-0">
+          {/* Active Sliding Floating Pill (Smooth GPU Spring Animation) */}
+          <div
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-gradient-to-r from-emerald-800 to-emerald-600 shadow-md shadow-emerald-900/20 transition-all duration-300 ease-[cubic-bezier(0.34,1.4,0.64,1)] pointer-events-none ${
+              viewMode === 'letter' ? 'left-[calc(50%+2px)]' : 'left-1'
+            }`}
+          />
 
           <button
             type="button"
-            onClick={handleResetDraft}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 text-slate-600 border border-slate-200 text-xs font-bold transition-all cursor-pointer shadow-3xs"
-            title="Tüm seçimleri sıfırla ve yeni teklif başlat"
+            onClick={() => setViewMode('form')}
+            className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer ${
+              viewMode === 'form' ? 'text-white' : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
-            <span>Formu Sıfırla</span>
+            <FileEdit className="h-3.5 w-3.5 shrink-0" />
+            <span>Teklif Formu</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode('letter')}
+            className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-bold transition-colors duration-200 cursor-pointer ${
+              viewMode === 'letter' ? 'text-white' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            <span>Teklif Mektubu</span>
           </button>
         </div>
+
+        {/* Right Section: Form Mode Live Real-time Clock OR A4 Mode Action Buttons with Smooth CSS Transitions */}
+        <div key={viewMode} className="animate-fade-scale">
+          {viewMode === 'form' ? (
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 border border-slate-200/90 shadow-3xs select-none">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              <Clock className="h-3.5 w-3.5 text-emerald-700 ml-0.5" />
+              <span className="text-xs font-semibold text-slate-700">
+                {currentTime.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}
+              </span>
+              <span className="text-slate-300">|</span>
+              <span className="text-xs font-mono font-bold text-slate-950">
+                {currentTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Print Button */}
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition-all cursor-pointer spring-pill shadow-xs"
+                title="Yazıcıdan A4 Olarak Yazdır"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                <span>Yazdır</span>
+              </button>
+
+              {/* Download PDF Button */}
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-all cursor-pointer spring-pill shadow-xs disabled:opacity-60"
+                title="Tek Sayfa A4 PDF İndir"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>{isDownloadingPdf ? 'Hazırlanıyor...' : 'PDF İndir'}</span>
+              </button>
+
+              {/* Save Quote Button */}
+              <button
+                type="button"
+                onClick={handleSaveQuote}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs border transition-all cursor-pointer ${
+                  isSaved
+                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                }`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span>{isSaved ? 'Kaydedildi!' : 'Teklifi Kaydet'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 🎬 60FPS High-Performance Animated Content Viewport */}
+      <div key={viewMode} className="animate-fade-scale w-full min-w-0">
+        {viewMode === 'letter' ? (
+          <QuotationLetterView
+            quotation={currentQuotation}
+            onBackToForm={() => setViewMode('form')}
+            onSaveQuote={handleSaveQuote}
+            isSaved={isSaved}
+            activeCurrency={activeCurrency}
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start font-sans">
+            {/* Left 8 Columns: Configuration Form */}
+            <div className="lg:col-span-8 space-y-6 pb-24">
 
         {/* Revision / Editing Mode Alert Banner */}
         {editingQuote && (
@@ -411,12 +509,17 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
         )}
 
         {/* Step 1: Seyahat Dönemi / Ayı */}
-        <div className="pearl-card rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm border border-slate-200/90">
+        <div id="step-1" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
           <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3 gap-2">
-            <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-emerald-600" />
-              <span>1. Seyahat Dönemi / Ayı (Otonom Otel Fiyatı)</span>
-            </h3>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs font-mono shrink-0">
+                1
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-emerald-600" />
+                <span>Seyahat Dönemi & Ayı</span>
+              </h3>
+            </div>
             
             <div className="flex items-center gap-2">
               <button
@@ -428,13 +531,13 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
                 Yeni Teklif / Sıfırla
               </button>
 
-              <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-2xs">
+              <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                 Otel Fiyatları Otomatik Çekilir
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
             {activeMonthsList.map((m) => {
               const isSelected = selectedMonth === m.id;
               return (
@@ -442,10 +545,10 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
                   key={m.id}
                   type="button"
                   onClick={() => setSelectedMonth(m.id)}
-                  className={`h-18 p-2.5 sm:p-3 rounded-2xl text-left spring-pill border cursor-pointer relative flex flex-col justify-between overflow-hidden select-none ${
+                  className={`h-15 p-2.5 rounded-xl text-left spring-pill border cursor-pointer relative flex flex-col justify-between overflow-hidden select-none transition-all ${
                     isSelected
-                      ? 'border-emerald-600 bg-emerald-50/90 text-emerald-950 ring-2 ring-emerald-600/30 shadow-md scale-102 -translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-emerald-300 text-slate-700 hover:bg-slate-50 hover:-translate-y-0.5'
+                      ? 'border-emerald-600 bg-emerald-50/90 text-emerald-950 ring-2 ring-emerald-600/30 shadow-xs scale-101'
+                      : 'border-slate-200/80 bg-white hover:border-emerald-300 text-slate-700 hover:bg-slate-50/80'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
@@ -465,67 +568,106 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
           </div>
         </div>
 
-        {/* Step 2: Umre Paketi & Otel Standartları */}
-        <div className="pearl-card rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm border border-slate-200/90">
+        {/* Step 2: Umre Paketi & Otel Standartları (Spacious Full-Width Luxury Layout) */}
+        <div id="step-2" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
-              <Layers className="h-5 w-5 text-emerald-600" />
-              <span>2. Umre Paketi & Otel Kategorisi</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-medium">Merkez Tarafından Yönetilen Standartlar</span>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs font-mono shrink-0">
+                2
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <Layers className="h-4 w-4 text-emerald-600" />
+                <span>Umre Paketi & Otel Kategorisi</span>
+              </h3>
+            </div>
+            <span className="text-xs text-slate-400 font-medium hidden sm:inline">Merkez Standartları</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-3">
             {packages.map((pkg) => {
               const isSelected = selectedPkgId === pkg.id;
               const monthRate = pkg.monthlyPrices?.[selectedMonth] || { makkahRoomSAR: 0, madinahRoomSAR: 0 };
+              const makkahFood = pkg.makkahFoodPriceSAR || pkg.makkahFoodSAR || 35;
+              const madinahFood = pkg.madinahFoodPriceSAR || pkg.madinahFoodSAR || 45;
 
               return (
                 <div
                   key={pkg.id}
                   onClick={() => setSelectedPkgId(pkg.id)}
-                  className={`cursor-pointer rounded-2xl p-5 spring-pill border flex flex-col justify-between select-none ${
+                  className={`cursor-pointer rounded-2xl p-4 sm:p-5 spring-pill border transition-all duration-200 select-none flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                     isSelected
-                      ? 'bg-emerald-50/90 border-emerald-600 ring-2 ring-emerald-600/30 shadow-md scale-102 -translate-y-0.5'
-                      : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:bg-slate-50 hover:-translate-y-0.5'
+                      ? 'bg-emerald-50/95 border-emerald-600 ring-2 ring-emerald-600/30 shadow-md scale-[1.01]'
+                      : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:bg-slate-50/80 shadow-3xs'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-3.5 w-3.5 rounded-full shadow-xs" style={{ backgroundColor: pkg.color || '#059669' }} />
-                        <h4 className="font-bold text-slate-900 text-base font-display">
-                          {pkg.name}
-                        </h4>
-                      </div>
+                  {/* Left: Package Name, Color, Description & Hotel Names */}
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="h-3.5 w-3.5 rounded-full shadow-xs shrink-0" style={{ backgroundColor: pkg.color || '#059669' }} />
+                      <h4 className="font-bold text-slate-900 text-base font-display">
+                        {pkg.name}
+                      </h4>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
+                        {pkg.badge || 'Paket'}
+                      </span>
                       {isSelected && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xs animate-fade-scale">
-                          <Check className="h-3 w-3 stroke-[3]" />
+                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                          <Check className="h-3.5 w-3.5 stroke-[3]" />
+                          <span>Seçili Paket</span>
                         </span>
                       )}
                     </div>
 
-                    <span className="inline-block mt-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-700">
-                      {pkg.badge || 'Paket'}
-                    </span>
-
-                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-600">
-                      <div className="flex items-start gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                        <span className="font-medium text-slate-900">{pkg.hotelMakkah}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 pt-1">
+                      <div className="flex items-center gap-2 bg-white/90 p-2.5 rounded-xl border border-slate-100">
+                        <MapPin className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Mekke Oteli</span>
+                          <span className="font-semibold text-slate-900 truncate block">{pkg.hotelMakkah}</span>
+                        </div>
                       </div>
-                      <div className="flex items-start gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                        <span className="font-medium text-slate-900">{pkg.hotelMadinah}</span>
+
+                      <div className="flex items-center gap-2 bg-white/90 p-2.5 rounded-xl border border-slate-100">
+                        <MapPin className="h-4 w-4 text-amber-600 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Medine Oteli</span>
+                          <span className="font-semibold text-slate-900 truncate block">{pkg.hotelMadinah}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-mono">Kod: {pkg.code || 'PKG'}</span>
-                    <span className="text-emerald-800 font-bold font-mono">
-                      Mekke: {monthRate.makkahRoomSAR} SAR
-                    </span>
+                  {/* Right: Clean Room & Food Price Breakdown Boxes */}
+                  <div className="flex sm:flex-col justify-between sm:justify-center gap-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-200/80 pt-3 md:pt-0 md:pl-4 min-w-[210px]">
+                    <div className="bg-white/90 p-2.5 rounded-xl border border-slate-100 shadow-3xs space-y-0.5">
+                      <div className="flex items-center justify-between text-xs gap-3">
+                        <span className="flex items-center gap-1 font-bold text-emerald-900">
+                          <Building className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Mekke:</span>
+                        </span>
+                        <span className="font-mono font-black text-slate-900 text-xs">
+                          {monthRate.makkahRoomSAR} SAR <span className="text-slate-400 text-[10px] font-normal">Oda</span>
+                        </span>
+                      </div>
+                      <div className="text-right text-[11px] text-slate-500 font-mono font-medium">
+                        + {makkahFood} SAR Yemek
+                      </div>
+                    </div>
+
+                    <div className="bg-white/90 p-2.5 rounded-xl border border-slate-100 shadow-3xs space-y-0.5">
+                      <div className="flex items-center justify-between text-xs gap-3">
+                        <span className="flex items-center gap-1 font-bold text-amber-900">
+                          <Building2 className="h-3.5 w-3.5 text-amber-600" />
+                          <span>Medine:</span>
+                        </span>
+                        <span className="font-mono font-black text-slate-900 text-xs">
+                          {monthRate.madinahRoomSAR} SAR <span className="text-slate-400 text-[10px] font-normal">Oda</span>
+                        </span>
+                      </div>
+                      <div className="text-right text-[11px] text-slate-500 font-mono font-medium">
+                        + {madinahFood} SAR Yemek
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -533,105 +675,96 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
           </div>
         </div>
 
-        {/* Step 3: Konaklama Süresi & Oda Seçici */}
-        <div className="pearl-card rounded-3xl p-6 sm:p-7 space-y-6 shadow-sm border border-slate-200/90">
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3 gap-2">
-            <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
-              <Bed className="h-5 w-5 text-emerald-600" />
-              <span>3. Gün Sayısı & Oda Seçenekleri</span>
-            </h3>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-2xs">
-              Toplam: {Number(makkahDays) + Number(madinahDays)} Gün
-              {madinahDays === 0 && ' (Sadece Mekke)'}
-              {makkahDays === 0 && ' (Sadece Medine)'}
+        {/* Step 3: Konaklama Süresi */}
+        <div id="step-3" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs font-mono shrink-0">
+                3
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <Bed className="h-4 w-4 text-emerald-600" />
+                <span>Konaklama Süresi</span>
+              </h3>
+            </div>
+            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              Toplam {Number(makkahDays) + Number(madinahDays)} Gece
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Mekke Days */}
-            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-2.5 hover:border-slate-300 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Building className="h-4 w-4 text-emerald-700" />
-                  <span>Mekke Gün Sayısı:</span>
-                </span>
-                <span className={`text-base font-black font-mono px-3 py-0.5 rounded-lg border shadow-2xs ${
-                  makkahDays === 0 
-                    ? 'text-slate-400 bg-slate-100 border-slate-200' 
-                    : 'text-emerald-950 bg-white border-slate-200'
-                }`}>
-                  {makkahDays === 0 ? 'Mekke Yok (0)' : `${makkahDays} Gün`}
-                </span>
+            {/* Mekke Box */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/40 via-white to-white hover:border-emerald-200 transition-all shadow-3xs">
+              <div>
+                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="text-sm">🕋</span>
+                  <span>Mekke Kalış</span>
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  {makkahDays === 0 ? 'Konaklama Yok' : `${makkahDays} Gece`}
+                </div>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="30"
-                value={makkahDays}
-                onChange={(e) => setMakkahDays(parseInt(e.target.value) || 0)}
-                className="w-full accent-emerald-600 cursor-pointer"
-              />
-              <div className="flex items-center gap-1.5 pt-1">
-                {[0, 5, 7, 10, 14].map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setMakkahDays(d)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                      makkahDays === d ? 'bg-emerald-700 text-white shadow-2xs' : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                    }`}
-                  >
-                    {d === 0 ? '0 (Yok)' : `${d}g`}
-                  </button>
-                ))}
+
+              <div className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setMakkahDays(Math.max(0, makkahDays - 1))}
+                  className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-90 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill"
+                  title="1 Gece Azalt"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="font-mono font-black text-base text-emerald-950 min-w-[32px] text-center select-none">
+                  {makkahDays}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMakkahDays(Math.min(30, makkahDays + 1))}
+                  className="h-8 w-8 rounded-lg bg-emerald-700 hover:bg-emerald-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs shadow-emerald-800/20"
+                  title="1 Gece Artır"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
 
-            {/* Medine Days */}
-            <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 space-y-2.5 hover:border-slate-300 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 text-amber-700" />
-                  <span>Medine Gün Sayısı:</span>
-                </span>
-                <span className={`text-base font-black font-mono px-3 py-0.5 rounded-lg border shadow-2xs ${
-                  madinahDays === 0 
-                    ? 'text-rose-700 bg-rose-50 border-rose-200' 
-                    : 'text-amber-950 bg-white border-slate-200'
-                }`}>
-                  {madinahDays === 0 ? 'Medine Yok (0)' : `${madinahDays} Gün`}
-                </span>
+            {/* Medine Box */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50/40 via-white to-white hover:border-amber-200 transition-all shadow-3xs">
+              <div>
+                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="text-sm">🕌</span>
+                  <span>Medine Kalış</span>
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium">
+                  {madinahDays === 0 ? 'Konaklama Yok' : `${madinahDays} Gece`}
+                </div>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                value={madinahDays}
-                onChange={(e) => setMadinahDays(parseInt(e.target.value) || 0)}
-                className="w-full accent-amber-600 cursor-pointer"
-              />
-              <div className="flex items-center gap-1.5 pt-1">
-                {[0, 3, 4, 7, 10].map(d => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setMadinahDays(d)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                      madinahDays === d 
-                        ? 'bg-amber-600 text-white shadow-2xs' 
-                        : d === 0 
-                        ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-extrabold' 
-                        : 'bg-white text-slate-600 hover:bg-slate-200 border border-slate-200'
-                    }`}
-                  >
-                    {d === 0 ? '0 (Medine Yok)' : `${d}g`}
-                  </button>
-                ))}
+
+              <div className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setMadinahDays(Math.max(0, madinahDays - 1))}
+                  className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-90 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill"
+                  title="1 Gece Azalt"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="font-mono font-black text-base text-amber-950 min-w-[32px] text-center select-none">
+                  {madinahDays}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMadinahDays(Math.min(20, madinahDays + 1))}
+                  className="h-8 w-8 rounded-lg bg-amber-600 hover:bg-amber-500 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs shadow-amber-700/20"
+                  title="1 Gece Artır"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Oda Tipleri Karşılaştırma Tablosu */}
+          {/* Saf Otel Oda Tipleri Karşılaştırma & Karma Dağılım Tablosu */}
           <RoomComparisonTable
             matrix={roomMatrix}
             selectedOccupancy={makkahOccupancy}
@@ -640,21 +773,37 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
               setMadinahOccupancy(occ);
             }}
             currency={activeCurrency}
+            isMixedRoomMode={isMixedRoomMode}
+            onToggleMixedMode={(enabled) => {
+              setIsMixedRoomMode(enabled);
+              if (enabled) {
+                const totalP = (mixedRooms.single * 1) + (mixedRooms.double * 2) + (mixedRooms.triple * 3) + (mixedRooms.quad * 4);
+                if (totalP > 0) setPaxCount(totalP);
+              }
+            }}
+            mixedRooms={mixedRooms}
+            onChangeMixedRoom={(key, val) => {
+              const updated = { ...mixedRooms, [key]: val };
+              setMixedRooms(updated);
+              const totalP = (updated.single * 1) + (updated.double * 2) + (updated.triple * 3) + (updated.quad * 4);
+              if (totalP > 0) setPaxCount(totalP);
+            }}
           />
         </div>
 
-        {/* Step 4: Transfer & Şehirlerarası Ulaşım */}
-        <div className="pearl-card rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm border border-slate-200/90">
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3 gap-2">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
-                <Bus className="h-5 w-5 text-sky-600" />
-                <span>4. Transfer & Ulaşım Dağılımı</span>
+        {/* Step 4: Transfer & Ulaşım */}
+        <div id="step-4" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-sky-800 font-bold text-xs font-mono shrink-0">
+                4
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <Bus className="h-4 w-4 text-sky-600" />
+                <span>Transfer & Ulaşım</span>
               </h3>
-              <p className="text-xs text-slate-400 font-medium">Araç Ücreti Kişi Sayısına Bölünür</p>
             </div>
 
-            {/* Quick All-Transfer Toggle */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -665,12 +814,10 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
                     medAir: { vehicleType: 'none', passengerCount: 0 },
                   });
                 }}
-                className="flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 text-slate-600 border border-slate-200 text-xs font-bold transition-all cursor-pointer spring-pill"
+                className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 border border-slate-200 text-xs font-bold transition-all cursor-pointer spring-pill"
               >
-                <XCircle className="h-3.5 w-3.5 text-rose-500" />
-                <span>Taşıt Gerek Yok (Tümünü Kaldır)</span>
+                Tümünü Kaldır
               </button>
-
               <button
                 type="button"
                 onClick={() => {
@@ -680,15 +827,14 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
                     medAir: { vehicleType: 'small', passengerCount: paxCount || 2 },
                   });
                 }}
-                className="flex items-center gap-1 px-3 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs font-bold transition-all cursor-pointer spring-pill"
+                className="px-3 py-1.5 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs font-bold transition-all cursor-pointer spring-pill"
               >
-                <RotateCcw className="h-3.5 w-3.5 text-sky-600" />
-                <span>Standart Transferleri Seç</span>
+                Standart (Binek)
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2.5">
             {TRANSFER_ROUTES.map((route) => {
               const sel = transfersSelection[route.id] || { vehicleType: 'small', passengerCount: 2 };
               const smallCost = activePackage?.transfers?.[route.smallKey] || 0;
@@ -696,85 +842,91 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
 
               return (
                 <div 
-                  key={route.id}
-                  className="rounded-2xl p-4 border border-slate-200/90 bg-white space-y-3 shadow-2xs hover:border-slate-300 transition-all"
+                  key={route.id} 
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                    sel.vehicleType === 'none'
+                      ? 'bg-slate-50/60 border-slate-200/80 opacity-75'
+                      : 'bg-white border-slate-200/90 shadow-3xs hover:border-slate-300'
+                  }`}
                 >
-                  <div className="flex items-center justify-between font-bold text-xs text-slate-900 pb-2 border-b border-slate-100">
-                    <div className="flex items-center gap-1.5">
-                      <Car className="h-4 w-4 text-sky-600" />
-                      <span>{route.label}</span>
+                  <div className="flex items-center gap-2.5 font-bold text-xs text-slate-900">
+                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${
+                      sel.vehicleType === 'none' ? 'bg-slate-200 text-slate-500' : 'bg-sky-100 text-sky-700'
+                    }`}>
+                      <Car className="h-4 w-4 shrink-0" />
                     </div>
-                    {sel.vehicleType === 'none' && (
-                      <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                        Taşıt Yok
-                      </span>
-                    )}
+                    <span>{route.label}</span>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 block">Araç Tercihi:</label>
-                    <div className="grid grid-cols-3 gap-1.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* Vehicle Type Segment Pill with Distinct High-Contrast Active Colors */}
+                    <div className="flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200/80 rounded-full select-none">
+                      {/* Binek Button */}
                       <button
                         type="button"
                         onClick={() => handleTransferChange(route.id, 'vehicleType', 'small')}
-                        className={`p-2 rounded-xl text-xs font-bold spring-pill border text-left cursor-pointer transition-all ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
                           sel.vehicleType === 'small'
-                            ? 'bg-sky-50 border-sky-500 text-sky-950 ring-2 ring-sky-500/20 shadow-2xs scale-102'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white shadow-xs shadow-sky-600/30'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                         }`}
                       >
-                        <span className="block text-[10px] font-bold">Küçük</span>
-                        <span className="text-[10px] font-mono text-slate-400">{smallCost} SAR</span>
+                        Binek ({smallCost} SAR)
                       </button>
 
+                      {/* Otobüs Button */}
                       <button
                         type="button"
                         onClick={() => handleTransferChange(route.id, 'vehicleType', 'big')}
-                        className={`p-2 rounded-xl text-xs font-bold spring-pill border text-left cursor-pointer transition-all ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
                           sel.vehicleType === 'big'
-                            ? 'bg-sky-50 border-sky-500 text-sky-950 ring-2 ring-sky-500/20 shadow-2xs scale-102'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs shadow-emerald-800/30'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                         }`}
                       >
-                        <span className="block text-[10px] font-bold">Büyük</span>
-                        <span className="text-[10px] font-mono text-slate-400">{bigCost} SAR</span>
+                        Otobüs ({bigCost} SAR)
                       </button>
 
+                      {/* Yok Button */}
                       <button
                         type="button"
                         onClick={() => handleTransferChange(route.id, 'vehicleType', 'none')}
-                        className={`p-2 rounded-xl text-xs font-bold spring-pill border text-left cursor-pointer transition-all ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
                           sel.vehicleType === 'none'
-                            ? 'bg-rose-50 border-rose-500 text-rose-950 ring-2 ring-rose-500/20 shadow-2xs scale-102'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-xs shadow-rose-500/30'
+                            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
                         }`}
                       >
-                        <span className="block text-[10px] font-bold">Araç Yok</span>
-                        <span className="text-[10px] font-mono text-slate-400">0 SAR</span>
+                        Yok
                       </button>
                     </div>
-                  </div>
 
-                  {sel.vehicleType !== 'none' ? (
-                    <div className="space-y-1 pt-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-500">Araçtaki Kişi Sayısı:</span>
-                        <span className="font-mono font-bold text-slate-900">{sel.passengerCount || 1} Kişi</span>
+                    {/* Fluid Animated Passenger Count Stepper */}
+                    {sel.vehicleType !== 'none' && (
+                      <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 shadow-3xs animate-fade-scale">
+                        <span className="text-[11px] font-bold text-slate-500 pl-0.5">Kişi:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleTransferChange(route.id, 'passengerCount', Math.max(1, (sel.passengerCount || 1) - 1))}
+                          className="h-6 w-6 rounded-full bg-white hover:bg-slate-200 active:scale-85 text-slate-700 flex items-center justify-center font-bold border border-slate-200 transition-all cursor-pointer shadow-3xs"
+                          title="1 Kişi Azalt"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="font-mono font-black text-xs text-slate-950 min-w-[20px] text-center select-none">
+                          {sel.passengerCount || 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleTransferChange(route.id, 'passengerCount', Math.min(50, (sel.passengerCount || 1) + 1))}
+                          className="h-6 w-6 rounded-full bg-sky-600 hover:bg-sky-500 active:scale-85 text-white flex items-center justify-center font-bold transition-all cursor-pointer shadow-xs shadow-sky-600/30"
+                          title="1 Kişi Artır"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        value={sel.passengerCount || 1}
-                        onChange={(e) => handleTransferChange(route.id, 'passengerCount', parseInt(e.target.value) || 1)}
-                        className="w-full accent-sky-600 cursor-pointer"
-                      />
-                    </div>
-                  ) : (
-                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 text-center text-[10px] text-slate-400 font-medium">
-                      Bu rota için araç bedeli eklenmez (0 SAR)
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -782,16 +934,21 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
         </div>
 
         {/* Step 5: Sabit & Ek Giderler Checklist */}
-        <div className="pearl-card rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm border border-slate-200/90">
+        <div id="step-5" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
-              <Coins className="h-5 w-5 text-emerald-600" />
-              <span>5. Sabit & Operasyonel Giderler Havuzu</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-medium">Teklife Dahil Edilecek Kalemleri Seçin</span>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs font-mono shrink-0">
+                5
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <Coins className="h-4 w-4 text-emerald-600" />
+                <span>Sabit & Operasyonel Giderler Havuzu</span>
+              </h3>
+            </div>
+            <span className="text-xs text-slate-400 font-medium">Teklife Dahil Edilecek Kalemler</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {FIXED_EXPENSES_INFO.map((item) => {
               const isIncluded = !!fixedExpensesIncluded[item.key];
               const costSAR = activePackage?.fixedExpenses?.[item.key] || 0;
@@ -800,25 +957,25 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
                 <div
                   key={item.key}
                   onClick={() => toggleFixedExpense(item.key)}
-                  className={`p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer flex items-center justify-between select-none ${
+                  className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between select-none ${
                     isIncluded
-                      ? 'bg-emerald-50/90 border-emerald-500/80 shadow-2xs scale-101'
-                      : 'bg-white border-slate-200/90 opacity-60 hover:opacity-100 hover:border-slate-300'
+                      ? 'bg-emerald-50/90 border-emerald-500/80 shadow-3xs'
+                      : 'bg-white border-slate-200/80 opacity-60 hover:opacity-100 hover:border-slate-300'
                   }`}
                 >
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 pr-2">
                     <span className="text-xs font-bold text-slate-900 block">{item.label}</span>
                     <span className="text-[10px] text-slate-400 line-clamp-1">{item.desc}</span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span className="font-mono font-bold text-xs text-slate-700">
-                      {costSAR} <span className="text-[10px] text-slate-400">SAR</span>
+                      {costSAR} <span className="text-[9px] text-slate-400">SAR</span>
                     </span>
-                    <div className={`flex h-5 w-5 items-center justify-center rounded-lg border transition-colors ${
+                    <div className={`flex h-4.5 w-4.5 items-center justify-center rounded-md border transition-colors ${
                       isIncluded ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white'
                     }`}>
-                      {isIncluded && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                      {isIncluded && <Check className="h-3 w-3 stroke-[3]" />}
                     </div>
                   </div>
                 </div>
@@ -828,45 +985,76 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
         </div>
 
         {/* Step 6: Müşteri Bilgisi & Teklif Notları */}
-        <div className="pearl-card rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm border border-slate-200/90">
+        <div id="step-6" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
-              <User className="h-5 w-5 text-emerald-600" />
-              <span>6. Müşteri & Misafir Bilgileri</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-medium">PDF ve WhatsApp Çıktısında Görünür</span>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs font-mono shrink-0">
+                6
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-1.5">
+                <User className="h-4 w-4 text-emerald-600" />
+                <span>Müşteri & Misafir Bilgileri</span>
+              </h3>
+            </div>
+            <span className="text-xs text-slate-400 font-medium hidden sm:inline">PDF ve Teklif Mektubunda Görünür</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5 text-slate-400" />
-                <span>Misafir Adı Soyadı / Grup Lideri:</span>
+                <span>Misafir / Grup Lideri:</span>
               </label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="Örn: Ahmet Yılmaz"
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-2xs font-semibold"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-3xs font-semibold"
               />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-slate-400" />
-                <span>Telefon Numarası (WhatsApp İçin):</span>
+                <span>İletişim Telefonu:</span>
               </label>
               <input
                 type="tel"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="Örn: 0532 123 45 67"
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-2xs font-mono font-semibold"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-3xs font-mono font-semibold"
               />
             </div>
 
-            <div className="sm:col-span-2 space-y-1.5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-slate-400" />
+                <span>Grup Kişi Sayısı:</span>
+              </label>
+              <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-slate-300 shadow-3xs">
+                <button
+                  type="button"
+                  onClick={() => setPaxCount(Math.max(1, paxCount - 1))}
+                  className="h-7 w-7 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-90 text-slate-700 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="flex-1 font-mono font-black text-xs text-slate-900 text-center select-none">
+                  {paxCount} Kişi
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPaxCount(Math.min(200, paxCount + 1))}
+                  className="h-7 w-7 rounded-lg bg-emerald-700 hover:bg-emerald-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="sm:col-span-3 space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
                 <span>Teklif Özel Notları & Açıklamalar:</span>
@@ -876,7 +1064,7 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Misafir için özel istekler, rehberlik notları, transfer detayları vb."
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-2xs resize-none"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-3xs resize-none"
               />
             </div>
           </div>
@@ -893,6 +1081,7 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
           onSaveQuote={handleSaveQuote}
           isSaved={isSaved}
           paxCount={paxCount}
+          onChangePaxCount={setPaxCount}
           discountUSD={discountUSD}
           onChangeDiscount={setDiscountUSD}
           activeCurrency={activeCurrency}
@@ -902,5 +1091,8 @@ export default function AgentQuotationWizard({ editingQuote = null, setEditingQu
         />
       </div>
     </div>
-  );
+  )}
+</div>
+</div>
+);
 }

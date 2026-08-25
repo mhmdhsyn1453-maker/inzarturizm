@@ -11,6 +11,28 @@ import {
   ChevronsRight
 } from 'lucide-react';
 
+const ACTION_META = {
+  USER_LOGIN: { label: 'Giriş Yapıldı', color: 'bg-sky-50 text-sky-800 border-sky-200' },
+  USER_LOGOUT: { label: 'Çıkış Yapıldı', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  USER_UPDATED: { label: 'Kullanıcı Güncellendi', color: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+  STAFF_CREATED: { label: 'Personel Tanımlandı', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  ADMIN_CREATED: { label: 'Yönetici Tanımlandı', color: 'bg-amber-50 text-amber-900 border-amber-300 font-bold' },
+  STAFF_DELETED: { label: 'Personel Silindi', color: 'bg-rose-50 text-rose-800 border-rose-200' },
+  STAFF_SUSPENDED: { label: 'Yetki Duraklatıldı', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+  STAFF_ACTIVATED: { label: 'Yetki Aktif Edildi', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  PACKAGES_UPDATED: { label: 'Tarifeler Güncellendi', color: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+  CURRENCY_UPDATED: { label: 'Döviz Kurları Güncellendi', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+  MONTHS_CONFIG_UPDATED: { label: 'Sezon Ayarları Güncellendi', color: 'bg-teal-50 text-teal-800 border-teal-200' },
+  QUOTE_CREATED: { label: 'Teklif Oluşturuldu', color: 'bg-blue-50 text-blue-800 border-blue-200' },
+  QUOTE_REVISED: { label: 'Teklif Düzenlendi', color: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
+  QUOTE_APPROVED: { label: 'Teklif Onaylandı (Satış)', color: 'bg-emerald-100 text-emerald-950 border-emerald-400 font-bold' },
+  QUOTE_STATUS_CHANGED: { label: 'Teklif Durumu Değişti', color: 'bg-purple-50 text-purple-800 border-purple-200' },
+  QUOTE_DELETED: { label: 'Teklif Silindi', color: 'bg-rose-50 text-rose-800 border-rose-200' },
+  ANNOUNCEMENT_CREATED: { label: 'Duyuru Yayınlandı', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+  ANNOUNCEMENT_DELETED: { label: 'Duyuru Silindi', color: 'bg-rose-50 text-rose-800 border-rose-200' },
+  SYSTEM_RESET: { label: 'Fabrika Ayarlarına Sıfırlandı', color: 'bg-rose-100 text-rose-900 border-rose-300 font-extrabold' }
+};
+
 export default function AuditLogView() {
   const { auditLogs } = useData();
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,8 +41,10 @@ export default function AuditLogView() {
 
   const filteredLogs = auditLogs.filter(log => {
     const term = searchTerm.toLowerCase();
+    const trLabel = ACTION_META[log.action]?.label?.toLowerCase() || '';
     return (
       (log.action && log.action.toLowerCase().includes(term)) ||
+      trLabel.includes(term) ||
       (log.user && log.user.toLowerCase().includes(term)) ||
       (log.details && log.details.toLowerCase().includes(term))
     );
@@ -99,34 +123,28 @@ export default function AuditLogView() {
                     <th className="py-3 px-4 text-right rounded-r-xl">Tarih & Saat</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
+                <tbody className="divide-y divide-slate-100">
                   {currentLogs.map((log) => {
-                    const isApproval = log.action === 'QUOTE_APPROVED';
-                    const isLogin = log.action === 'USER_LOGIN';
-                    const isPrice = log.action === 'PACKAGES_UPDATED' || log.action === 'CURRENCY_UPDATED';
+                    const meta = ACTION_META[log.action] || { 
+                      label: log.action || 'İşlem', 
+                      color: 'bg-slate-100 text-slate-800 border-slate-200' 
+                    };
 
                     return (
                       <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            isApproval
-                              ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                              : isPrice
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                              : isLogin
-                              ? 'bg-sky-100 text-sky-900 border border-sky-300'
-                              : 'bg-slate-100 text-slate-800 border border-slate-200'
-                          }`}>
-                            {log.action}
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border shadow-2xs ${meta.color}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75"></span>
+                            <span>{meta.label}</span>
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-900 font-sans font-bold">
+                        <td className="py-3 px-4 text-slate-900 font-bold">
                           {log.user}
                         </td>
-                        <td className="py-3 px-4 text-slate-700 font-sans font-medium leading-relaxed">
+                        <td className="py-3 px-4 text-slate-700 font-medium leading-relaxed">
                           {log.details}
                         </td>
-                        <td className="py-3 px-4 text-right text-slate-400 text-[11px] whitespace-nowrap">
+                        <td className="py-3 px-4 text-right text-slate-500 font-mono text-[11px] whitespace-nowrap">
                           {new Date(log.timestamp).toLocaleString('tr-TR')}
                         </td>
                       </tr>

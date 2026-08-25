@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEFAULT_USERS } from '../data/defaultTariffData';
 import { syncService } from '../services/syncService';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -29,6 +30,16 @@ export function AuthProvider({ children }) {
     return null;
   });
 
+  // Listen to remote Supabase sync updates
+  useEffect(() => {
+    const unsubscribe = syncService.subscribe((event) => {
+      if (event.type === 'USERS_UPDATED' || event.type === 'STORAGE_CHANGE') {
+        setUsers(syncService.getUsers());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('inzar_auth_user', JSON.stringify(currentUser));
@@ -37,22 +48,57 @@ export function AuthProvider({ children }) {
     }
   }, [currentUser]);
 
-  const login = (inputIdentifier, password, commit = true) => {
+  const login = async (inputIdentifier, password, commit = true) => {
     const trimmedInput = inputIdentifier.trim().toLowerCase();
     const trimmedPass = password.trim();
 
-    const user = users.find(u => {
+    // 1. Try local memory/localStorage matching first
+    let user = users.find(u => {
       const uMatch = u.username.toLowerCase() === trimmedInput || 
                      (u.email && u.email.toLowerCase() === trimmedInput) ||
                      (u.email && u.email.toLowerCase().startsWith(trimmedInput + '@'));
-      const pMatch = String(u.password || u.pin || '').trim() === trimmedPass ||
-                    trimmedPass === '123' ||
-                    trimmedPass === '1234';
+      const pMatch = String(u.password || '').trim() === trimmedPass;
       return uMatch && pMatch;
     });
 
+    // 2. If not matched locally, query Supabase profiles table directly
+    if (!user && isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('username', trimmedInput)
+          .maybeSingle();
+
+        if (data && !error) {
+          if (String(data.password || '').trim() === trimmedPass) {
+            user = {
+              id: data.id,
+              username: data.username,
+              password: data.password,
+              name: data.name,
+              role: (data.role || 'STAFF').toUpperCase(),
+              city: data.city || 'İstanbul',
+              branch: data.branch || 'Genel Merkez',
+              phone: data.phone || '',
+              avatarImage: data.avatar_image || null,
+              isActive: data.is_active !== false,
+              lastLogin: new Date().toISOString()
+            };
+
+            // Merge user into local state & storage
+            const updatedList = [user, ...users.filter(u => u.username.toLowerCase() !== trimmedInput)];
+            setUsers(updatedList);
+            syncService.saveUsers(updatedList);
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase live auth check failed, using local cache:', err);
+      }
+    }
+
     if (!user) {
-      return { success: false, message: 'Kullanıcı adı / e-posta veya şifre hatalı!' };
+      return { success: false, message: 'Kullanıcı adı veya şifre hatalı!' };
     }
 
     if (user.isActive === false) {
@@ -62,6 +108,7 @@ export function AuthProvider({ children }) {
     const sessionUser = {
       id: user.id,
       username: user.username,
+      password: user.password,
       name: user.name,
       role: (user.role || 'STAFF').toUpperCase(),
       city: user.city || 'İstanbul',
@@ -69,6 +116,7 @@ export function AuthProvider({ children }) {
       phone: user.phone || '',
       email: user.email || `${user.username}@inzarturizm.com`,
       avatar: user.avatar || '',
+      avatarImage: user.avatarImage || null,
       lastLogin: new Date().toISOString(),
       sessionToken: 'tkn_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
     };
@@ -83,7 +131,7 @@ export function AuthProvider({ children }) {
       syncService.addAuditLog({
         action: 'USER_LOGIN',
         user: user.name,
-        details: `${user.name} (${sessionUser.email}) sisteme güvenli giriş yaptı.`,
+        details: `${user.name} (@${user.username}) sisteme güvenli giriş yaptı.`,
         timestamp: new Date().toISOString()
       });
     }
@@ -176,11 +224,11 @@ export function AuthProvider({ children }) {
     const target = users.find(u => u.id === staffId);
     const updated = users.filter(u => u.id !== staffId);
     setUsers(updated);
-    syncService.saveUsers(updated);
+    syncService.deleteUser(staffId, target?.username, target?.email);
     syncService.addAuditLog({
       action: 'STAFF_DELETED',
       user: currentUser?.name || 'Genel Merkez',
-      details: `Kullanıcı hesabı silindi: ${target?.name || staffId} (${target?.email || ''})`,
+      details: `Kullanıcı hesabı silindi: ${target?.name || staffId} (@${target?.username || ''})`,
       timestamp: new Date().toISOString()
     });
   };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import inzarLogo from '../assets/inzarturizmlogo.png';
 import CustomSelect from './common/CustomSelect';
 import { 
   Building2, 
@@ -83,12 +84,9 @@ export default function Header({ activeTab, setActiveTab }) {
           <div className="flex items-center gap-3">
             <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-emerald-600 via-emerald-800 to-slate-900 p-1 shadow-lg shadow-emerald-900/30 border border-emerald-500/30">
               <img 
-                src="/inzarturizmlogo.png" 
+                src={inzarLogo} 
                 alt="İnzar Turizm Logo" 
                 className="h-full w-full object-contain filter drop-shadow"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
               />
               <span className="text-white font-bold text-lg font-display">İZ</span>
             </div>

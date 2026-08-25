@@ -131,9 +131,13 @@ export function ModalProvider({ children }) {
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
                   <LogOut className="h-8 w-8" />
                 </div>
-              ) : modalState.confirmVariant === 'danger' ? (
+              ) : modalState.type === 'delete' ? (
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
                   <Trash2 className="h-8 w-8" />
+                </div>
+              ) : modalState.confirmVariant === 'danger' ? (
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
+                  <ShieldAlert className="h-8 w-8" />
                 </div>
               ) : modalState.confirmVariant === 'amber' ? (
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 shadow-sm">

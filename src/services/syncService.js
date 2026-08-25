@@ -254,7 +254,8 @@ class SyncService {
       if (!error && data && data.length > 0) {
         const formatted = data.map(u => ({
           id: u.id,
-          username: u.email.split('@')[0],
+          username: u.username || u.email.split('@')[0],
+          password: u.password || '123',
           name: u.name,
           role: u.role,
           city: u.city,
@@ -705,6 +706,65 @@ class SyncService {
       }).then();
     }
 
+    return updated;
+  }
+
+  getUsers() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.USERS);
+      if (data) return JSON.parse(data);
+    } catch (e) {}
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
+    return DEFAULT_USERS;
+  }
+
+  saveUsers(users) {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    this.broadcast('USERS_UPDATED', users);
+
+    if (this.isSupabaseReady) {
+      users.forEach(async (u) => {
+        try {
+          await supabase.from('profiles').upsert({
+            id: (u.id && u.id.includes('-')) ? u.id : undefined,
+            username: u.username,
+            password: u.password || '123',
+            name: u.name,
+            role: u.role || 'STAFF',
+            city: u.city || 'İstanbul',
+            branch: u.branch || 'Merkez',
+            phone: u.phone || '',
+            avatar_image: u.avatarImage || u.avatar || '',
+            is_active: u.isActive !== false
+          }, { onConflict: 'username' });
+        } catch (err) {
+          console.error('Supabase profile save error:', err);
+        }
+      });
+    }
+  }
+
+  async deleteUser(staffId, username = '', email = '') {
+    const current = this.getUsers();
+    const updated = current.filter(u => u.id !== staffId && (username ? u.username !== username : true));
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
+    this.broadcast('USERS_UPDATED', updated);
+
+    if (this.isSupabaseReady) {
+      try {
+        if (staffId && staffId.includes('-')) {
+          await supabase.from('profiles').delete().eq('id', staffId);
+        }
+        if (username) {
+          await supabase.from('profiles').delete().eq('username', username);
+        }
+        if (email) {
+          await supabase.from('profiles').delete().eq('email', email);
+        }
+      } catch (err) {
+        console.error('Supabase profile deletion error:', err);
+      }
+    }
     return updated;
   }
 

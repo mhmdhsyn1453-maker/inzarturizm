@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { soundService } from '../../services/soundService';
 import lottie from 'lottie-web';
 import fingerprintAnimation from '../../assets/fingerprint_verification.json';
+import inzarLogo from '../../assets/inzarturizmlogo.png';
 import { 
   Lock, 
   User, 
@@ -279,7 +280,7 @@ function FingerprintLottiePlayer({ onDone }) {
       }
     });
 
-    anim.setSpeed(0.38);
+    anim.setSpeed(1.1);
 
     let hasCompleted = false;
 
@@ -421,14 +422,14 @@ export default function LoginScreen() {
     // 🔊 2. Play Crystal Success Chime!
     soundService.playSuccessChime();
     setIsVerified(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       if (pendingCredentials) {
-        login(pendingCredentials.userStr, pendingCredentials.passStr, true);
+        await login(pendingCredentials.userStr, pendingCredentials.passStr, true);
       }
-    }, 1000);
+    }, 450);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (lockoutTimer > 0 || isFlipped) return;
     setErrorMsg('');
@@ -443,8 +444,8 @@ export default function LoginScreen() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const result = login(cleanUser, cleanPass, false);
+    try {
+      const result = await login(cleanUser, cleanPass, false);
       setIsLoading(false);
 
       if (!result.success) {
@@ -460,7 +461,10 @@ export default function LoginScreen() {
         setFailedAttempts(0);
         startBiometricVerification(result.user, cleanUser, cleanPass);
       }
-    }, 200);
+    } catch (err) {
+      setIsLoading(false);
+      triggerError('Giriş yapılırken bir hata oluştu.');
+    }
   };
 
   const triggerError = (msg) => {
@@ -536,19 +540,18 @@ export default function LoginScreen() {
              ══════════════════════════════════════════════════════════════ */}
           <div className="absolute inset-0 w-full h-full rounded-full pt-8 pb-10 px-10 sm:px-14 bg-white border-2 border-white/90 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 [backface-visibility:hidden]">
             
-            {/* Logo Section */}
-            <div className="mb-4">
-              <div className="mx-auto flex h-28 sm:h-36 w-auto items-center justify-center">
+            {/* Logo Section (Pure, Large & Elegant) */}
+            <div className="mb-6 sm:mb-7 flex flex-col items-center">
+              <div className="flex items-center justify-center">
                 <img
-                  src="/inzarturizmlogo.png"
+                  src={inzarLogo}
                   alt="İnzar Turizm"
-                  className="h-full w-auto max-w-[260px] sm:max-w-[290px] object-contain"
-                  onError={(e) => { e.target.style.display = 'none'; }}
+                  className="h-36 sm:h-44 w-auto max-w-[320px] sm:max-w-[380px] object-contain pointer-events-none"
                 />
               </div>
 
               {/* Single-Line Title with Emerald Gradient */}
-              <h2 className="text-sm sm:text-base font-extrabold font-display tracking-tight text-slate-900 mt-2">
+              <h2 className="text-sm sm:text-base font-extrabold font-display tracking-tight text-slate-900 mt-4">
                 TARİFE & TEKLİF <span className="emerald-gradient-text">YÖNETİM SİSTEMİ</span>
               </h2>
             </div>
@@ -578,7 +581,7 @@ export default function LoginScreen() {
                   disabled={lockoutTimer > 0 || isFlipped}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="E-posta veya Kullanıcı Adı"
+                  placeholder="Kullanıcı Adı (ör. merkez, mustafa)"
                   className="w-full rounded-full bg-slate-50/90 pl-11 pr-5 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-semibold disabled:opacity-50"
                 />
               </div>
@@ -672,31 +675,12 @@ export default function LoginScreen() {
               </button>
             </form>
 
-            {/* Demo Fast Login Chips */}
-            <div className="mt-4 pt-3 border-t border-slate-100/90 flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('merkez', '123')}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100/90 hover:bg-slate-200/90 border border-slate-200/80 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-2xs"
-              >
-                <Crown className="h-3.5 w-3.5 text-amber-600" />
-                <span>Merkez (123)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('ahmet', '123')}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold text-emerald-950 transition-all cursor-pointer shadow-2xs"
-              >
-                <User className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Personel (123)</span>
-              </button>
-            </div>
-
-            {/* Bottom Security Badge */}
-            <div className="mt-3 text-[10px] text-slate-400 font-medium flex items-center justify-center gap-1">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>256-Bit SSL • Biyometrik Doğrulama</span>
+            {/* Bottom NEXUS Platforms Badge */}
+            <div
+              className="mt-4 text-[11px] text-slate-400 font-normal flex items-center justify-center select-none tracking-wide"
+              style={{ fontFamily: "'Mark Pro', 'Plus Jakarta Sans', sans-serif" }}
+            >
+              <span>By <strong style={{ fontWeight: 700, color: '#334155' }}>NEXUS</strong> Platforms</span>
             </div>
           </div>
 

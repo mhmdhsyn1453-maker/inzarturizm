@@ -11,7 +11,7 @@ export default function Footer() {
           </div>
           <div>
             <span className="font-bold text-slate-200">İNZAR TURİZM</span> - Umre Tarife Hesaplama & Teklif Otomasyonu
-            <p className="text-[11px] text-slate-500">Tüm hakları saklıdır © {new Date().getFullYear()} • TÜRSAB A Grubu Belge No: 12840</p>
+            <p className="text-[11px] text-slate-500">Tüm hakları saklıdır © {new Date().getFullYear()} • TÜRSAB Belge No: 8207</p>
           </div>
         </div>
 

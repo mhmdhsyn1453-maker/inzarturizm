@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useModal } from '../../context/ModalContext';
+import inzarLogo from '../../assets/inzarturizmlogo.png';
 import { 
   Calculator, 
   Calendar,
@@ -105,12 +106,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 title={collapsed ? 'Genişletmek için tıklayın' : undefined}
               >
                 <img
-                  src="/inzarturizmlogo.png"
+                  src={inzarLogo}
                   alt="İnzar Turizm"
                   className="h-full w-full object-contain pointer-events-none"
-                  onError={(e) => {
-                    e.target.src = '/inzarturizmlogo.png';
-                  }}
                 />
               </div>
               

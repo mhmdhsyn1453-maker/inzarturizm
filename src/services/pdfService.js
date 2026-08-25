@@ -1,6 +1,7 @@
 // İnzar Turizm - Profesyonel ve Kesintisiz PDF & Mektup Motoru
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import inzarLogo from '../assets/inzarturizmlogo.png';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -175,7 +176,7 @@ export function openQuotationInNewPage(quote) {
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2.5px solid #064e3b; padding-bottom: 10px;">
         <div style="display: flex; align-items: center; gap: 14px;">
           <img 
-            src="/inzarturizmlogo.png" 
+            src="${inzarLogo}" 
             alt="İnzar Turizm Logo" 
             style="height: 60px; width: auto; object-fit: contain; display: block;"
           />
@@ -185,7 +186,7 @@ export function openQuotationInNewPage(quote) {
               Hac & Umre Organizasyonu • Turizm Acentesi
             </p>
             <p style="font-size: 9px; color: #64748b; margin-top: 1px;">
-              TÜRSAB A Grubu Seyahat Acentesi Belge No: 12840 • Diyanet Yetkili
+              TÜRSAB Belge No: 8207 • Diyanet Yetkili
             </p>
           </div>
         </div>
@@ -222,7 +223,7 @@ export function openQuotationInNewPage(quote) {
             Toplam Süre: <strong>${Number(quote.makkahDays) + Number(quote.madinahDays)} Gün</strong> 
             ${quote.madinahDays === 0 ? ' (Sadece Mekke)' : quote.makkahDays === 0 ? ' (Sadece Medine)' : ` (${quote.makkahDays}G Mekke / ${quote.madinahDays}G Medine)`}
           </div>
-          <div style="color: #475569; margin-top: 1px;">Dönem: <strong>${escapeHtml(quote.selectedMonthLabel || quote.selectedMonth || 'Standart')}</strong></div>
+          <div style="color: #475569; margin-top: 1px;">Dönem: <strong>${escapeHtml(quote.selectedMonthLabel || quote.selectedMonth || 'Ocak (Sömestr Tatili)')}</strong></div>
         </div>
       </div>
 
@@ -281,44 +282,81 @@ export function openQuotationInNewPage(quote) {
         </div>
       </div>
 
-      <!-- Pricing Matrix -->
+      <!-- Pricing Matrix or Mixed Rooms Group Pricing -->
       <div style="margin-bottom: 10px;">
         <div style="font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #064e3b; margin-bottom: 6px; border-bottom: 1.5px solid #a7f3d0; padding-bottom: 2px;">
-          FİYATLANDIRMA SEÇENEKLERİ (ODA TİPİNE GÖRE KİŞİ BAŞI)
+          ${quote.isMixedRoomMode ? 'KARMA GRUP KONAKLAMA DAĞILIMI & FİYATLANDIRMA' : 'FİYATLANDIRMA SEÇENEKLERİ (ODA TİPİNE GÖRE KİŞİ BAŞI)'}
         </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
-          
-          <div style="padding: 8px; border-radius: 6px; border: ${quote.makkahRoomOccupancy === 2 ? '2px solid #059669' : '1px solid #cbd5e1'}; background-color: ${quote.makkahRoomOccupancy === 2 ? '#ecfdf5' : '#f8fafc'};">
-            <span style="font-size: 9.5px; font-weight: 800; color: #334155; display: block;">2 KİŞİLİK ODA (DOUBLE)</span>
-            <div style="font-size: 15px; font-weight: 900; color: #064e3b; margin-top: 2px;">
-              $${doubleRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
+        ${quote.isMixedRoomMode && quote.mixedRoomsSummary ? `
+          <div style="padding: 10px 14px; border-radius: 6px; background-color: #f0fdf4; border: 1.5px solid #86efac;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin-bottom: 8px;">
+              <div style="padding: 6px; background-color: #ffffff; border-radius: 4px; border: 1px solid #cbd5e1;">
+                <div style="font-size: 9px; font-weight: 800; color: #475569;">1 KİŞİLİK</div>
+                <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.singleRooms} Oda</div>
+                <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.singleRooms * 1} Misafir</div>
+              </div>
+              <div style="padding: 6px; background-color: #ffffff; border-radius: 4px; border: 1px solid #cbd5e1;">
+                <div style="font-size: 9px; font-weight: 800; color: #475569;">2 KİŞİLİK</div>
+                <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.doubleRooms} Oda</div>
+                <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.doubleRooms * 2} Misafir</div>
+              </div>
+              <div style="padding: 6px; background-color: #ffffff; border-radius: 4px; border: 1px solid #cbd5e1;">
+                <div style="font-size: 9px; font-weight: 800; color: #475569;">3 KİŞİLİK</div>
+                <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.tripleRooms} Oda</div>
+                <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.tripleRooms * 3} Misafir</div>
+              </div>
+              <div style="padding: 6px; background-color: #ffffff; border-radius: 4px; border: 1px solid #cbd5e1;">
+                <div style="font-size: 9px; font-weight: 800; color: #475569;">4 KİŞİLİK</div>
+                <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.quadRooms} Oda</div>
+                <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.quadRooms * 4} Misafir</div>
+              </div>
             </div>
-            <div style="font-size: 8.5px; color: #64748b; margin-top: 1px;">
-              ~${doubleRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #bbf7d0; padding-top: 6px; font-size: 11px;">
+              <div>
+                <span style="color: #475569;">Toplam Konaklama: </span>
+                <strong style="color: #0f172a;">${quote.mixedRoomsSummary.totalRooms} Oda (${quote.mixedRoomsSummary.totalPax} Kişi)</strong>
+              </div>
+              <div style="text-align: right;">
+                <span style="color: #475569;">Grup Toplam Teklif: </span>
+                <strong style="font-size: 14px; color: #064e3b;">$${(quote.finalPriceUSD * (quote.paxCount || 1)).toLocaleString('tr-TR')} USD</strong>
+                <span style="font-size: 9.5px; color: #64748b; margin-left: 6px;">(Ort. $${quote.finalPriceUSD?.toLocaleString('tr-TR')} USD / Kişi)</span>
+              </div>
             </div>
           </div>
-
-          <div style="padding: 8px; border-radius: 6px; border: ${quote.makkahRoomOccupancy === 3 ? '2px solid #059669' : '1px solid #cbd5e1'}; background-color: ${quote.makkahRoomOccupancy === 3 ? '#ecfdf5' : '#f8fafc'};">
-            <span style="font-size: 9.5px; font-weight: 800; color: #334155; display: block;">3 KİŞİLİK ODA (TRIPLE)</span>
-            <div style="font-size: 15px; font-weight: 900; color: #064e3b; margin-top: 2px;">
-              $${tripleRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
+        ` : `
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+            <div style="padding: 8px; border-radius: 6px; border: ${quote.makkahRoomOccupancy === 2 ? '2px solid #059669' : '1px solid #cbd5e1'}; background-color: ${quote.makkahRoomOccupancy === 2 ? '#ecfdf5' : '#f8fafc'};">
+              <span style="font-size: 9.5px; font-weight: 800; color: #334155; display: block;">2 KİŞİLİK ODA</span>
+              <div style="font-size: 15px; font-weight: 900; color: #064e3b; margin-top: 2px;">
+                $${doubleRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
+              </div>
+              <div style="font-size: 8.5px; color: #64748b; margin-top: 1px;">
+                ~${doubleRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+              </div>
             </div>
-            <div style="font-size: 8.5px; color: #64748b; margin-top: 1px;">
-              ~${tripleRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+
+            <div style="padding: 8px; border-radius: 6px; border: ${quote.makkahRoomOccupancy === 3 ? '2px solid #059669' : '1px solid #cbd5e1'}; background-color: ${quote.makkahRoomOccupancy === 3 ? '#ecfdf5' : '#f8fafc'};">
+              <span style="font-size: 9.5px; font-weight: 800; color: #334155; display: block;">3 KİŞİLİK ODA</span>
+              <div style="font-size: 15px; font-weight: 900; color: #064e3b; margin-top: 2px;">
+                $${tripleRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
+              </div>
+              <div style="font-size: 8.5px; color: #64748b; margin-top: 1px;">
+                ~${tripleRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+              </div>
+            </div>
+
+            <div style="padding: 8px; border-radius: 6px; border: ${quote.makkahRoomOccupancy === 4 ? '2px solid #059669' : '1px solid #cbd5e1'}; background-color: ${quote.makkahRoomOccupancy === 4 ? '#ecfdf5' : '#f8fafc'};">
+              <span style="font-size: 9.5px; font-weight: 800; color: #334155; display: block;">4 KİŞİLİK ODA</span>
+              <div style="font-size: 15px; font-weight: 900; color: #064e3b; margin-top: 2px;">
+                $${quadRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
+              </div>
+              <div style="font-size: 8.5px; color: #64748b; margin-top: 1px;">
+                ~${quadRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+              </div>
             </div>
           </div>
-
-          <div style="padding: 8px; border-radius: 6px; border: ${quote.makkahRoomOccupancy === 4 ? '2px solid #059669' : '1px solid #cbd5e1'}; background-color: ${quote.makkahRoomOccupancy === 4 ? '#ecfdf5' : '#f8fafc'};">
-            <span style="font-size: 9.5px; font-weight: 800; color: #334155; display: block;">4 KİŞİLİK ODA (QUAD)</span>
-            <div style="font-size: 15px; font-weight: 900; color: #064e3b; margin-top: 2px;">
-              $${quadRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
-            </div>
-            <div style="font-size: 8.5px; color: #64748b; margin-top: 1px;">
-              ~${quadRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-            </div>
-          </div>
-
-        </div>
+        `}
       </div>
 
       <!-- Inclusions & Exclusions -->
@@ -327,20 +365,20 @@ export function openQuotationInNewPage(quote) {
           DAHİL / HARİÇ HİZMETLER DÖKÜMÜ
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 4px; font-size: 9.5px;">
-          <div style="color: ${fixed.flightTicketUSD ? '#065f46' : '#94a3b8'};">
-            ${fixed.flightTicketUSD ? '✓ Gidiş-Dönüş Uçak Bileti (Dahil)' : '— Uçak Bileti (Dahil Değil / Kendi Temin Eder)'}
+          <div style="color: ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8'};">
+            ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '✓ Gidiş-Dönüş Uçak Bileti (Dahil)' : '— Uçak Bileti (Dahil Değil / Kendi Temin Eder)'}
           </div>
-          <div style="color: ${fixed.visaSAR ? '#065f46' : '#94a3b8'};">
-            ${fixed.visaSAR ? '✓ Suudi Arabistan Elektronik Umre Vizesi (Dahil)' : '— Umre Vizesi (Dahil Değil)'}
+          <div style="color: ${(fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8'};">
+            ${(fixed.visaTaxSAR || fixed.visaSAR) ? '✓ Suudi Arabistan Elektronik Umre Vizesi (Dahil)' : '— Umre Vizesi (Dahil Değil)'}
           </div>
           <div style="color: ${fixed.insuranceSAR ? '#065f46' : '#94a3b8'};">
             ${fixed.insuranceSAR ? '✓ Kapsamlı Sağlık ve Seyahat Sigortası (Dahil)' : '— Seyahat Sigortası (Dahil Değil)'}
           </div>
-          <div style="color: ${fixed.guidanceSAR ? '#065f46' : '#94a3b8'};">
-            ${fixed.guidanceSAR ? '✓ Kutsal Mekan Ziyaretleri & Rehberlik (Dahil)' : '— Rehberlik Hizmeti (Dahil Değil)'}
+          <div style="color: ${(fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8'};">
+            ${(fixed.guideSAR || fixed.guidanceSAR) ? '✓ Kutsal Mekan Ziyaretleri & Rehberlik (Dahil)' : '— Rehberlik Hizmeti (Dahil Değil)'}
           </div>
-          <div style="color: ${fixed.bagSAR ? '#065f46' : '#94a3b8'};">
-            ${fixed.bagSAR ? '✓ İnzar Turizm Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
+          <div style="color: ${(fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8'};">
+            ${(fixed.bagSAR || fixed.scarfSAR) ? '✓ İnzar Turizm Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
           </div>
           <div style="color: ${fixed.zamzamSAR ? '#065f46' : '#94a3b8'};">
             ${fixed.zamzamSAR ? '✓ 5 Litre Orijinal Zemzem Suyu İkramı (Dahil)' : '— Zemzem İkramı (Dahil Değil)'}
