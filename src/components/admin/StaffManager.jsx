@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useModal } from '../../context/ModalContext';
@@ -37,16 +37,55 @@ import {
   Copy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { formatPhoneNumber } from '../../utils/phoneUtils';
+import ImageCropModal from '../common/ImageCropModal';
+import ImageLightboxModal from '../common/ImageLightboxModal';
 
 export default function StaffManager() {
   const { users, currentUser, addStaff, updateStaff, deleteStaff, toggleStaffStatus } = useAuth();
   const { savedQuotes } = useData();
   const { showConfirm, showAlert } = useModal();
 
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'create' | 'detail'
-  const [selectedStaffId, setSelectedStaffId] = useState(null);
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return sessionStorage.getItem('inzar_staff_view_mode') || 'list';
+    } catch { return 'list'; }
+  }); // 'list' | 'create' | 'detail'
+  
+  const [selectedStaffId, setSelectedStaffId] = useState(() => {
+    try {
+      return sessionStorage.getItem('inzar_staff_selected_id') || null;
+    } catch { return null; }
+  });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [visiblePasswords, setVisiblePasswords] = useState({});
+
+  // Modals state
+  const [lightboxState, setLightboxState] = useState({
+    isOpen: false,
+    imageSrc: null,
+    userName: '',
+    userRole: '',
+    userBranch: ''
+  });
+  const [cropState, setCropState] = useState({
+    isOpen: false,
+    imageSrc: null,
+    target: null // 'create' | 'edit'
+  });
+
+  const fileInputCreateRef = useRef(null);
+  const fileInputEditRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('inzar_staff_view_mode', viewMode);
+      if (selectedStaffId) {
+        sessionStorage.setItem('inzar_staff_selected_id', selectedStaffId);
+      }
+    } catch {}
+  }, [viewMode, selectedStaffId]);
 
   const togglePasswordVisibility = (userId, e) => {
     if (e) e.stopPropagation();
@@ -59,22 +98,47 @@ export default function StaffManager() {
     showAlert({ title: 'Kopyalandı', message: 'Kullanıcı şifresi panoya kopyalandı.', type: 'success' });
   };
 
-  // Create Form State
-  const [createForm, setCreateForm] = useState({
-    name: '',
-    username: '',
-    password: '',
-    role: 'STAFF',
-    city: 'İstanbul',
-    branch: 'Fatih Şubesi',
-    phone: '',
-    email: '',
-    avatar: ''
+  // Create Form State with persistence
+  const [createForm, setCreateForm] = useState(() => {
+    try {
+      const draft = sessionStorage.getItem('inzar_draft_staff_form');
+      if (draft) return JSON.parse(draft);
+    } catch {}
+    return {
+      name: '',
+      username: '',
+      password: '',
+      role: 'STAFF',
+      city: 'İstanbul',
+      branch: 'Fatih Şubesi',
+      phone: '',
+      email: '',
+      avatar: ''
+    };
   });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('inzar_draft_staff_form', JSON.stringify(createForm));
+    } catch {}
+  }, [createForm]);
 
   // Selected Staff for Detail
   const selectedStaff = users.find(u => u.id === selectedStaffId);
-  const [editForm, setEditForm] = useState(null);
+  const [editForm, setEditForm] = useState(() => {
+    if (!selectedStaff) return null;
+    return {
+      name: selectedStaff.name || '',
+      username: selectedStaff.username || '',
+      role: (selectedStaff.role || 'STAFF').toUpperCase(),
+      city: selectedStaff.city || 'İstanbul',
+      branch: selectedStaff.branch || 'Merkez Şube',
+      phone: selectedStaff.phone ? formatPhoneNumber(selectedStaff.phone) : '',
+      email: selectedStaff.email || '',
+      avatar: selectedStaff.avatar || selectedStaff.avatarImage || '',
+      password: ''
+    };
+  });
 
   const filteredUsers = users.filter(u => {
     const term = searchTerm.toLowerCase();
@@ -95,12 +159,56 @@ export default function StaffManager() {
       role: (user.role || 'STAFF').toUpperCase(),
       city: user.city || 'İstanbul',
       branch: user.branch || 'Merkez Şube',
-      phone: user.phone || '',
+      phone: user.phone ? formatPhoneNumber(user.phone) : '',
       email: user.email || '',
-      avatar: user.avatar || '',
+      avatar: user.avatar || user.avatarImage || '',
       password: ''
     });
     setViewMode('detail');
+  };
+
+  // Image Selection Handlers
+  const handleSelectImageFor = (e, target) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showAlert({ title: 'Geçersiz Dosya', message: 'Lütfen geçerli bir görsel dosyası seçiniz.', type: 'error' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setCropState({
+        isOpen: true,
+        imageSrc: event.target?.result,
+        target
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleConfirmCrop = (croppedBase64) => {
+    if (cropState.target === 'create') {
+      setCreateForm(prev => ({ ...prev, avatar: croppedBase64 }));
+    } else if (cropState.target === 'edit') {
+      setEditForm(prev => ({ ...prev, avatar: croppedBase64 }));
+    }
+  };
+
+  const handleOpenLightbox = (user, e) => {
+    if (e) e.stopPropagation();
+    const imgSrc = user.avatarImage || user.avatar;
+    if (!imgSrc) return;
+
+    setLightboxState({
+      isOpen: true,
+      imageSrc: imgSrc,
+      userName: user.name,
+      userRole: user.role === 'ADMIN' ? 'Genel Merkez Yöneticisi' : 'Satış Personeli',
+      userBranch: `${user.city || 'İstanbul'} / ${user.branch || 'Şube'}`
+    });
   };
 
   // Submit New Staff
@@ -111,7 +219,11 @@ export default function StaffManager() {
       return;
     }
 
-    addStaff(createForm);
+    addStaff({
+      ...createForm,
+      avatarImage: createForm.avatar
+    });
+    sessionStorage.removeItem('inzar_draft_staff_form');
     setViewMode('list');
     setCreateForm({
       name: '',
@@ -270,6 +382,57 @@ export default function StaffManager() {
                 </div>
               </div>
 
+              {/* Avatar Upload in Create Form */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div 
+                    onClick={() => createForm.avatar && handleOpenLightbox({ name: createForm.name || 'Yeni Kullanıcı', avatar: createForm.avatar, role: createForm.role, city: createForm.city, branch: createForm.branch })}
+                    className={`h-16 w-16 rounded-2xl bg-white border-2 border-emerald-500/40 flex items-center justify-center overflow-hidden shadow-xs shrink-0 ${createForm.avatar ? 'cursor-pointer hover:scale-105 transition-all' : ''}`}
+                    title={createForm.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
+                  >
+                    {createForm.avatar ? (
+                      <img src={createForm.avatar} alt="Seçilen Fotoğraf" className="h-full w-full object-cover" />
+                    ) : createForm.role === 'ADMIN' ? (
+                      <Crown className="h-7 w-7 text-amber-500" />
+                    ) : (
+                      <User className="h-7 w-7 text-emerald-700" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Profil Fotoğrafı (İsteğe Bağlı)</h4>
+                    <p className="text-[11px] text-slate-500">Seçtiğiniz fotoğrafı dilediğiniz gibi kırpıp yakınlaştırabilirsiniz.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputCreateRef}
+                    accept="image/*"
+                    onChange={(e) => handleSelectImageFor(e, 'create')}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputCreateRef.current?.click()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-3xs"
+                  >
+                    <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Fotoğraf Seç & Kırp</span>
+                  </button>
+                  {createForm.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm(prev => ({ ...prev, avatar: '' }))}
+                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold cursor-pointer"
+                      title="Fotoğrafı Kaldır"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Basic Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -336,8 +499,8 @@ export default function StaffManager() {
                     type="tel"
                     placeholder="+90 5XX XXX XX XX"
                     value={createForm.phone}
-                    onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    onChange={(e) => setCreateForm({ ...createForm, phone: formatPhoneNumber(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -556,9 +719,59 @@ export default function StaffManager() {
                     <input
                       type="tel"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                      onChange={(e) => setEditForm({ ...editForm, phone: formatPhoneNumber(e.target.value) })}
+                      placeholder="+90 5XX XXX XX XX"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
                     />
+                  </div>
+                </div>
+
+                {/* Avatar upload in edit form */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      onClick={() => editForm.avatar && handleOpenLightbox({ name: editForm.name, avatar: editForm.avatar, role: editForm.role, city: editForm.city, branch: editForm.branch })}
+                      className={`h-12 w-12 rounded-xl bg-white border border-emerald-400 flex items-center justify-center overflow-hidden shrink-0 shadow-3xs ${editForm.avatar ? 'cursor-pointer hover:scale-105 transition-all' : ''}`}
+                      title={editForm.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
+                    >
+                      {editForm.avatar ? (
+                        <img src={editForm.avatar} alt={editForm.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-6 w-6 text-emerald-700" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">Profil Fotoğrafı</div>
+                      <div className="text-[10px] text-slate-500">Değiştirmek için fotoğraf seçip kırpın.</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="file"
+                      ref={fileInputEditRef}
+                      accept="image/*"
+                      onChange={(e) => handleSelectImageFor(e, 'edit')}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputEditRef.current?.click()}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-3xs"
+                    >
+                      <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Seç & Kırp</span>
+                    </button>
+                    {editForm.avatar && (
+                      <button
+                        type="button"
+                        onClick={() => setEditForm(prev => ({ ...prev, avatar: '' }))}
+                        className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer"
+                        title="Fotoğrafı Kaldır"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -716,138 +929,166 @@ export default function StaffManager() {
             </div>
 
             {filteredUsers.length === 0 ? (
-              <div className="py-12 text-center text-slate-400">
-                <Users className="h-10 w-10 mx-auto text-slate-300 mb-2" />
-                <p className="text-xs">Arama kriterlerine uygun kullanıcı bulunamadı.</p>
+              <div className="py-12 text-center text-slate-400 space-y-2">
+                <Users className="h-10 w-10 mx-auto text-slate-300" />
+                <p className="text-xs font-bold text-slate-600">Arama kriterlerine uygun kullanıcı bulunamadı.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider bg-slate-50/70">
-                    <tr>
-                      <th className="py-3 px-4 rounded-l-xl">Kullanıcı</th>
-                      <th className="py-3 px-4">Şehir / Şube</th>
-                      <th className="py-3 px-4">Yetki Rolü</th>
-                      <th className="py-3 px-4">Giriş Şifresi</th>
-                      <th className="py-3 px-4">İletişim</th>
-                      <th className="py-3 px-4">Durum</th>
-                      <th className="py-3 px-4 text-right rounded-r-xl">İşlemler</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredUsers.map((user) => {
-                      const isAdminRole = user.role?.toUpperCase() === 'ADMIN';
+              <div className="space-y-3">
+                {filteredUsers.map((user) => {
+                  const isAdminRole = user.role?.toUpperCase() === 'ADMIN';
 
-                      return (
-                        <tr 
-                          key={user.id} 
-                          onClick={() => handleOpenDetail(user)}
-                          className="hover:bg-emerald-50/40 transition-colors cursor-pointer group"
-                        >
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-base font-bold shadow-xs overflow-hidden ${
-                                isAdminRole ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                  return (
+                    <div
+                      key={user.id}
+                      onClick={() => handleOpenDetail(user)}
+                      className="pearl-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-lg hover:border-emerald-400 bg-white/95 backdrop-blur-sm cursor-pointer group relative overflow-hidden transition-all duration-300 hover:scale-[1.008]"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        
+                        {/* Sol Kısım: Avatar, İsim, Kullanıcı Adı ve Rol Rozeti */}
+                        <div className="flex items-start sm:items-center gap-3.5 min-w-[260px]">
+                          <div
+                            onClick={(e) => handleOpenLightbox(user, e)}
+                            className={`flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black shadow-xs shrink-0 overflow-hidden transition-all duration-300 ${
+                              user.avatarImage || user.avatar ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-emerald-500' : ''
+                            } ${
+                              isAdminRole ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-900 border border-amber-300' : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-900 border border-emerald-300'
+                            }`}
+                            title={user.avatarImage || user.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
+                          >
+                            {user.avatarImage || user.avatar ? (
+                              <img src={user.avatarImage || user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                            ) : isAdminRole ? (
+                              <Crown className="h-6 w-6 text-amber-600" />
+                            ) : (
+                              <User className="h-6 w-6 text-emerald-700" />
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-900 transition-colors">
+                                {user.name}
+                              </h4>
+                              {user.id === currentUser.id && (
+                                <span className="text-[9px] font-extrabold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">Siz</span>
+                              )}
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold shadow-3xs ${
+                                isAdminRole
+                                  ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                                  : 'bg-emerald-100 text-emerald-950 border border-emerald-300'
                               }`}>
-                                {user.avatarImage ? (
-                                  <img src={user.avatarImage} alt={user.name} className="h-full w-full object-cover" />
-                                ) : isAdminRole ? (
-                                  <Crown className="h-4 w-4 text-amber-600" />
-                                ) : (
-                                  <User className="h-4 w-4 text-emerald-700" />
-                                )}
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-900 group-hover:text-emerald-800 transition-colors flex items-center gap-1.5">
-                                  <span>{user.name}</span>
-                                  {user.id === currentUser.id && (
-                                    <span className="text-[9px] font-bold bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded">Siz</span>
-                                  )}
-                                </div>
-                                <div className="text-[11px] text-slate-400 font-mono">@{user.username}</div>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="py-3.5 px-4 text-slate-700 font-semibold">
-                            <div>{user.city || 'İstanbul'}</div>
-                            <div className="text-[10px] text-slate-400 font-normal">{user.branch || 'Genel Merkez'}</div>
-                          </td>
-
-                          <td className="py-3.5 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                              isAdminRole
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                            }`}>
-                              {isAdminRole ? 'Genel Merkez' : 'Satış Personeli'}
-                            </span>
-                          </td>
-
-                          {/* Şifre Görüntüleme & Kopyalama Sütunu */}
-                          <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 py-1 w-fit">
-                              <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
-                                {visiblePasswords[user.id] ? (user.password || 'Inzar2026!') : '••••••••'}
+                                {isAdminRole ? <Crown className="h-2.5 w-2.5 text-amber-700" /> : <User className="h-2.5 w-2.5 text-emerald-700" />}
+                                <span>{isAdminRole ? 'Genel Merkez' : 'Satış Personeli'}</span>
                               </span>
-                              <button
-                                type="button"
-                                onClick={(e) => togglePasswordVisibility(user.id, e)}
-                                className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
-                                title={visiblePasswords[user.id] ? "Şifreyi Gizle" : "Şifreyi Göster"}
-                              >
-                                {visiblePasswords[user.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => copyPasswordToClipboard(user.password || 'Inzar2026!', e)}
-                                className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
-                                title="Şifreyi Kopyala"
-                              >
-                                <Copy className="h-3.5 w-3.5" />
-                              </button>
                             </div>
-                          </td>
 
-                          <td className="py-3.5 px-4 text-slate-600 text-[11px]">
-                            <div>{user.phone || '-'}</div>
-                            <div className="text-[10px] text-slate-400">{user.email || '-'}</div>
-                          </td>
+                            <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                              <span>@{user.username}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                          <td className="py-3.5 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                              user.isActive !== false
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}>
-                              {user.isActive !== false ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                              <span>{user.isActive !== false ? 'Aktif' : 'Duraklatıldı'}</span>
+                        {/* Orta Kısım: Şube, İletişim, Şifre ve Durum Rozetleri */}
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+                          {/* Şube Rozeti */}
+                          <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 font-bold text-slate-800 flex items-center gap-1.5 shadow-3xs">
+                            <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <span>{user.city || 'İstanbul'}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-slate-600 font-medium">{user.branch || 'Genel Merkez'}</span>
+                          </div>
+
+                          {/* İletişim */}
+                          {user.phone && (
+                            <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-700 flex items-center gap-1.5 shadow-3xs font-mono text-xs font-semibold">
+                              <Phone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                              <span>{user.phone}</span>
+                            </div>
+                          )}
+
+                          {/* Şifre Rozeti */}
+                          <div 
+                            className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-3xs" 
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Lock className="h-3 w-3 text-slate-400" />
+                            <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
+                              {visiblePasswords[user.id] ? (user.password || 'Inzar2026!') : '••••••••'}
                             </span>
-                          </td>
-
-                          <td className="py-3.5 px-4 text-right">
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDetail(user);
-                              }}
-                              className="rounded-xl px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 font-bold text-[11px] transition-all cursor-pointer shadow-3xs"
+                              onClick={(e) => togglePasswordVisibility(user.id, e)}
+                              className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                              title={visiblePasswords[user.id] ? "Şifreyi Gizle" : "Şifreyi Göster"}
                             >
-                              Detay & Düzenle ➔
+                              {visiblePasswords[user.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            <button
+                              type="button"
+                              onClick={(e) => copyPasswordToClipboard(user.password || 'Inzar2026!', e)}
+                              className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                              title="Şifreyi Kopyala"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Durum Rozeti */}
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold shadow-3xs ${
+                            user.isActive !== false
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}>
+                            {user.isActive !== false ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                            <span>{user.isActive !== false ? 'Aktif' : 'Duraklatıldı'}</span>
+                          </span>
+                        </div>
+
+                        {/* Sağ Kısım: Detay & Düzenle Butonu */}
+                        <div className="flex items-center justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDetail(user);
+                            }}
+                            className="rounded-full px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 flex items-center gap-1.5"
+                          >
+                            <span>Detay & Düzenle</span>
+                            <span className="font-mono">➔</span>
+                          </button>
+                        </div>
+
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* 🖼️ Image Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={lightboxState.isOpen}
+        imageSrc={lightboxState.imageSrc}
+        userName={lightboxState.userName}
+        userRole={lightboxState.userRole}
+        userBranch={lightboxState.userBranch}
+        onClose={() => setLightboxState(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* ✂️ Image Cropper Modal */}
+      <ImageCropModal
+        isOpen={cropState.isOpen}
+        imageSrc={cropState.imageSrc}
+        onClose={() => setCropState({ isOpen: false, imageSrc: null, target: null })}
+        onConfirmCrop={handleConfirmCrop}
+        title="Personel Fotoğrafını Kırp ve Hizala"
+      />
     </div>
   );
 }

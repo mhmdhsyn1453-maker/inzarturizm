@@ -333,8 +333,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
 
     return {
       ...rawQuotation,
+      id: editingQuote ? editingQuote.id : undefined,
       selectedMonth,
       selectedMonthLabel,
+      selectedMonthName: activeMonth?.name || activeMonth?.label || selectedMonth,
       pkgDetails: activePackage,
       roomMatrix,
       fixedExpensesIncluded,
@@ -343,9 +345,11 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       customerPhone,
       paxCount,
       notes,
-      agentName: currentUser?.name || 'Acente Temsilcisi'
+      agentName: currentUser?.name || 'Acente Temsilcisi',
+      isRevision: !!editingQuote,
+      originalQuoteId: editingQuote?.id || null
     };
-  }, [rawQuotation, activePackage, roomMatrix, fixedExpensesIncluded, transfersSelection, customerName, customerPhone, paxCount, notes, currentUser, months, selectedMonth]);
+  }, [rawQuotation, activePackage, roomMatrix, fixedExpensesIncluded, transfersSelection, customerName, customerPhone, paxCount, notes, currentUser, months, selectedMonth, editingQuote, activeMonth]);
 
   const toggleFixedExpense = (key) => {
     setFixedExpensesIncluded(prev => ({
@@ -534,36 +538,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start font-sans">
             {/* Left 7/8 Columns: Configuration Form */}
             <div className="lg:col-span-7 xl:col-span-8 space-y-6 pb-24">
-
-        {/* Revision / Editing Mode Alert Banner */}
-        {editingQuote && (
-          <div className="pearl-card rounded-3xl p-4 sm:p-5 bg-gradient-to-r from-amber-50 via-amber-100/50 to-amber-50 border border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-scale">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-600/30">
-                <Edit3 className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-black text-amber-950 font-display">Teklif Düzenleme / Revizyon Modu Aktif</h4>
-                <p className="text-[11px] text-amber-900/90 font-medium">
-                  <strong>#{editingQuote.id}</strong> ({editingQuote.customerName || 'Misafir'}) teklifini güncelliyorsunuz. Kaydettiğinizde Merkeze revizyon bildirimi iletilecektir.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEditingQuote(null);
-                setCustomerName('');
-                setCustomerPhone('');
-                setNotes('');
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs hover:scale-102 active:scale-98"
-            >
-              Düzenlemeyi İptal Et
-            </button>
-          </div>
-        )}
 
         {/* Step 1: Seyahat Dönemi / Ayı */}
         <div id="step-1" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
@@ -1236,8 +1210,8 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               <input
                 type="tel"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Örn: 0532 123 45 67"
+                onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
+                placeholder="Örn: 0532 123 45 67 veya +90 ..."
                 className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none shadow-3xs font-mono font-semibold"
               />
             </div>
@@ -1298,6 +1272,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
           }}
           onSaveQuote={handleSaveQuote}
           isSaved={isSaved}
+          isEditing={!!editingQuote}
           paxCount={paxCount}
           onChangePaxCount={setPaxCount}
           discountUSD={discountUSD}

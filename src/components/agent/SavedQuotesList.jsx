@@ -439,6 +439,11 @@ export default function SavedQuotesList({ onEditQuote }) {
             {paginatedQuotes.map((quote) => {
               const isApproved = quote.status === 'approved' || quote.status === 'approved_revised';
               const isRevised = quote.status === 'revised' || quote.status === 'approved_revised' || (quote.revisionCount && quote.revisionCount > 0);
+              const isMixed = !!(quote.isMixedRoomMode || (quote.mixedRoomsSummary && quote.mixedRoomsSummary.totalPax > 0));
+              const totalPax = isMixed ? (quote.mixedRoomsSummary?.totalPax || quote.paxCount || 1) : (quote.paxCount || 1);
+              const totalGroupPrice = isMixed 
+                ? (quote.mixedRoomsSummary?.groupGrandTotalUSD || (quote.finalPriceUSD * totalPax))
+                : (quote.finalPriceUSD * totalPax);
 
               return (
                 <div
@@ -455,16 +460,21 @@ export default function SavedQuotesList({ onEditQuote }) {
                       </div>
                       
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-900 transition-colors">
                             {quote.customerName || 'Misafir'}
                           </h4>
-                          {quote.paxCount > 1 && (
+                          {isMixed ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-3xs">
+                              <Users className="h-2.5 w-2.5 text-amber-700" />
+                              <span>Çoklu Oda ({totalPax} Kişi)</span>
+                            </span>
+                          ) : quote.paxCount > 1 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                               <Users className="h-2.5 w-2.5 text-slate-500" />
                               <span>{quote.paxCount} Kişi</span>
                             </span>
-                          )}
+                          ) : null}
                         </div>
 
                         <div className="flex items-center gap-3 text-slate-500 text-xs font-mono">
@@ -518,14 +528,28 @@ export default function SavedQuotesList({ onEditQuote }) {
                       
                       {/* Price Pill */}
                       <div className="text-right font-mono">
-                        <div className="inline-flex items-baseline gap-1 px-3 py-1 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 shadow-3xs">
-                          <span className="text-base font-black">${quote.finalPriceUSD}</span>
-                          <span className="text-[10px] font-bold text-emerald-700 font-sans">USD</span>
-                        </div>
-                        {quote.paxCount > 1 && (
-                          <div className="text-[10px] text-slate-400 font-sans mt-0.5">
-                            Toplam: ${(quote.finalPriceUSD * quote.paxCount).toLocaleString()}
-                          </div>
+                        {isMixed ? (
+                          <>
+                            <div className="inline-flex items-baseline gap-1 px-3 py-1 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 shadow-3xs">
+                              <span className="text-base font-black">${totalGroupPrice.toLocaleString('tr-TR')}</span>
+                              <span className="text-[10px] font-bold text-amber-700 font-sans">USD</span>
+                            </div>
+                            <div className="text-[10px] text-amber-800 font-bold font-sans mt-0.5">
+                              Toplam Tutar
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="inline-flex items-baseline gap-1 px-3 py-1 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 shadow-3xs">
+                              <span className="text-base font-black">${quote.finalPriceUSD?.toLocaleString('tr-TR')}</span>
+                              <span className="text-[10px] font-bold text-emerald-700 font-sans">USD</span>
+                            </div>
+                            {quote.paxCount > 1 && (
+                              <div className="text-[10px] text-slate-400 font-sans mt-0.5">
+                                Toplam: ${totalGroupPrice.toLocaleString('tr-TR')}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 

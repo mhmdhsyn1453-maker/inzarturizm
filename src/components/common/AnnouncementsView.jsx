@@ -33,17 +33,39 @@ export default function AnnouncementsView() {
   const { currentUser, isAdmin } = useAuth();
   const { showConfirm } = useModal();
 
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'create' | 'detail'
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return sessionStorage.getItem('inzar_announcement_view_mode') || 'list';
+    } catch { return 'list'; }
+  }); // 'list' | 'create' | 'detail'
   const [selectedAnnId, setSelectedAnnId] = useState(null);
   const [slideDirection, setSlideDirection] = useState('right'); // 'right' | 'left'
   
-  const [form, setForm] = useState({
-    title: '',
-    content: '',
-    priority: 'normal', // 'urgent' | 'high' | 'normal'
-    isPinned: false,
-    author: currentUser?.name ? `${currentUser.name} (Genel Merkez)` : 'İnzar Genel Merkez'
+  const [form, setForm] = useState(() => {
+    try {
+      const draft = sessionStorage.getItem('inzar_draft_announcement');
+      if (draft) return JSON.parse(draft);
+    } catch {}
+    return {
+      title: '',
+      content: '',
+      priority: 'normal', // 'urgent' | 'high' | 'normal'
+      isPinned: false,
+      author: currentUser?.name ? `${currentUser.name} (Genel Merkez)` : 'İnzar Genel Merkez'
+    };
   });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('inzar_announcement_view_mode', viewMode);
+    } catch {}
+  }, [viewMode]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('inzar_draft_announcement', JSON.stringify(form));
+    } catch {}
+  }, [form]);
 
   // Mark all announcements as read when the user views the announcements page
   useEffect(() => {
@@ -78,6 +100,7 @@ export default function AnnouncementsView() {
       author: form.author || 'Genel Merkez'
     });
 
+    sessionStorage.removeItem('inzar_draft_announcement');
     setSlideDirection('left');
     setViewMode('list');
     setForm({ 

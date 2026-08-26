@@ -15,7 +15,7 @@ import {
   FileText, 
   DollarSign, 
   Calendar, 
-  Clock,
+  Clock, 
   Sparkles,
   Lock,
   Camera,
@@ -28,7 +28,9 @@ import {
   Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { compressAvatarImage } from '../../services/imageUtils';
+import { formatPhoneNumber } from '../../utils/phoneUtils';
+import ImageCropModal from '../common/ImageCropModal';
+import ImageLightboxModal from '../common/ImageLightboxModal';
 
 export default function UserProfileView() {
   const { currentUser, updateStaff, isAdmin, users } = useAuth();
@@ -41,10 +43,15 @@ export default function UserProfileView() {
     username: currentUser?.username || '',
     city: currentUser?.city || 'İstanbul',
     branch: currentUser?.branch || (isAdmin ? 'Genel Merkez' : 'Fatih Şubesi'),
-    phone: currentUser?.phone || '',
+    phone: currentUser?.phone ? formatPhoneNumber(currentUser.phone) : '',
     email: currentUser?.email || '',
     avatarImage: currentUser?.avatarImage || null,
   });
+
+  // Image crop & lightbox modals
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Password Security Form State
   const [oldPassword, setOldPassword] = useState('');
@@ -84,16 +91,27 @@ export default function UserProfileView() {
 
   const strength = calculateStrength(newPassword);
 
-  const handleImageChange = async (e) => {
+  const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      const compressedDataUrl = await compressAvatarImage(file, 256, 0.85);
-      setForm(prev => ({ ...prev, avatarImage: compressedDataUrl }));
-    } catch (err) {
-      showAlert({ title: 'Görsel Hatası', message: err.message || 'Görsel işlenirken bir sorun oluştu.', type: 'error' });
+    if (!file.type.startsWith('image/')) {
+      showAlert({ title: 'Geçersiz Dosya', message: 'Lütfen geçerli bir görsel dosyası seçiniz.', type: 'error' });
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setCropImageSrc(event.target?.result);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    // Reset file input so same file can be selected again
+    e.target.value = '';
+  };
+
+  const handleConfirmCrop = (croppedBase64) => {
+    setForm(prev => ({ ...prev, avatarImage: croppedBase64 }));
   };
 
   const handleRemoveImage = () => {
@@ -171,7 +189,13 @@ export default function UserProfileView() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="relative group">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border-2 border-white/30 shadow-inner overflow-hidden">
+              <div 
+                onClick={() => form.avatarImage && setLightboxOpen(true)}
+                className={`flex h-20 w-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border-2 border-white/30 shadow-inner overflow-hidden ${
+                  form.avatarImage ? 'cursor-pointer hover:scale-105 hover:ring-2 hover:ring-emerald-400 transition-all' : ''
+                }`}
+                title={form.avatarImage ? 'Büyütmek için tıklayın' : undefined}
+              >
                 {form.avatarImage ? (
                   <img src={form.avatarImage} alt={form.name} className="h-full w-full object-cover" />
                 ) : isAdmin ? (
@@ -251,7 +275,13 @@ export default function UserProfileView() {
           <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white border-2 border-emerald-500/40 shadow-md overflow-hidden ring-4 ring-emerald-500/10">
+                <div 
+                  onClick={() => form.avatarImage && setLightboxOpen(true)}
+                  className={`flex h-20 w-20 items-center justify-center rounded-full bg-white border-2 border-emerald-500/40 shadow-md overflow-hidden ring-4 ring-emerald-500/10 ${
+                    form.avatarImage ? 'cursor-pointer hover:scale-105 hover:ring-emerald-500 transition-all' : ''
+                  }`}
+                  title={form.avatarImage ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
+                >
                   {form.avatarImage ? (
                     <img src={form.avatarImage} alt="Profil Önizleme" className="h-full w-full object-cover" />
                   ) : isAdmin ? (
@@ -265,7 +295,7 @@ export default function UserProfileView() {
               <div>
                 <h4 className="text-xs font-bold text-slate-900">Profil Fotoğrafı</h4>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Fotoğraf yüklenmediğinde rolünüze uygun kurumsal vektör ikonu görüntülenir.
+                  Fotoğrafa tıklayarak tam boy inceleyebilir veya yeni fotoğraf yükleyebilirsiniz.
                 </p>
               </div>
             </div>
@@ -276,7 +306,7 @@ export default function UserProfileView() {
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
-                onChange={handleImageChange}
+                onChange={handleImageSelect}
                 className="hidden"
               />
 
@@ -367,9 +397,9 @@ export default function UserProfileView() {
                 <input
                   type="tel"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) => setForm({ ...form, phone: formatPhoneNumber(e.target.value) })}
                   placeholder="+90 5XX XXX XX XX"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
                 />
               </div>
             </div>
@@ -513,6 +543,28 @@ export default function UserProfileView() {
           </div>
         </form>
       </div>
+
+      {/* 🖼️ Image Lightbox Modal */}
+      <ImageLightboxModal
+        isOpen={lightboxOpen}
+        imageSrc={form.avatarImage}
+        userName={form.name}
+        userRole={isAdmin ? 'Genel Merkez Yöneticisi' : 'Satış Personeli'}
+        userBranch={`${form.city} / ${form.branch}`}
+        onClose={() => setLightboxOpen(false)}
+      />
+
+      {/* ✂️ Image Cropper Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageSrc={cropImageSrc}
+        onClose={() => {
+          setCropModalOpen(false);
+          setCropImageSrc(null);
+        }}
+        onConfirmCrop={handleConfirmCrop}
+        title="Profil Fotoğrafını Kırp ve Hizala"
+      />
     </div>
   );
 }

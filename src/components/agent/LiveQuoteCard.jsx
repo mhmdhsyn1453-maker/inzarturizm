@@ -21,6 +21,7 @@ export default function LiveQuoteCard({
   onOpenPdfModal,
   onSaveQuote,
   isSaved,
+  isEditing = false,
   paxCount = 1,
   onChangePaxCount,
   activeCurrency,
@@ -405,11 +406,13 @@ export default function LiveQuoteCard({
               className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-3 text-xs font-bold transition-all cursor-pointer whitespace-nowrap spring-pill ${
                 isSaved
                   ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-sm'
+                  : isEditing
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md shadow-amber-600/30'
                   : 'bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white shadow-md shadow-emerald-800/20'
               }`}
             >
               <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>{isSaved ? 'Kaydedildi ✓' : 'Teklifi Kaydet'}</span>
+              <span>{isSaved ? (isEditing ? 'Revize Edildi ✓' : 'Kaydedildi ✓') : (isEditing ? 'Değişiklikleri Kaydet' : 'Teklifi Kaydet')}</span>
             </button>
           </div>
         </div>
