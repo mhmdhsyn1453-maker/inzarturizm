@@ -492,15 +492,14 @@ export default function LoginScreen() {
   return (
     <div 
       onMouseMove={handleMouseMove}
-      className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-emerald-50/30"
+      className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-white"
     >
       
-      {/* 1. LAYER: Crisp Pearl & Cool Slate Ambient Auras */}
+      {/* 1. LAYER: Minimalist Soft Slate Ambient Lighting on Pure White */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 -left-20 h-[550px] w-[550px] rounded-full bg-slate-300/30 blur-[130px] animate-breathe-1" />
-        <div className="absolute -bottom-20 -right-20 h-[600px] w-[600px] rounded-full bg-teal-200/25 blur-[140px] animate-breathe-2" />
-        <div className="absolute top-10 right-1/4 h-[450px] w-[450px] rounded-full bg-emerald-200/25 blur-[120px] animate-breathe-3" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[650px] w-[650px] rounded-full bg-slate-200/40 blur-[100px]" />
+        <div className="absolute top-1/4 -left-20 h-[550px] w-[550px] rounded-full bg-slate-100/70 blur-[130px] animate-breathe-1" />
+        <div className="absolute -bottom-20 -right-20 h-[600px] w-[600px] rounded-full bg-slate-100/60 blur-[140px] animate-breathe-2" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[650px] w-[650px] rounded-full bg-slate-50/80 blur-[100px]" />
       </div>
 
       {/* 2. LAYER: Magnetic Ambient Particle Canvas */}
@@ -508,13 +507,16 @@ export default function LoginScreen() {
 
       {/* 3. LAYER: Subtle Crystal Glow following mouse */}
       <div
-        className="pointer-events-none absolute h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-300/15 via-sky-200/15 to-transparent blur-[80px] transition-transform duration-75 ease-out z-0"
+        className="pointer-events-none absolute h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-400/10 via-teal-300/10 to-transparent blur-[80px] transition-transform duration-75 ease-out z-0"
         style={{ left: `${mousePos.x}px`, top: `${mousePos.y}px` }}
       />
 
-      {/* 🪐 3D PERSPECTIVE CONTAINER WITH REFINED ORBIT BEAM */}
+      {/* 🪐 3D PERSPECTIVE CONTAINER WITH EMERALD BREATHING GLOW & ORBIT BEAM */}
       <div className={`relative w-full max-w-[620px] aspect-square z-10 [perspective:1400px] transition-transform duration-300 ${isShaking ? 'animate-shake' : 'animate-fade-scale'}`}>
         
+        {/* 💚 Ultra-Luxurious Emerald Breathing Glow Underneath Circle Form */}
+        <div className="absolute -inset-6 sm:-inset-10 rounded-full bg-gradient-to-tr from-emerald-600/40 via-teal-500/35 to-emerald-400/45 pointer-events-none -z-20 animate-emerald-breathe shadow-[0_0_80px_rgba(5,150,105,0.35)]" />
+
         {/* ✨ Outer Rotating Light Ring (Strictly External) */}
         <div className="absolute -inset-[5px] rounded-full overflow-hidden pointer-events-none -z-10 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
           <div 

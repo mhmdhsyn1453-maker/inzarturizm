@@ -2,18 +2,18 @@
 // Aylık Sezonluk Otel Fiyat Matrisi, Personel Hesapları ve Döviz Kurları (Takvimsel Sıralı: Ocak - Aralık)
 
 export const DEFAULT_MONTHS = [
-  { id: 'jan', name: 'Ocak', label: 'Ocak (Sömestr Tatili)', subtitle: 'Sömestr Tatili', isPeak: true, badge: 'Sömestr' },
-  { id: 'feb', name: 'Şubat', label: 'Şubat (Üç Aylar / Recep)', subtitle: 'Üç Aylar / Recep', isPeak: false, badge: null },
-  { id: 'mar', name: 'Mart', label: 'Mart (Şaban Ayı)', subtitle: 'Şaban Ayı', isPeak: false, badge: null },
-  { id: 'apr', name: 'Nisan', label: 'Nisan (Ramazan-ı Şerif)', subtitle: 'Ramazan-ı Şerif', isPeak: true, badge: 'Ramazan Özel' },
-  { id: 'may', name: 'Mayıs', label: 'Mayıs (Şevval Umresi)', subtitle: 'Şevval Umresi', isPeak: false, badge: 'Şevval' },
-  { id: 'jun', name: 'Haziran', label: 'Haziran (Erken Yaz)', subtitle: 'Erken Yaz', isPeak: false, badge: null },
-  { id: 'jul', name: 'Temmuz', label: 'Temmuz (Yaz Dönemi)', subtitle: 'Yaz Dönemi', isPeak: false, badge: null },
-  { id: 'aug', name: 'Ağustos', label: 'Ağustos (Yaz Dönemi)', subtitle: 'Yaz Dönemi', isPeak: false, badge: null },
-  { id: 'sep', name: 'Eylül', label: 'Eylül (Güz Dönemi)', subtitle: 'Güz Dönemi', isPeak: false, badge: null },
-  { id: 'oct', name: 'Ekim', label: 'Ekim (Sezon Açılışı)', subtitle: 'Sezon Açılışı', isPeak: false, badge: null },
-  { id: 'nov', name: 'Kasım', label: 'Kasım (Standart Sezon)', subtitle: 'Standart Sezon', isPeak: false, badge: null },
-  { id: 'dec', name: 'Aralık', label: 'Aralık (Yıl Sonu)', subtitle: 'Yıl Sonu', isPeak: false, badge: null },
+  { id: 'jan', name: 'Ocak', label: 'Ocak', subtitle: 'Sömestr', isPeak: true, badge: 'Sömestr' },
+  { id: 'feb', name: 'Şubat', label: 'Şubat', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'mar', name: 'Mart', label: 'Mart', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'apr', name: 'Nisan', label: 'Nisan', subtitle: 'Ramazan Özel', isPeak: true, badge: 'Ramazan Özel' },
+  { id: 'may', name: 'Mayıs', label: 'Mayıs', subtitle: 'Şevval', isPeak: false, badge: 'Şevval' },
+  { id: 'jun', name: 'Haziran', label: 'Haziran', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'jul', name: 'Temmuz', label: 'Temmuz', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'aug', name: 'Ağustos', label: 'Ağustos', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'sep', name: 'Eylül', label: 'Eylül', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'oct', name: 'Ekim', label: 'Ekim', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'nov', name: 'Kasım', label: 'Kasım', subtitle: 'Standart', isPeak: false, badge: null },
+  { id: 'dec', name: 'Aralık', label: 'Aralık', subtitle: 'Standart', isPeak: false, badge: null },
 ];
 
 export const MONTHS_LIST = DEFAULT_MONTHS;

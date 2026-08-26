@@ -5,9 +5,14 @@ import { useAuth } from './AuthContext';
 
 const DataContext = createContext();
 
+const sortPackagesList = (pkgs) => {
+  const order = { 'ekonomik': 1, 'standart': 2, 'luxe': 3, 'vip': 3 };
+  return [...(pkgs || [])].sort((a, b) => (order[a.id] || 99) - (order[b.id] || 99));
+};
+
 export function DataProvider({ children }) {
   const { currentUser } = useAuth();
-  const [packages, setPackages] = useState(() => syncService.getPackages());
+  const [packages, setPackages] = useState(() => sortPackagesList(syncService.getPackages()));
   const [currencies, setCurrencies] = useState(() => syncService.getCurrencies());
   const [months, setMonths] = useState(() => syncService.getMonths());
   const [savedQuotes, setSavedQuotes] = useState(() => syncService.getSavedQuotes());
@@ -87,7 +92,7 @@ export function DataProvider({ children }) {
 
       if (event.type === 'PACKAGES_UPDATED' || event.type === 'STORAGE_CHANGE') {
         const freshPackages = event.payload || syncService.getPackages();
-        setPackages(freshPackages);
+        setPackages(sortPackagesList(freshPackages));
         setAuditLogs(syncService.getAuditLogs());
       } else if (event.type === 'CURRENCIES_UPDATED') {
         const freshCurrencies = event.payload || syncService.getCurrencies();
@@ -109,7 +114,7 @@ export function DataProvider({ children }) {
       } else if (event.type === 'AUDIT_LOGS_UPDATED') {
         setAuditLogs(event.payload || syncService.getAuditLogs());
       } else if (event.type === 'SYSTEM_RESET') {
-        setPackages(syncService.getPackages());
+        setPackages(sortPackagesList(syncService.getPackages()));
         setCurrencies(syncService.getCurrencies());
         setMonths(syncService.getMonths());
         setAnnouncements(syncService.getAnnouncements());

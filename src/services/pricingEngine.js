@@ -48,13 +48,13 @@ export function calculateQuotation({
   const targetMargin = customProfitMargin !== null ? customProfitMargin : defaultPkgMargin;
   const profitMarginPercent = applyProfitMargin ? targetMargin : 0;
 
-  // 1. Seçilen Aya Göre Otonom Otel Oda Fiyatı (SAR)
+  // 1. Seçilen Aya Göre Otonom Otel Oda ve Yemek Fiyatı (SAR)
   const monthRate = pkg.monthlyPrices?.[selectedMonth] || pkg.monthlyPrices?.nov || { makkahRoomSAR: 100, madinahRoomSAR: 500 };
-  const makkahRoomSAR = monthRate.makkahRoomSAR || 0;
-  const madinahRoomSAR = monthRate.madinahRoomSAR || 0;
+  const makkahRoomSAR = Number(monthRate.makkahRoomSAR) || 0;
+  const madinahRoomSAR = Number(monthRate.madinahRoomSAR) || 0;
 
-  const makkahFoodSAR = Number(pkg.makkahFoodPriceSAR) || Number(pkg.makkahFoodSAR) || 0;
-  const madinahFoodSAR = Number(pkg.madinahFoodPriceSAR) || Number(pkg.madinahFoodSAR) || 0;
+  const makkahFoodSAR = Number(monthRate.makkahFoodSAR !== undefined ? monthRate.makkahFoodSAR : (pkg.makkahFoodPriceSAR || pkg.makkahFoodSAR || 0));
+  const madinahFoodSAR = Number(monthRate.madinahFoodSAR !== undefined ? monthRate.madinahFoodSAR : (pkg.madinahFoodPriceSAR || pkg.madinahFoodSAR || 0));
 
   // 2. Mekke & Medine Konaklama & Yemek
   let makkahTotalSAR = 0;
@@ -62,60 +62,11 @@ export function calculateQuotation({
   let makkahPerPersonDailyRoomSAR = 0;
   let madinahPerPersonDailyRoomSAR = 0;
   let mixedRoomsSummary = null;
+  let mixedRoomsBreakdown = null;
 
-  if (isMixedRoomMode) {
-    const singleCount = Number(mixedRooms.single) || 0;
-    const doubleCount = Number(mixedRooms.double) || 0;
-    const tripleCount = Number(mixedRooms.triple) || 0;
-    const quadCount = Number(mixedRooms.quad) || 0;
-
-    const totalMixedPax = (singleCount * 1) + (doubleCount * 2) + (tripleCount * 3) + (quadCount * 4);
-    const totalMixedRooms = singleCount + doubleCount + tripleCount + quadCount;
-    const effectivePax = totalMixedPax > 0 ? totalMixedPax : 1;
-
-    // Mekke Grup Toplamı
-    const makkahGroupSingle = singleCount * (makkahRoomSAR + (1 * makkahFoodSAR)) * makkahDays;
-    const makkahGroupDouble = doubleCount * (makkahRoomSAR + (2 * makkahFoodSAR)) * makkahDays;
-    const makkahGroupTriple = tripleCount * (makkahRoomSAR + (3 * makkahFoodSAR)) * makkahDays;
-    const makkahGroupQuad = quadCount * (makkahRoomSAR + (4 * makkahFoodSAR)) * makkahDays;
-    const makkahGroupTotal = makkahGroupSingle + makkahGroupDouble + makkahGroupTriple + makkahGroupQuad;
-    makkahTotalSAR = totalMixedPax > 0 ? (makkahGroupTotal / effectivePax) : 0;
-    makkahPerPersonDailyRoomSAR = makkahDays > 0 ? ((makkahTotalSAR / makkahDays) - makkahFoodSAR) : 0;
-
-    // Medine Grup Toplamı
-    const madinahGroupSingle = singleCount * (madinahRoomSAR + (1 * madinahFoodSAR)) * madinahDays;
-    const madinahGroupDouble = doubleCount * (madinahRoomSAR + (2 * madinahFoodSAR)) * madinahDays;
-    const madinahGroupTriple = tripleCount * (madinahRoomSAR + (3 * madinahFoodSAR)) * madinahDays;
-    const madinahGroupQuad = quadCount * (madinahRoomSAR + (4 * madinahFoodSAR)) * madinahDays;
-    const madinahGroupTotal = madinahGroupSingle + madinahGroupDouble + madinahGroupTriple + madinahGroupQuad;
-    madinahTotalSAR = totalMixedPax > 0 ? (madinahGroupTotal / effectivePax) : 0;
-    madinahPerPersonDailyRoomSAR = madinahDays > 0 ? ((madinahTotalSAR / madinahDays) - madinahFoodSAR) : 0;
-
-    mixedRoomsSummary = {
-      totalRooms: totalMixedRooms,
-      totalPax: totalMixedPax,
-      singleRooms: singleCount,
-      doubleRooms: doubleCount,
-      tripleRooms: tripleCount,
-      quadRooms: quadCount,
-      makkahGroupTotalSAR: makkahGroupTotal,
-      madinahGroupTotalSAR: madinahGroupTotal
-    };
-  } else {
-    // Standart Tekil Oda Tipi
-    makkahPerPersonDailyRoomSAR = makkahRoomOccupancy > 0 ? (makkahRoomSAR / makkahRoomOccupancy) : 0;
-    const makkahPerPersonDailyTotalSAR = makkahPerPersonDailyRoomSAR + makkahFoodSAR;
-    makkahTotalSAR = makkahPerPersonDailyTotalSAR * makkahDays;
-
-    madinahPerPersonDailyRoomSAR = madinahRoomOccupancy > 0 ? (madinahRoomSAR / madinahRoomOccupancy) : 0;
-    const madinahPerPersonDailyTotalSAR = madinahPerPersonDailyRoomSAR + madinahFoodSAR;
-    madinahTotalSAR = madinahPerPersonDailyTotalSAR * madinahDays;
-  }
-
-  // 4. Transferler Dağılımı (Kişi Sayısına Bölünür)
+  // Transfer & Sabit giderleri önceden hesaplayalım (her oda tipine ortak eklenecek)
   let transfersTotalSAR = 0;
   const transferBreakdown = [];
-
   const routeKeys = [
     { id: 'jedMek', label: 'Cidde - Mekke Otel', smallKey: 'jedMekSmall', bigKey: 'jedMekBig' },
     { id: 'mekMed', label: 'Mekke - Medine Transfer', smallKey: 'mekMedSmall', bigKey: 'mekMedBig' },
@@ -146,10 +97,9 @@ export function calculateQuotation({
     });
   });
 
-  // 5. Sabit & Ek Giderler
+  // Sabit Giderler
   let fixedExpensesTotalSAR = 0;
   const fixedExpensesBreakdown = [];
-
   const fixedList = [
     { key: 'flightTicketSAR', label: 'Uçak Bileti' },
     { key: 'visaTaxSAR', label: 'Vize + Vergi' },
@@ -175,14 +125,142 @@ export function calculateQuotation({
     });
   });
 
-  // 6. Toplam Maliyet Havuzu (SAR)
-  const grandTotalCostSAR = makkahTotalSAR + madinahTotalSAR + transfersTotalSAR + fixedExpensesTotalSAR;
+  // Ortak Kişi Başı Ek Masraflar (Transfer + Sabitler)
+  const sharedExpensesPerPersonSAR = transfersTotalSAR + fixedExpensesTotalSAR;
 
-  // 7. USD ve Kar Marjı Çevirisi
+  // Her oda kapasitesi için net paket fiyatı hesaplayan yardımcı fonksiyon
+  const calcRoomTypeFinalUSD = (occupancy) => {
+    const mkDailyRoom = occupancy > 0 ? (makkahRoomSAR / occupancy) : 0;
+    const mdDailyRoom = occupancy > 0 ? (madinahRoomSAR / occupancy) : 0;
+    const mkTotal = (mkDailyRoom + makkahFoodSAR) * makkahDays;
+    const mdTotal = (mdDailyRoom + madinahFoodSAR) * madinahDays;
+    const totalSAR = mkTotal + mdTotal + sharedExpensesPerPersonSAR;
+    const baseUSD = totalSAR / sarUsdRate;
+    const profitUSD = baseUSD * (profitMarginPercent / 100);
+    const beforeDiscount = baseUSD + profitUSD;
+    return Math.round(Math.max(0, beforeDiscount - (customDiscountUSD || 0)));
+  };
+
+  let grandTotalCostSAR = 0;
+  let finalPriceUSD = 0;
+  let groupGrandTotalUSD = 0;
+
+  if (isMixedRoomMode) {
+    const singleCount = Number(mixedRooms.single) || 0;
+    const doubleCount = Number(mixedRooms.double) || 0;
+    const tripleCount = Number(mixedRooms.triple) || 0;
+    const quadCount = Number(mixedRooms.quad) || 0;
+
+    const totalMixedPax = (singleCount * 1) + (doubleCount * 2) + (tripleCount * 3) + (quadCount * 4);
+    const totalMixedRooms = singleCount + doubleCount + tripleCount + quadCount;
+    const effectivePax = totalMixedPax > 0 ? totalMixedPax : 1;
+
+    // Her oda tipi için ayrı kişi başı net teklif fiyatı
+    const singlePriceUSD = calcRoomTypeFinalUSD(1);
+    const doublePriceUSD = calcRoomTypeFinalUSD(2);
+    const triplePriceUSD = calcRoomTypeFinalUSD(3);
+    const quadPriceUSD = calcRoomTypeFinalUSD(4);
+
+    mixedRoomsBreakdown = {
+      single: {
+        count: singleCount,
+        pax: singleCount * 1,
+        priceUSD: singlePriceUSD,
+        priceTRY: Math.round(singlePriceUSD * usdTryRate),
+        priceSAR: Math.round(singlePriceUSD * sarUsdRate),
+        priceEUR: Math.round(singlePriceUSD / eurUsdRate),
+        subtotalUSD: singleCount * 1 * singlePriceUSD,
+      },
+      double: {
+        count: doubleCount,
+        pax: doubleCount * 2,
+        priceUSD: doublePriceUSD,
+        priceTRY: Math.round(doublePriceUSD * usdTryRate),
+        priceSAR: Math.round(doublePriceUSD * sarUsdRate),
+        priceEUR: Math.round(doublePriceUSD / eurUsdRate),
+        subtotalUSD: doubleCount * 2 * doublePriceUSD,
+      },
+      triple: {
+        count: tripleCount,
+        pax: tripleCount * 3,
+        priceUSD: triplePriceUSD,
+        priceTRY: Math.round(triplePriceUSD * usdTryRate),
+        priceSAR: Math.round(triplePriceUSD * sarUsdRate),
+        priceEUR: Math.round(triplePriceUSD / eurUsdRate),
+        subtotalUSD: tripleCount * 3 * triplePriceUSD,
+      },
+      quad: {
+        count: quadCount,
+        pax: quadCount * 4,
+        priceUSD: quadPriceUSD,
+        priceTRY: Math.round(quadPriceUSD * usdTryRate),
+        priceSAR: Math.round(quadPriceUSD * sarUsdRate),
+        priceEUR: Math.round(quadPriceUSD / eurUsdRate),
+        subtotalUSD: quadCount * 4 * quadPriceUSD,
+      },
+    };
+
+    groupGrandTotalUSD = 
+      mixedRoomsBreakdown.single.subtotalUSD + 
+      mixedRoomsBreakdown.double.subtotalUSD + 
+      mixedRoomsBreakdown.triple.subtotalUSD + 
+      mixedRoomsBreakdown.quad.subtotalUSD;
+
+    // Ortalama Kişi Başı (Bilgi amaçlı)
+    finalPriceUSD = totalMixedPax > 0 ? Math.round(groupGrandTotalUSD / effectivePax) : doublePriceUSD;
+
+    // Maliyet havuzu
+    const makkahGroupSingle = singleCount * (makkahRoomSAR + (1 * makkahFoodSAR)) * makkahDays;
+    const makkahGroupDouble = doubleCount * (makkahRoomSAR + (2 * makkahFoodSAR)) * makkahDays;
+    const makkahGroupTriple = tripleCount * (makkahRoomSAR + (3 * makkahFoodSAR)) * makkahDays;
+    const makkahGroupQuad = quadCount * (makkahRoomSAR + (4 * makkahFoodSAR)) * makkahDays;
+    const makkahGroupTotal = makkahGroupSingle + makkahGroupDouble + makkahGroupTriple + makkahGroupQuad;
+    makkahTotalSAR = totalMixedPax > 0 ? (makkahGroupTotal / effectivePax) : 0;
+    makkahPerPersonDailyRoomSAR = makkahDays > 0 ? ((makkahTotalSAR / makkahDays) - makkahFoodSAR) : 0;
+
+    const madinahGroupSingle = singleCount * (madinahRoomSAR + (1 * madinahFoodSAR)) * madinahDays;
+    const madinahGroupDouble = doubleCount * (madinahRoomSAR + (2 * madinahFoodSAR)) * madinahDays;
+    const madinahGroupTriple = tripleCount * (madinahRoomSAR + (3 * madinahFoodSAR)) * madinahDays;
+    const madinahGroupQuad = quadCount * (madinahRoomSAR + (4 * madinahFoodSAR)) * madinahDays;
+    const madinahGroupTotal = madinahGroupSingle + madinahGroupDouble + madinahGroupTriple + madinahGroupQuad;
+    madinahTotalSAR = totalMixedPax > 0 ? (madinahGroupTotal / effectivePax) : 0;
+    madinahPerPersonDailyRoomSAR = madinahDays > 0 ? ((madinahTotalSAR / madinahDays) - madinahFoodSAR) : 0;
+
+    grandTotalCostSAR = makkahTotalSAR + madinahTotalSAR + sharedExpensesPerPersonSAR;
+
+    mixedRoomsSummary = {
+      totalRooms: totalMixedRooms,
+      totalPax: totalMixedPax,
+      singleRooms: singleCount,
+      doubleRooms: doubleCount,
+      tripleRooms: tripleCount,
+      quadRooms: quadCount,
+      groupGrandTotalUSD,
+      groupGrandTotalTRY: Math.round(groupGrandTotalUSD * usdTryRate),
+      groupGrandTotalSAR: Math.round(groupGrandTotalUSD * sarUsdRate),
+      groupGrandTotalEUR: Math.round(groupGrandTotalUSD / eurUsdRate),
+      makkahGroupTotalSAR: makkahGroupTotal,
+      madinahGroupTotalSAR: madinahGroupTotal
+    };
+  } else {
+    // Standart Tekil Oda Tipi
+    makkahPerPersonDailyRoomSAR = makkahRoomOccupancy > 0 ? (makkahRoomSAR / makkahRoomOccupancy) : 0;
+    const makkahPerPersonDailyTotalSAR = makkahPerPersonDailyRoomSAR + makkahFoodSAR;
+    makkahTotalSAR = makkahPerPersonDailyTotalSAR * makkahDays;
+
+    madinahPerPersonDailyRoomSAR = madinahRoomOccupancy > 0 ? (madinahRoomSAR / madinahRoomOccupancy) : 0;
+    const madinahPerPersonDailyTotalSAR = madinahPerPersonDailyRoomSAR + madinahFoodSAR;
+    madinahTotalSAR = madinahPerPersonDailyTotalSAR * madinahDays;
+
+    grandTotalCostSAR = makkahTotalSAR + madinahTotalSAR + sharedExpensesPerPersonSAR;
+    const baseCostUSD = grandTotalCostSAR / sarUsdRate;
+    const profitMarginAmountUSD = baseCostUSD * (profitMarginPercent / 100);
+    const priceBeforeDiscountUSD = baseCostUSD + profitMarginAmountUSD;
+    finalPriceUSD = Math.round(Math.max(0, priceBeforeDiscountUSD - (customDiscountUSD || 0)));
+  }
+
   const baseCostUSD = grandTotalCostSAR / sarUsdRate;
   const profitMarginAmountUSD = baseCostUSD * (profitMarginPercent / 100);
-  const priceBeforeDiscountUSD = baseCostUSD + profitMarginAmountUSD;
-  const finalPriceUSD = Math.max(0, priceBeforeDiscountUSD - (customDiscountUSD || 0));
 
   // 8. Diğer Para Birimleri
   const finalPriceTRY = finalPriceUSD * usdTryRate;
@@ -225,12 +303,13 @@ export function calculateQuotation({
     isMixedRoomMode,
     mixedRooms,
     mixedRoomsSummary,
+    mixedRoomsBreakdown,
     currenciesUsed: { ...currencies },
     timestamp: new Date().toISOString()
   };
 }
 
-// 2'li, 3'lü, 4'lü, 1'li Saf Konaklama & Yemek Karşılaştırma Matrisi (Uçak, vize, transfer ve diğer giderlerden bağımsız)
+// 2'li, 3'lü, 4'lü, 1'li Saf Konaklama & Yemek Karşılaştırma Matrisi (Detaylı Matematiksel Formüllü)
 export function generateRoomMatrix(
   pkg, 
   selectedMonth = 'nov', 
@@ -257,22 +336,28 @@ export function generateRoomMatrix(
   };
 
   const makkahRoomSAR = Number(monthRates.makkahRoomSAR) || Number(pkg.baseMakkahRoomSAR) || 0;
-  const makkahFoodSAR = Number(pkg.makkahFoodPriceSAR) || Number(pkg.makkahFoodSAR) || 0;
+  const makkahFoodSAR = Number(monthRates.makkahFoodSAR !== undefined ? monthRates.makkahFoodSAR : (pkg.makkahFoodPriceSAR || pkg.makkahFoodSAR || 0));
 
   const madinahRoomSAR = Number(monthRates.madinahRoomSAR) || Number(pkg.baseMadinahRoomSAR) || 0;
-  const madinahFoodSAR = Number(pkg.madinahFoodPriceSAR) || Number(pkg.madinahFoodSAR) || 0;
+  const madinahFoodSAR = Number(monthRates.madinahFoodSAR !== undefined ? monthRates.madinahFoodSAR : (pkg.madinahFoodPriceSAR || pkg.madinahFoodSAR || 0));
 
   const numMakkahDays = Number(makkahDays) || 0;
   const numMadinahDays = Number(madinahDays) || 0;
 
   return occupancies.map(occ => {
-    // Mekke kişi başı günlük (Oda payı + Yemek) ve toplam
-    const makkahDailySAR = (occ.count > 0 ? (makkahRoomSAR / occ.count) : 0) + makkahFoodSAR;
-    const makkahTotalSAR = makkahDailySAR * numMakkahDays;
+    // Mekke kişi başı günlük oda payı, yemek ve toplam
+    const makkahDailyRoomPerPax = occ.count > 0 ? (makkahRoomSAR / occ.count) : 0;
+    const makkahDailyTotalSAR = makkahDailyRoomPerPax + makkahFoodSAR;
+    const makkahRoomTotalPerPax = makkahDailyRoomPerPax * numMakkahDays;
+    const makkahFoodTotalPerPax = makkahFoodSAR * numMakkahDays;
+    const makkahTotalSAR = makkahDailyTotalSAR * numMakkahDays;
 
-    // Medine kişi başı günlük (Oda payı + Yemek) ve toplam
-    const madinahDailySAR = (occ.count > 0 ? (madinahRoomSAR / occ.count) : 0) + madinahFoodSAR;
-    const madinahTotalSAR = madinahDailySAR * numMadinahDays;
+    // Medine kişi başı günlük oda payı, yemek ve toplam
+    const madinahDailyRoomPerPax = occ.count > 0 ? (madinahRoomSAR / occ.count) : 0;
+    const madinahDailyTotalSAR = madinahDailyRoomPerPax + madinahFoodSAR;
+    const madinahRoomTotalPerPax = madinahDailyRoomPerPax * numMadinahDays;
+    const madinahFoodTotalPerPax = madinahFoodSAR * numMadinahDays;
+    const madinahTotalSAR = madinahDailyTotalSAR * numMadinahDays;
 
     // Toplam Saf Konaklama & Yemek (Kişi Başı)
     const totalHotelSAR = makkahTotalSAR + madinahTotalSAR;
@@ -290,12 +375,25 @@ export function generateRoomMatrix(
       desc: occ.desc,
       makkahDays: numMakkahDays,
       madinahDays: numMadinahDays,
+      // Mekke ayrıntıları
+      makkahRoomSAR,
+      makkahDailyRoomPerPax: Math.round(makkahDailyRoomPerPax),
+      makkahFoodSAR,
+      makkahRoomTotalPerPax: Math.round(makkahRoomTotalPerPax),
+      makkahFoodTotalPerPax: Math.round(makkahFoodTotalPerPax),
       makkahTotalSAR: Math.round(makkahTotalSAR),
-      madinahTotalSAR: Math.round(madinahTotalSAR),
       makkahUSD: Math.round(makkahUSD),
+      // Medine ayrıntıları
+      madinahRoomSAR,
+      madinahDailyRoomPerPax: Math.round(madinahDailyRoomPerPax),
+      madinahFoodSAR,
+      madinahRoomTotalPerPax: Math.round(madinahRoomTotalPerPax),
+      madinahFoodTotalPerPax: Math.round(madinahFoodTotalPerPax),
+      madinahTotalSAR: Math.round(madinahTotalSAR),
       madinahUSD: Math.round(madinahUSD),
-      makkahDailySAR: Math.round(makkahDailySAR),
-      madinahDailySAR: Math.round(madinahDailySAR),
+      // Toplamlar
+      totalHotelSAR: Math.round(totalHotelSAR),
+      totalHotelUSD: Math.round(totalHotelUSD),
       priceUSD: Math.round(totalHotelUSD),
       priceTRY: Math.round(totalHotelTRY),
       priceEUR: Math.round(totalHotelEUR),

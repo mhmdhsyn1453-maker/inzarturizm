@@ -413,7 +413,24 @@ class SyncService {
   getMonths() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.MONTHS);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Eski hardcoded metinleri (Erken Yaz, Güz Dönemi, vb.) temizle ve Sezon Tipine çevir
+          const legacyTerms = ['Tatili', 'Recep', 'Şaban', 'Erken Yaz', 'Yaz Dönemi', 'Güz Dönemi', 'Sezon Açılışı', 'Yıl Sonu', 'Standart Sezon'];
+          const sanitized = parsed.map(m => {
+            const hasLegacy = legacyTerms.some(term => (m.subtitle || '').includes(term));
+            const cleanSeason = hasLegacy ? (m.badge || 'Standart') : (m.subtitle || m.badge || 'Standart');
+            return {
+              ...m,
+              subtitle: cleanSeason,
+              badge: m.badge === 'Standart' ? null : m.badge
+            };
+          });
+          localStorage.setItem(STORAGE_KEYS.MONTHS, JSON.stringify(sanitized));
+          return sanitized;
+        }
+      }
     } catch (e) {}
     localStorage.setItem(STORAGE_KEYS.MONTHS, JSON.stringify(DEFAULT_MONTHS));
     return DEFAULT_MONTHS;

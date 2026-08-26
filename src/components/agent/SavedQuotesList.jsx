@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useModal } from '../../context/ModalContext';
-import { generateWhatsAppMessage } from '../../services/pdfService';
-import QuotationPdfModal from '../pdf/QuotationPdfModal';
+import { downloadDirectQuotationPdf, shareQuoteOnWhatsApp } from '../../services/pdfService';
+import QuotationLetterView from './QuotationLetterView';
 import { 
   FileText, 
   Search, 
@@ -21,9 +21,48 @@ import {
   Layers,
   Clock,
   ThumbsUp,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  Loader2,
+  ArrowLeft,
+  Printer,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  MapPin,
+  Building2,
+  ChevronRightCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+const ITEMS_PER_PAGE = 10;
+
+const TURKISH_MONTH_MAP = {
+  jan: 'Ocak',
+  feb: 'Şubat',
+  mar: 'Mart',
+  apr: 'Nisan',
+  may: 'Mayıs',
+  jun: 'Haziran',
+  jul: 'Temmuz',
+  aug: 'Ağustos',
+  sep: 'Eylül',
+  oct: 'Ekim',
+  nov: 'Kasım',
+  dec: 'Aralık',
+  ramadan_early: 'Ramazan (İlk 15 Gün)',
+  ramadan_late: 'Ramazan (Son 15 Gün)',
+  ramadan_full: 'Tam Ramazan (30 Gün)',
+  sevval: 'Şevval Umresi',
+};
+
+function formatTurkishMonth(monthId, monthName) {
+  if (monthName && !TURKISH_MONTH_MAP[monthName.toLowerCase()] && !['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].includes(monthName.toLowerCase())) {
+    return monthName;
+  }
+  const key = (monthId || monthName || '').toLowerCase().trim();
+  return TURKISH_MONTH_MAP[key] || monthName || monthId || 'Dönem Belirtilmedi';
+}
 
 export default function SavedQuotesList({ onEditQuote }) {
   const { savedQuotes, deleteQuote, updateQuoteStatus, setEditingQuote } = useData();
@@ -33,14 +72,33 @@ export default function SavedQuotesList({ onEditQuote }) {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'approved' | 'revised' | 'pending'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQuoteForPdf, setSelectedQuoteForPdf] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isExiting, setIsExiting] = useState(false);
 
-  // Status counts
-  const approvedCount = savedQuotes.filter(q => q.status === 'approved' || q.status === 'approved_revised').length;
-  const revisedCount = savedQuotes.filter(q => q.status === 'revised' || q.status === 'approved_revised' || (q.revisionCount && q.revisionCount > 0)).length;
-  const pendingCount = savedQuotes.filter(q => !q.status || q.status === 'pending').length;
+  // Auto reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // 🔒 Rol Bazlı Teklif İzolasyonu: Admin tüm acentenin tekliflerini görür, Personel yalnızca kendi oluşturduğu teklifleri görür
+  const visibleQuotes = useMemo(() => {
+    if (isAdmin) return savedQuotes;
+    return savedQuotes.filter(q => {
+      const isOwner = 
+        (currentUser?.id && (q.createdById === currentUser.id || q.createdBy === currentUser.id)) ||
+        (currentUser?.name && (q.createdByName === currentUser.name || q.agentName === currentUser.name));
+      return isOwner;
+    });
+  }, [savedQuotes, isAdmin, currentUser]);
+
+  // Status counts (hesaplanan görünür tekliflere göre)
+  const approvedCount = visibleQuotes.filter(q => q.status === 'approved' || q.status === 'approved_revised').length;
+  const revisedCount = visibleQuotes.filter(q => q.status === 'revised' || q.status === 'approved_revised' || (q.revisionCount && q.revisionCount > 0)).length;
+  const pendingCount = visibleQuotes.filter(q => !q.status || q.status === 'pending').length;
 
   const filteredQuotes = useMemo(() => {
-    return savedQuotes.filter(q => {
+    return visibleQuotes.filter(q => {
       // Filter by status tab
       if (statusFilter === 'approved' && q.status !== 'approved' && q.status !== 'approved_revised') return false;
       if (statusFilter === 'revised' && q.status !== 'revised' && q.status !== 'approved_revised' && (!q.revisionCount || q.revisionCount === 0)) return false;
@@ -56,20 +114,74 @@ export default function SavedQuotesList({ onEditQuote }) {
         (q.id && q.id.toLowerCase().includes(term));
       return matchSearch;
     });
-  }, [savedQuotes, searchTerm, statusFilter]);
+  }, [visibleQuotes, searchTerm, statusFilter]);
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredQuotes.length / ITEMS_PER_PAGE) || 1;
+  const paginatedQuotes = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredQuotes.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredQuotes, currentPage]);
 
   const totalVolumeUSD = useMemo(() => {
-    return savedQuotes.reduce((acc, q) => acc + (q.finalPriceUSD * (q.paxCount || 1)), 0);
-  }, [savedQuotes]);
+    return visibleQuotes.reduce((acc, q) => acc + (q.finalPriceUSD * (q.paxCount || 1)), 0);
+  }, [visibleQuotes]);
 
-  const handleWhatsApp = (quote) => {
-    const encoded = generateWhatsAppMessage(quote);
-    const phone = quote.customerPhone ? quote.customerPhone.replace(/[^0-9]/g, '') : '';
-    const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
-    window.open(url, '_blank');
+  // 🌊 Animasyonlu Önizleme Açma (Tak diye değil, CSS ile akıcı geçiş)
+  const handleOpenPreview = (quote) => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setSelectedQuoteForPdf(quote);
+      setIsExiting(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 180);
   };
 
-  const handleApproveQuote = async (quote) => {
+  // 🌊 Animasyonlu Listeye Dönüş
+  const handleClosePreview = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      setSelectedQuoteForPdf(null);
+      setIsExiting(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 180);
+  };
+
+  // 📥 Doğrudan Tek Tıkla PDF İndirme
+  const handleDirectDownload = async (quote, e) => {
+    e?.stopPropagation();
+    try {
+      setDownloadingId(quote.id);
+      await downloadDirectQuotationPdf(quote);
+      confetti({
+        particleCount: 40,
+        spread: 60,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {
+      console.error('Download error:', err);
+      showAlert({
+        title: 'İndirme Başarısız',
+        message: 'PDF dosyası oluşturulurken bir hata meydana geldi: ' + (err?.message || err),
+        variant: 'danger'
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  // 💬 WhatsApp Paylaşımı (PDF Dosyası ile)
+  const handleWhatsApp = async (quote, e) => {
+    e?.stopPropagation();
+    try {
+      await shareQuoteOnWhatsApp(quote);
+    } catch (err) {
+      console.error('WhatsApp share error:', err);
+    }
+  };
+
+  const handleApproveQuote = async (quote, e) => {
+    e?.stopPropagation();
     const confirmed = await showConfirm({
       title: 'Teklifi Onayla (Satışa Dönüştür)',
       message: `${quote.customerName || 'Misafir'} adına verilen ${quote.packageName} (${quote.finalPriceUSD} USD) teklifi MÜŞTERİ TARAFINDAN ONAYLANDI olarak işaretlensin mi?`,
@@ -89,15 +201,95 @@ export default function SavedQuotesList({ onEditQuote }) {
     }
   };
 
-  const handleEditClick = (quote) => {
+  const handleEditClick = (quote, e) => {
+    e?.stopPropagation();
     setEditingQuote(quote);
     if (onEditQuote) {
       onEditQuote(quote);
     }
   };
 
+  // 📄 TAM SAYFA TEKLİF MEKTUBU ÖNİZLEME (CSS Animasyonlu Geçiş)
+  if (selectedQuoteForPdf) {
+    return (
+      <div className={`space-y-6 pb-20 font-sans ${isExiting ? 'animate-page-exit' : 'animate-page-enter'}`}>
+        
+        {/* Top Control Bar (Signature Pill Form with Rich CSS Micro-interactions) */}
+        <div className="pearl-card rounded-full p-2 sm:px-6 sm:py-2.5 border border-slate-200/90 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={handleClosePreview}
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95 self-start sm:self-auto"
+          >
+            <ArrowLeft className="h-4 w-4 text-emerald-700 transition-transform duration-200 group-hover:-translate-x-1" />
+            <span>Teklifler Listesine Dön</span>
+          </button>
+
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-50 via-emerald-100/60 to-emerald-50 border border-emerald-300 text-slate-800 text-xs font-bold self-center shadow-3xs">
+            <FileText className="h-4 w-4 text-emerald-700 shrink-0" />
+            <span>Teklif Mektubu Önizleme: <strong className="text-emerald-900 font-extrabold">{selectedQuoteForPdf.customerName || 'Misafir'}</strong></span>
+          </div>
+
+          <div className="flex items-center flex-wrap gap-2 justify-end">
+            {/* WhatsApp */}
+            <button
+              type="button"
+              onClick={(e) => handleWhatsApp(selectedQuoteForPdf, e)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold border border-emerald-300 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+            >
+              <Send className="h-3.5 w-3.5" />
+              <span>WhatsApp</span>
+            </button>
+
+            {/* Yazdır */}
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white text-xs font-bold border border-slate-300 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              <span>Yazdır / PDF</span>
+            </button>
+
+            {/* Resmi PDF İndir */}
+            <button
+              type="button"
+              disabled={downloadingId === selectedQuoteForPdf.id}
+              onClick={(e) => handleDirectDownload(selectedQuoteForPdf, e)}
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-700 hover:to-emerald-500 text-white text-xs font-black tracking-wide transition-all duration-200 cursor-pointer shadow-md shadow-emerald-900/25 hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+              {downloadingId === selectedQuoteForPdf.id ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              <span>Resmi PDF İndir</span>
+            </button>
+
+            {/* Teklifi Düzenle */}
+            <button
+              type="button"
+              onClick={(e) => handleEditClick(selectedQuoteForPdf, e)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 hover:bg-amber-500 text-amber-900 hover:text-white text-xs font-bold border border-amber-300 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              <span>Teklifi Düzenle</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Integrated A4 Printable Letter View */}
+        <QuotationLetterView
+          quotation={selectedQuoteForPdf}
+          onBackToForm={handleClosePreview}
+          isSaved={true}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 pb-20">
+    <div className={`space-y-6 pb-20 ${isExiting ? 'animate-page-exit' : 'animate-page-enter'}`}>
       
       {/* Top Banner */}
       <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl">
@@ -130,7 +322,7 @@ export default function SavedQuotesList({ onEditQuote }) {
             <FileText className="h-4 w-4 text-slate-400" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
-            {savedQuotes.length} <span className="text-xs text-slate-400 font-sans">Adet</span>
+            {visibleQuotes.length} <span className="text-xs text-slate-400 font-sans">Adet</span>
           </div>
         </div>
 
@@ -165,30 +357,30 @@ export default function SavedQuotesList({ onEditQuote }) {
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
+      {/* Main Content Area */}
+      <div className="pearl-card rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-5">
         
-        {/* Status Filter Tabs & Search */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        {/* Status Filter Tabs & Search Bar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           
-          {/* Status Filter Buttons */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-2xl">
+          {/* Status Filter Buttons (Pill Format) */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-full">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'all'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Tümü ({savedQuotes.length})
+              Tümü ({visibleQuotes.length})
             </button>
 
             <button
               type="button"
               onClick={() => setStatusFilter('approved')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'approved'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-emerald-800 hover:bg-emerald-100/50'
@@ -200,7 +392,7 @@ export default function SavedQuotesList({ onEditQuote }) {
             <button
               type="button"
               onClick={() => setStatusFilter('revised')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'revised'
                   ? 'bg-amber-500 text-white shadow-xs'
                   : 'text-amber-900 hover:bg-amber-100/50'
@@ -212,7 +404,7 @@ export default function SavedQuotesList({ onEditQuote }) {
             <button
               type="button"
               onClick={() => setStatusFilter('pending')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'pending'
                   ? 'bg-slate-700 text-white shadow-xs'
                   : 'text-slate-600 hover:bg-slate-200'
@@ -223,18 +415,19 @@ export default function SavedQuotesList({ onEditQuote }) {
           </div>
 
           {/* Search Box */}
-          <div className="relative w-full lg:w-72">
+          <div className="relative w-full lg:w-80">
             <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Misafir, paket, personel ara..."
-              className="w-full bg-slate-50 text-slate-800 text-xs rounded-2xl pl-10 pr-4 py-2 border border-slate-200 focus:outline-none focus:border-emerald-600 focus:bg-white"
+              placeholder="Misafir, paket, telefon veya personel ara..."
+              className="w-full bg-slate-50 text-slate-800 text-xs rounded-full pl-10 pr-4 py-2.5 border border-slate-200 focus:outline-none focus:border-emerald-600 focus:bg-white shadow-3xs"
             />
           </div>
         </div>
 
+        {/* 🗂️ Ayrı Ayrı Standalone Teklif Kartları Listesi (Her Biri Özel CSS & Hover Efektli) */}
         {filteredQuotes.length === 0 ? (
           <div className="py-16 text-center text-slate-400 space-y-2">
             <FileText className="h-12 w-12 mx-auto text-slate-300" />
@@ -242,167 +435,252 @@ export default function SavedQuotesList({ onEditQuote }) {
             <p className="text-xs text-slate-400">Teklif Sihirbazından yeni hesaplama yapıp kaydedebilirsiniz.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider bg-slate-50/70">
-                <tr>
-                  <th className="py-3 px-4 rounded-l-xl">Umreci / Referans</th>
-                  <th className="py-3 px-4">Paket & Sezon</th>
-                  <th className="py-3 px-4">Durum / Etiket</th>
-                  <th className="py-3 px-4">Kişi Başı Satış</th>
-                  <th className="py-3 px-4">Hazırlayan</th>
-                  <th className="py-3 px-4">Tarih</th>
-                  <th className="py-3 px-4 text-right rounded-r-xl">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-sans">
-                {filteredQuotes.map((quote) => {
-                  const isApproved = quote.status === 'approved' || quote.status === 'approved_revised';
-                  const isRevised = quote.status === 'revised' || quote.status === 'approved_revised' || (quote.revisionCount && quote.revisionCount > 0);
+          <div className="space-y-3.5">
+            {paginatedQuotes.map((quote) => {
+              const isApproved = quote.status === 'approved' || quote.status === 'approved_revised';
+              const isRevised = quote.status === 'revised' || quote.status === 'approved_revised' || (quote.revisionCount && quote.revisionCount > 0);
 
-                  return (
-                    <tr key={quote.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900 text-xs">
-                          {quote.customerName || 'Misafir'}
+              return (
+                <div
+                  key={quote.id}
+                  onClick={() => handleOpenPreview(quote)}
+                  className="quote-card-interactive pearl-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-lg hover:border-emerald-400 bg-white/95 backdrop-blur-sm cursor-pointer group relative overflow-hidden"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    
+                    {/* Left: Customer & Contact */}
+                    <div className="flex items-start sm:items-center gap-3.5 min-w-[240px]">
+                      <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-800 flex items-center justify-center font-black text-sm border border-emerald-200/80 shadow-3xs shrink-0 group-hover:scale-105 group-hover:bg-emerald-700 group-hover:text-white transition-all duration-300">
+                        {quote.customerName ? quote.customerName.charAt(0).toUpperCase() : 'M'}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-900 transition-colors">
+                            {quote.customerName || 'Misafir'}
+                          </h4>
+                          {quote.paxCount > 1 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              <Users className="h-2.5 w-2.5 text-slate-500" />
+                              <span>{quote.paxCount} Kişi</span>
+                            </span>
+                          )}
                         </div>
-                        <div className="text-slate-400 text-[11px] font-mono flex items-center gap-1 mt-0.5">
-                          <Phone className="h-3 w-3 text-emerald-600" />
-                          <span>{quote.customerPhone || 'Belirtilmedi'}</span>
-                        </div>
-                      </td>
 
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-800">{quote.packageName}</div>
-                        <div className="text-slate-400 text-[10px]">
-                          {quote.selectedMonthName || quote.selectedMonth} • {quote.makkahDays + quote.madinahDays} Gün
+                        <div className="flex items-center gap-3 text-slate-500 text-xs font-mono">
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3 text-emerald-600" />
+                            <span>{quote.customerPhone || 'Belirtilmedi'}</span>
+                          </span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-[11px] text-slate-400 font-sans">
+                            {new Date(quote.createdAt || quote.timestamp).toLocaleDateString('tr-TR')}
+                          </span>
                         </div>
-                      </td>
+                      </div>
+                    </div>
 
-                      <td className="py-3.5 px-4">
-                        {isApproved ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300">
-                            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                            <span>Müşteri Onayladı</span>
-                          </span>
-                        ) : isRevised ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">
-                            <Edit3 className="h-3 w-3 text-amber-600" />
-                            <span>Sonradan Düzenlendi ({quote.revisionCount || 1}x)</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-100 text-sky-900 border border-sky-200">
-                            <Clock className="h-3 w-3 text-sky-600" />
-                            <span>Beklemede</span>
-                          </span>
+                    {/* Center: Package & Season Details */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+                      <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 font-bold text-slate-800 flex items-center gap-1.5 shadow-3xs">
+                        <Building2 className="h-3.5 w-3.5 text-amber-600" />
+                        <span>{quote.packageName}</span>
+                      </div>
+
+                      <div className="px-3.5 py-1.5 rounded-full bg-slate-50 border border-slate-200/80 text-slate-700 flex items-center gap-1.5 shadow-3xs">
+                        <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="font-bold text-slate-850">{formatTurkishMonth(quote.selectedMonth, quote.selectedMonthName)}</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="font-bold text-emerald-800">{quote.makkahDays + quote.madinahDays} Gün</span>
+                      </div>
+
+                      {/* Status Badge */}
+                      {isApproved ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-3xs">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-700" />
+                          <span>Müşteri Onayladı</span>
+                        </span>
+                      ) : isRevised ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 shadow-3xs">
+                          <Edit3 className="h-3 w-3 text-amber-700" />
+                          <span>Revize ({quote.revisionCount || 1}x)</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-extrabold bg-sky-100 text-sky-900 border border-sky-200 shadow-3xs">
+                          <Clock className="h-3 w-3 text-sky-700" />
+                          <span>Beklemede</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Right: Price & Quick Action Pills */}
+                    <div className="flex items-center justify-between lg:justify-end gap-4 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                      
+                      {/* Price Pill */}
+                      <div className="text-right font-mono">
+                        <div className="inline-flex items-baseline gap-1 px-3 py-1 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 shadow-3xs">
+                          <span className="text-base font-black">${quote.finalPriceUSD}</span>
+                          <span className="text-[10px] font-bold text-emerald-700 font-sans">USD</span>
+                        </div>
+                        {quote.paxCount > 1 && (
+                          <div className="text-[10px] text-slate-400 font-sans mt-0.5">
+                            Toplam: ${(quote.finalPriceUSD * quote.paxCount).toLocaleString()}
+                          </div>
                         )}
-                      </td>
+                      </div>
 
-                      <td className="py-3.5 px-4 font-mono">
-                        <div className="text-xs font-black text-emerald-900">
-                          ${quote.finalPriceUSD} <span className="text-[10px] text-slate-400 font-sans">USD</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-sans">
-                          {quote.paxCount > 1 ? `Toplam ${quote.paxCount} Kişi: $${(quote.finalPriceUSD * quote.paxCount).toLocaleString()}` : '1 Kişi'}
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-slate-700 text-xs">
-                        <div className="font-bold">{quote.createdByName || 'Personel'}</div>
-                        <div className="text-[10px] text-slate-400">{quote.branch || 'Merkez'}</div>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px] whitespace-nowrap">
-                        {new Date(quote.createdAt || quote.timestamp).toLocaleDateString('tr-TR')}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          
-                          {/* 🟢 Müşteri Onayladı Butonu */}
-                          {!isApproved && (
-                            <button
-                              type="button"
-                              onClick={() => handleApproveQuote(quote)}
-                              className="rounded-xl px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                              title="Müşteri Teklifi Kabul Etti Olarak Onayla"
-                            >
-                              <ThumbsUp className="h-3.5 w-3.5 text-emerald-700" />
-                              <span className="hidden sm:inline">Onayla</span>
-                            </button>
-                          )}
-
-                          {/* ✏️ Teklifi Düzenle (Revize Et) Butonu */}
+                      {/* Action Pill Buttons */}
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        
+                        {/* Onayla Butonu */}
+                        {!isApproved && (
                           <button
                             type="button"
-                            onClick={() => handleEditClick(quote)}
-                            className="rounded-xl p-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition-colors cursor-pointer shadow-2xs"
-                            title="Teklifi Düzenle / Revize Et"
+                            onClick={(e) => handleApproveQuote(quote, e)}
+                            className="rounded-full px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs transition-all cursor-pointer flex items-center gap-1 shadow-2xs hover:scale-105"
+                            title="Müşteri Teklifi Kabul Etti Olarak Onayla"
                           >
-                            <Edit3 className="h-3.5 w-3.5" />
+                            <ThumbsUp className="h-3.5 w-3.5 text-emerald-700" />
+                            <span className="hidden sm:inline">Onayla</span>
                           </button>
+                        )}
 
-                          {/* 📄 PDF Görüntüle */}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedQuoteForPdf(quote)}
-                            className="rounded-xl p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
-                            title="PDF Önizle & İndir"
-                          >
+                        {/* Önizle Butonu */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPreview(quote)}
+                          className="rounded-full px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1 shadow-2xs hover:scale-105"
+                          title="Teklif Mektubunu Önizle"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>Önizle</span>
+                        </button>
+
+                        {/* Düzenle Butonu */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleEditClick(quote, e)}
+                          className="rounded-full p-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition-all cursor-pointer shadow-2xs hover:scale-105"
+                          title="Teklifi Düzenle / Revize Et"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* PDF İndir */}
+                        <button
+                          type="button"
+                          disabled={downloadingId === quote.id}
+                          onClick={(e) => handleDirectDownload(quote, e)}
+                          className="rounded-full p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all cursor-pointer shadow-2xs disabled:opacity-50 hover:scale-105"
+                          title="Doğrudan PDF İndir"
+                        >
+                          {downloadingId === quote.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                          ) : (
                             <Download className="h-3.5 w-3.5" />
-                          </button>
+                          )}
+                        </button>
 
-                          {/* 💬 WhatsApp */}
+                        {/* WhatsApp Paylaş */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleWhatsApp(quote, e)}
+                          className="rounded-full p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-all cursor-pointer shadow-2xs hover:scale-105"
+                          title="WhatsApp ile Gönder"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* Sil (Admin) */}
+                        {isAdmin && (
                           <button
                             type="button"
-                            onClick={() => handleWhatsApp(quote)}
-                            className="rounded-xl p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors cursor-pointer shadow-2xs"
-                            title="WhatsApp Teklifi İlet"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const confirmed = await showConfirm({
+                                title: 'Teklifi Sil',
+                                message: `${quote.customerName || 'Misafir'} adına oluşturulan ${quote.packageName} teklifini silmek istediğinize emin misiniz?`,
+                                details: 'Silinen teklif geçmiş kayıtlardan kalıcı olarak kaldırılacaktır.',
+                                confirmText: 'Evet, Sil',
+                                cancelText: 'Vazgeç',
+                                confirmVariant: 'danger'
+                              });
+                              if (confirmed) {
+                                deleteQuote(quote.id);
+                              }
+                            }}
+                            className="rounded-full p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all cursor-pointer shadow-2xs hover:scale-105"
+                            title="Sil"
                           >
-                            <Send className="h-3.5 w-3.5" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
+                        )}
+                      </div>
+                    </div>
 
-                          {/* 🗑️ Sil */}
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                const confirmed = await showConfirm({
-                                  title: 'Teklifi Sil',
-                                  message: `${quote.customerName || 'Misafir'} adına oluşturulan ${quote.packageName} teklifini silmek istediğinize emin misiniz?`,
-                                  details: 'Silinen teklif geçmiş kayıtlardan kalıcı olarak kaldırılacaktır.',
-                                  confirmText: 'Evet, Sil',
-                                  cancelText: 'Vazgeç',
-                                  confirmVariant: 'danger'
-                                });
-                                if (confirmed) {
-                                  deleteQuote(quote.id);
-                                }
-                              }}
-                              className="rounded-xl p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer shadow-2xs"
-                              title="Sil"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-      </div>
 
-      {/* PDF Modal */}
-      {selectedQuoteForPdf && (
-        <QuotationPdfModal
-          quotation={selectedQuoteForPdf}
-          onClose={() => setSelectedQuoteForPdf(null)}
-        />
-      )}
+        {/* 📄 Sayfalama (Pagination Bar - 10 Teklifte Bir Sayfa) */}
+        {filteredQuotes.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100 text-xs text-slate-600">
+            <div className="font-medium text-slate-500">
+              Toplam <strong className="text-slate-800">{filteredQuotes.length}</strong> tekliften{' '}
+              <strong className="text-slate-800">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredQuotes.length)}
+              </strong>{' '}
+              arası gösteriliyor (Sayfa {currentPage} / {totalPages})
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-full shadow-3xs">
+                {/* Önceki Sayfa */}
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white text-slate-700"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Önceki</span>
+                </button>
+
+                {/* Sayfa Numaraları */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`h-7 w-7 rounded-full text-xs font-bold flex items-center justify-center transition-all cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-emerald-700 text-white shadow-xs scale-105'
+                        : 'text-slate-600 hover:bg-white'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+
+                {/* Sonraki Sayfa */}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white text-slate-700"
+                >
+                  <span>Sonraki</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

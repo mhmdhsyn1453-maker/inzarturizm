@@ -16,8 +16,8 @@ export default function Topbar() {
   const formattedCountdown = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <header className="sticky top-0 z-20 bg-transparent border-0 shadow-none px-4 sm:px-6 py-2.5 font-sans pointer-events-none">
-      <div className="relative flex items-center justify-end w-full min-h-9 pointer-events-auto">
+    <header className="relative z-20 bg-transparent border-0 shadow-none px-4 sm:px-6 py-2.5 font-sans">
+      <div className="relative flex items-center justify-end w-full min-h-9">
         
         {/* Closed State: Simple "Kurlar" Pill Button Floating at Far Right */}
         {!isRatesOpen && (

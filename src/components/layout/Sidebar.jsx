@@ -88,7 +88,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
 
   return (
     <aside 
-      className={`sidebar-gpu sticky top-0 h-screen bg-white/95 backdrop-blur-xl border-r border-slate-200/90 z-30 select-none overflow-hidden ${
+      className={`sidebar-gpu sticky top-0 h-screen bg-white/95 border-r border-slate-200/90 z-30 select-none overflow-hidden ${
         collapsed ? 'w-[74px]' : 'w-72'
       }`}
     >
@@ -120,8 +120,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 <h1 className="text-base font-black font-display tracking-tight text-slate-900 leading-none">
                   İNZAR <span className="emerald-gradient-text">TURİZM</span>
                 </h1>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                  Umre Fiyat Platformu
+                <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
+                  <span>UTH&TP</span>
+                  <span className="text-[8.5px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">v1.0.4</span>
                 </p>
               </div>
             </div>

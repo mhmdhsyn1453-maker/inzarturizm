@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { generateQuotationPdf } from '../../services/pdfService';
+import { generateQuotationPdf, shareQuoteOnWhatsApp } from '../../services/pdfService';
 import { 
   Download, 
   Printer, 
   X, 
   CheckCircle2, 
-  Award,
+  FileText,
+  Send,
   AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -68,18 +69,28 @@ export default function QuotationPdfModal({ quotation, onClose }) {
         {/* Modal Top Action Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-base sm:text-lg">
-            <Award className="h-5 w-5 text-emerald-700" />
-            <span>Resmi Umre Teklif Belgesi (A4 Matbaa Önizleme)</span>
+            <FileText className="h-5 w-5 text-emerald-700" />
+            <span>Teklif Mektubu Önizleme</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => shareQuoteOnWhatsApp(quotation)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 transition-all cursor-pointer spring-pill"
+              title="WhatsApp ile Paylaş"
+            >
+              <Send className="h-4 w-4 text-emerald-600" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </button>
+
             <button
               type="button"
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer spring-pill"
             >
               <Printer className="h-4 w-4" />
-              <span>Yazdır / PDF</span>
+              <span className="hidden sm:inline">Yazdır / PDF</span>
             </button>
 
             <button
@@ -95,7 +106,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
               {downloadSuccess ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-white" />
-                  <span>PDF Başarıyla İndirildi!</span>
+                  <span>PDF İndirildi!</span>
                 </>
               ) : (
                 <>
@@ -108,7 +119,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer ml-1"
             >
               <X className="h-5 w-5" />
             </button>
