@@ -25,7 +25,8 @@
     "publish": {
       "provider": "github",
       "owner": "mhmdhsyn1453-maker",
-      "repo": "inzarturizm"
+      "repo": "inzarturizm",
+      "releaseType": "release"
     },
     "npmRebuild": false,
     "directories": {
