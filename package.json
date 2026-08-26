@@ -1,7 +1,7 @@
 {
   "name": "inzar-tarife-hesap",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "İnzar Turizm Umre Tarife ve Teklif Yönetim Platformu",
   "author": "M.Hüseyin Akbalık",
   "repository": {
@@ -42,10 +42,9 @@
       "icon": "icon.ico"
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
       "allowElevation": true,
-      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "İnzar Turizm Umre Tarife ve Teklif Yönetim Platformu",
