@@ -1,7 +1,7 @@
 {
   "name": "inzar-tarife-hesap",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "İnzar Turizm Umre Tarife ve Teklif Yönetim Platformu",
   "author": "M.Hüseyin Akbalık",
   "repository": {
@@ -25,8 +25,7 @@
     "publish": {
       "provider": "github",
       "owner": "mhmdhsyn1453-maker",
-      "repo": "inzarturizm",
-      "releaseType": "release"
+      "repo": "inzarturizm"
     },
     "npmRebuild": false,
     "directories": {
