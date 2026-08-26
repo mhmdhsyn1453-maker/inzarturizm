@@ -153,10 +153,10 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                   style={{ height: '60px', width: 'auto', objectFit: 'contain', display: 'block' }}
                 />
                 <div>
-                  <h1 style={{ margin: 0, fontSize: '21px', fontWeight: '900', color: '#064e3b', letterSpacing: '-0.5px' }}>
+                  <h1 style={{ margin: 0, fontSize: '21px', fontWeight: '900', color: '#064e3b' }}>
                     İNZAR TURİZM
                   </h1>
-                  <p style={{ margin: '1px 0 0 0', fontSize: '10px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                  <p style={{ margin: '1px 0 0 0', fontSize: '10px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase' }}>
                     Hac & Umre Organizasyonu • Turizm Acentesi
                   </p>
                   <p style={{ margin: '1px 0 0 0', fontSize: '9px', color: '#64748b' }}>
@@ -166,7 +166,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
               </div>
 
               <div style={{ textAlign: 'right' }}>
-                <div style={{ display: 'inline-block', backgroundColor: '#064e3b', color: '#ffffff', fontWeight: '800', fontSize: '12px', padding: '6px 14px', borderRadius: '4px', letterSpacing: '0.5px' }}>
+                <div style={{ display: 'inline-block', backgroundColor: '#064e3b', color: '#ffffff', fontWeight: '800', fontSize: '12px', padding: '6px 14px', borderRadius: '4px' }}>
                   RESMİ FİYAT TEKLİF FORMU
                 </div>
                 <div style={{ marginTop: '6px', fontSize: '11px', color: '#475569', lineHeight: '1.4' }}>
@@ -178,7 +178,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
             </div>
 
             {/* Info Summary Banner */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', margin: '20px 0', padding: '14px 18px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', margin: '14px 0', padding: '12px 16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: '#065f46', marginBottom: '4px' }}>
                   SAYIN MİSAFİRİMİZ / REFERANS:
@@ -202,8 +202,8 @@ export default function QuotationPdfModal({ quotation, onClose }) {
             </div>
 
             {/* Hotel Standards Table */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '6px', borderBottom: '2px solid #a7f3d0', paddingBottom: '4px' }}>
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '6px', borderBottom: '2px solid #a7f3d0', paddingBottom: '4px' }}>
                 KONAKLAMA VE OTEL STANDARTLARI
               </div>
               <table style={{ width: '100%', textAlign: 'left', fontSize: '11px', borderCollapse: 'collapse', border: '1px solid #e2e8f0' }}>

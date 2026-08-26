@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { soundService } from '../../services/soundService';
 import lottie from 'lottie-web';
 import fingerprintAnimation from '../../assets/fingerprint_verification.json';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
@@ -280,7 +279,8 @@ function FingerprintLottiePlayer({ onDone }) {
       }
     });
 
-    anim.setSpeed(1.1);
+    // ⏳ 5-6 saniyelik ağır, karizmatik ve fütüristik parmak izi taraması
+    anim.setSpeed(0.42);
 
     let hasCompleted = false;
 
@@ -320,9 +320,9 @@ function FingerprintLottiePlayer({ onDone }) {
   }, []);
 
   return (
-    <div className="relative mx-auto flex items-center justify-center my-3">
-      <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-br from-white via-slate-50 to-emerald-50 p-2 shadow-2xl ring-8 ring-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center overflow-hidden">
-        <div ref={containerRef} className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center scale-125" />
+    <div className="relative mx-auto flex items-center justify-center mb-6 sm:mb-8">
+      <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-gradient-to-br from-white via-slate-50 to-emerald-50/80 p-3 shadow-2xl ring-8 ring-emerald-500/15 border-2 border-emerald-400 flex items-center justify-center overflow-hidden">
+        <div ref={containerRef} className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center scale-125" />
       </div>
     </div>
   );
@@ -405,8 +405,7 @@ export default function LoginScreen() {
     setPendingCredentials({ userStr, passStr });
     setIsVerified(false);
 
-    // 🔊 1. Play 3D Flip Whoosh Sound & trigger 3D coin rotation!
-    soundService.playFlipWhoosh();
+    // 🪙 Trigger 3D coin rotation
     setIsFlipped(true);
 
     if (rememberMe) {
@@ -419,14 +418,12 @@ export default function LoginScreen() {
   };
 
   const handleLottieDone = () => {
-    // 🔊 2. Play Crystal Success Chime!
-    soundService.playSuccessChime();
     setIsVerified(true);
     setTimeout(async () => {
       if (pendingCredentials) {
         await login(pendingCredentials.userStr, pendingCredentials.passStr, true);
       }
-    }, 450);
+    }, 1200);
   };
 
   const handleSubmit = async (e) => {
@@ -687,13 +684,14 @@ export default function LoginScreen() {
           {/* ══════════════════════════════════════════════════════════════
               🔹 BACK FACE: 3D REVERSE BIOMETRIC FINGERPRINT VIEW
              ══════════════════════════════════════════════════════════════ */}
-          <div className="absolute inset-0 w-full h-full rounded-full pt-8 pb-10 px-10 sm:px-14 bg-white border-2 border-white/90 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <div className="absolute inset-0 w-full h-full rounded-full py-12 px-10 sm:px-16 bg-white border-2 border-white/90 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             {isFlipped && (
-              <div className="w-full flex flex-col items-center justify-center space-y-4 animate-fade-scale py-2">
+              <div className="w-full flex flex-col items-center justify-center animate-fade-scale">
                 <FingerprintLottiePlayer onDone={handleLottieDone} />
 
-                <div className="space-y-2.5 w-full max-w-[320px]">
-                  <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border shadow-xs transition-all ${isVerified ? 'bg-emerald-100 text-emerald-900 border-emerald-300 scale-105' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                {/* Badge with distinct breathing room */}
+                <div className="mb-6">
+                  <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold border shadow-xs transition-all ${isVerified ? 'bg-emerald-100 text-emerald-900 border-emerald-300 scale-105' : 'bg-slate-100/90 text-slate-700 border-slate-200'}`}>
                     {isVerified ? (
                       <>
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -706,11 +704,14 @@ export default function LoginScreen() {
                       </>
                     )}
                   </div>
+                </div>
 
-                  <h3 className="text-xl font-bold text-slate-900 font-display">
-                    Hoş Geldiniz, {scannedUser?.name}
+                {/* User Greeting Title & Subtitle with spacious margins */}
+                <div className="w-full max-w-[380px] px-4">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight mb-3">
+                    Hoş Geldiniz, <span className="emerald-gradient-text">{scannedUser?.name}</span>
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium tracking-wide">
                     {isVerified ? 'Giriş Başarılı! Yönlendiriliyorsunuz...' : 'Güvenli oturum açılıyor, lütfen bekleyiniz...'}
                   </p>
                 </div>

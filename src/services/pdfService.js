@@ -466,10 +466,9 @@ export function openQuotationInNewPage(quote) {
   newWin.document.close();
 }
 
-// Download PDF as File directly
 export async function generateQuotationPdf(elementId, quotationData) {
-  const element = document.getElementById(elementId);
-  if (!element) {
+  const originalElement = document.getElementById(elementId);
+  if (!originalElement) {
     throw new Error('PDF render elementi bulunamadı');
   }
 
@@ -477,35 +476,69 @@ export async function generateQuotationPdf(elementId, quotationData) {
   const pkgName = quotationData?.packageName || 'Standart';
   const fileName = `Inzar_Umre_Teklifi_${clientName.replace(/\s+/g, '_')}_${pkgName.replace(/\s+/g, '_')}.pdf`;
 
-  // 1. Ensure all images inside element are fully loaded
-  const images = element.getElementsByTagName('img');
-  await Promise.all(
-    Array.from(images).map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.onload = resolve;
-        img.onerror = resolve;
-      });
-    })
-  );
-
-  // 2. High-Resolution Canvas Render with html2canvas (2x Retina scale)
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-    backgroundColor: '#ffffff',
-    windowWidth: 794,
+  // 1. Create a 100% Unclipped, Isolated Off-screen Container attached to body
+  const clone = originalElement.cloneNode(true);
+  clone.id = 'pdf-render-clone-target';
+  clone.style.width = '794px';
+  clone.style.height = '1122px';
+  clone.style.maxHeight = '1122px';
+  clone.style.position = 'fixed';
+  clone.style.left = '-99999px';
+  clone.style.top = '0px';
+  clone.style.zIndex = '-9999';
+  clone.style.background = '#ffffff';
+  clone.style.boxSizing = 'border-box';
+  clone.style.overflow = 'hidden';
+  clone.style.fontFamily = 'Arial, Helvetica, sans-serif';
+  clone.style.letterSpacing = 'normal';
+  clone.style.wordSpacing = 'normal';
+  
+  // Normalize all child fonts and spacing
+  const allNodes = clone.querySelectorAll('*');
+  allNodes.forEach(node => {
+    node.style.letterSpacing = 'normal';
+    node.style.fontFamily = 'Arial, Helvetica, sans-serif';
   });
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.95);
-  
-  // 3. Create Exactly Single-Page A4 PDF (210mm x 297mm)
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-  pdf.save(fileName);
-  return fileName;
+  document.body.appendChild(clone);
+
+  try {
+    // 2. Ensure all images inside clone are fully loaded
+    const images = clone.getElementsByTagName('img');
+    await Promise.all(
+      Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
+    // 3. High-Resolution Canvas Render with html2canvas (2x Retina scale)
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      width: 794,
+      height: 1122
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    
+    // 4. Create Exactly Single-Page A4 PDF (210mm x 297mm)
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+    pdf.save(fileName);
+    return fileName;
+  } finally {
+    // Clean up temporary clone from DOM
+    if (clone.parentNode) {
+      clone.parentNode.removeChild(clone);
+    }
+  }
 }
 
 // Generate formatted WhatsApp message text

@@ -93,7 +93,7 @@ export default function QuotationLetterView({
             color: '#0f172a',
             padding: '26px 34px',
             boxSizing: 'border-box',
-            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontFamily: 'Arial, Helvetica, sans-serif',
             boxShadow: '0 20px 35px -10px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
             borderRadius: '2px',
             display: 'flex',
@@ -112,10 +112,10 @@ export default function QuotationLetterView({
                 style={{ height: '60px', width: 'auto', objectFit: 'contain', display: 'block' }}
               />
               <div>
-                <h1 style={{ margin: 0, fontSize: '21px', fontWeight: '900', color: '#064e3b', letterSpacing: '-0.5px' }}>
+                <h1 style={{ margin: 0, fontSize: '21px', fontWeight: '900', color: '#064e3b' }}>
                   İNZAR TURİZM
                 </h1>
-                <p style={{ margin: '1px 0 0 0', fontSize: '10px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                <p style={{ margin: '1px 0 0 0', fontSize: '10px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase' }}>
                   Hac & Umre Organizasyonu • Turizm Acentesi
                 </p>
                 <p style={{ margin: '1px 0 0 0', fontSize: '9px', color: '#64748b' }}>
@@ -172,7 +172,7 @@ export default function QuotationLetterView({
 
           {/* Hotel Standards */}
           <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '4px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '4px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
               KONAKLAMA VE OTEL STANDARTLARI
             </div>
             <table style={{ width: '100%', textAlign: 'left', fontSize: '10px', border: '1px solid #e2e8f0', borderCollapse: 'collapse' }}>
@@ -222,7 +222,7 @@ export default function QuotationLetterView({
 
           {/* Transfers */}
           <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '4px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '4px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
               ULAŞIM VE İÇ HAT TRANSFERLERİ
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '9.5px' }}>
@@ -241,10 +241,9 @@ export default function QuotationLetterView({
             </div>
           </div>
 
-          {/* Pricing Matrix */}
           {/* Pricing Matrix or Mixed Rooms Group Pricing */}
           <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '6px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '6px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
               {quotation.isMixedRoomMode ? 'KARMA GRUP KONAKLAMA DAĞILIMI & FİYATLANDIRMA' : 'FİYATLANDIRMA SEÇENEKLERİ (ODA TİPİNE GÖRE KİŞİ BAŞI)'}
             </div>
 
@@ -322,7 +321,7 @@ export default function QuotationLetterView({
 
           {/* Inclusions & Exclusions */}
           <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '4px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '4px', borderBottom: '1.5px solid #a7f3d0', paddingBottom: '2px' }}>
               DAHİL / HARİÇ HİZMETLER DÖKÜMÜ
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '4px', fontSize: '9.5px' }}>
