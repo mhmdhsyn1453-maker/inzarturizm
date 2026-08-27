@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   phone TEXT,
   avatar_image TEXT,
   is_active BOOLEAN DEFAULT true,
+  two_factor_enabled BOOLEAN DEFAULT false,
+  two_factor_secret TEXT,
+  two_factor_backup_codes JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   last_login TIMESTAMPTZ
 );

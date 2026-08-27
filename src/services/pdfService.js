@@ -557,7 +557,7 @@ export function openQuotationInNewPage(quote) {
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px;">
             <div>
               <div style="font-size: 11px; font-weight: 800; color: #064e3b;">
-                ${quote.makkahRoomOccupancy || 2} Kişilik Oda (1 Kişi Toplam Paket Ücreti)
+                ${quote.makkahRoomOccupancy || 2} Kişilik Oda (Kişi Başı Paket Bedeli)
               </div>
               <div style="font-size: 8.5px; color: #475569; margin-top: 1px;">
                 Otel Konaklaması, Vize, Uçak Bileti, Araç/Transferler ve Tüm Dahili Hizmetler Dahildir.
@@ -1023,33 +1023,21 @@ export async function generateDirectPdfBlob(quote) {
               <div style="font-size: 8.5px; font-weight: 800; color: #475569;">1 KİŞİLİK</div>
               <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.singleRooms} Oda</div>
               <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.singleRooms * 1} Misafir</div>
-              <div style="margin-top: 3px; padding-top: 3px; border-top: 1px dashed #cbd5e1; font-size: 9px; font-weight: 800; color: #047857;">
-                $${getRoomCost(1).usd} <span style="font-size: 7.5px; font-weight: normal; color: #64748b;">/Kişi</span>
-              </div>
             </div>
             <div style="padding: 6px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
               <div style="font-size: 8.5px; font-weight: 800; color: #475569;">2 KİŞİLİK</div>
               <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.doubleRooms} Oda</div>
               <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.doubleRooms * 2} Misafir</div>
-              <div style="margin-top: 3px; padding-top: 3px; border-top: 1px dashed #cbd5e1; font-size: 9px; font-weight: 800; color: #047857;">
-                $${getRoomCost(2).usd} <span style="font-size: 7.5px; font-weight: normal; color: #64748b;">/Kişi</span>
-              </div>
             </div>
             <div style="padding: 6px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
               <div style="font-size: 8.5px; font-weight: 800; color: #475569;">3 KİŞİLİK</div>
               <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.tripleRooms} Oda</div>
               <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.tripleRooms * 3} Misafir</div>
-              <div style="margin-top: 3px; padding-top: 3px; border-top: 1px dashed #cbd5e1; font-size: 9px; font-weight: 800; color: #047857;">
-                $${getRoomCost(3).usd} <span style="font-size: 7.5px; font-weight: normal; color: #64748b;">/Kişi</span>
-              </div>
             </div>
             <div style="padding: 6px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
               <div style="font-size: 8.5px; font-weight: 800; color: #475569;">4 KİŞİLİK</div>
               <div style="font-size: 12px; font-weight: 900; color: #064e3b;">${quote.mixedRoomsSummary.quadRooms} Oda</div>
               <div style="font-size: 8px; color: #64748b;">${quote.mixedRoomsSummary.quadRooms * 4} Misafir</div>
-              <div style="margin-top: 3px; padding-top: 3px; border-top: 1px dashed #cbd5e1; font-size: 9px; font-weight: 800; color: #047857;">
-                $${getRoomCost(4).usd} <span style="font-size: 7.5px; font-weight: normal; color: #64748b;">/Kişi</span>
-              </div>
             </div>
           </div>
 
@@ -1058,13 +1046,9 @@ export async function generateDirectPdfBlob(quote) {
               <span style="color: #475569;">Toplam Konaklama: </span>
               <strong style="color: #0f172a;">${quote.mixedRoomsSummary.totalRooms} Oda (${quote.mixedRoomsSummary.totalPax} Misafir)</strong>
             </div>
-            <div style="color: #64748b; font-size: 8.5px;">
-              * Belirtilen tutarlar her oda tipini seçen misafirlerin kişi başı otel konaklama maliyetleridir.
-            </div>
           </div>
         </div>
       ` : `
-        <!-- SADECE SEÇİLEN ODA TİPİ VE KİŞİ BAŞI ODA MALİYETİ -->
         <div style="
           display: flex; 
           align-items: center; 
@@ -1085,13 +1069,10 @@ export async function generateDirectPdfBlob(quote) {
 
           <div style="text-align: right;">
             <span style="font-size: 8.5px; font-weight: 800; color: #047857; display: block;">
-              ODA KİŞİ BAŞI MALİYETİ
+              KONAKLAMA KAPASİTESİ
             </span>
-            <div style="font-size: 14px; font-weight: 900; color: #064e3b; margin-top: 1px;">
-              $${getRoomCost(quote.makkahRoomOccupancy || 2).usd?.toLocaleString('tr-TR')} USD
-            </div>
-            <div style="font-size: 8.5px; color: #64748b; font-weight: 600;">
-              ~${getRoomCost(quote.makkahRoomOccupancy || 2).try?.toLocaleString('tr-TR')} ₺ / Kişi
+            <div style="font-size: 12px; font-weight: 900; color: #0f172a; margin-top: 1px;">
+              ${quote.makkahRoomOccupancy || 2} Kişi / Oda (${quote.paxCount || 1} Misafir)
             </div>
           </div>
         </div>
@@ -1201,7 +1182,7 @@ export async function generateDirectPdfBlob(quote) {
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px;">
           <div>
             <div style="font-size: 11px; font-weight: 800; color: #064e3b;">
-              ${quote.makkahRoomOccupancy || 2} Kişilik Oda (1 Kişi Toplam Paket Ücreti)
+              ${quote.makkahRoomOccupancy || 2} Kişilik Oda (Kişi Başı Paket Bedeli)
             </div>
             <div style="font-size: 8.5px; color: #475569; margin-top: 1px;">
               Otel Konaklaması, Vize, Uçak Bileti, Araç/Transferler ve Tüm Dahili Hizmetler Dahildir.

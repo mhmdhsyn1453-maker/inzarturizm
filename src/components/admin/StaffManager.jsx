@@ -303,6 +303,28 @@ export default function StaffManager() {
     }
   };
 
+  // Reset 2FA for Staff
+  const handleResetTwoFactor = async (user, e) => {
+    if (e) e.stopPropagation();
+    const confirmed = await showConfirm({
+      title: '2FA Korumasını Sıfırla',
+      message: `"${user.name}" kullanıcısının Google Authenticator iki aşamalı doğrulamasını sıfırlamak istediğinize emin misiniz?`,
+      details: 'Personel telefonunu kaybettiyse veya değiştirdiyse 2FA sıfırlanarak sadece şifresiyle giriş yapması sağlanacaktır.',
+      confirmText: 'Evet, 2FA Sıfırla',
+      cancelText: 'Vazgeç',
+      confirmVariant: 'amber'
+    });
+
+    if (confirmed) {
+      updateStaff(user.id, {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorBackupCodes: []
+      });
+      showAlert({ title: '2FA Sıfırlandı', message: `"${user.name}" kullanıcısının 2FA doğrulaması başarıyla kaldırıldı.`, type: 'success' });
+    }
+  };
+
   // Staff specific quotes
   const staffQuotes = selectedStaff ? savedQuotes.filter(q => q.createdById === selectedStaff.id || q.createdByName === selectedStaff.name) : [];
   const staffApproved = staffQuotes.filter(q => q.status === 'approved' || q.status === 'approved_revised');
@@ -819,6 +841,41 @@ export default function StaffManager() {
                   />
                 </div>
 
+                {/* 2FA Status & Reset Card in Detail View */}
+                <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                  selectedStaff.twoFactorEnabled 
+                    ? 'bg-emerald-50/70 border-emerald-300/80 text-emerald-950' 
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className={`h-4 w-4 ${selectedStaff.twoFactorEnabled ? 'text-emerald-700' : 'text-slate-400'}`} />
+                      <span className="text-xs font-bold text-slate-900">Google Authenticator (2FA) Durumu</span>
+                    </div>
+                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                      selectedStaff.twoFactorEnabled 
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
+                        : 'bg-slate-200 text-slate-600 border-slate-300'
+                    }`}>
+                      {selectedStaff.twoFactorEnabled ? '2FA Aktif 🛡️' : '2FA Kapalı'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    {selectedStaff.twoFactorEnabled 
+                      ? 'Bu kullanıcı hesabında iki aşamalı doğrulama aktiftir. Telefon kaybı veya değişiminde aşağıdaki butonla sıfırlayabilirsiniz.'
+                      : 'Kullanıcı 2FA korumasını profil sayfasından dilediği zaman aktif edebilir.'}
+                  </p>
+                  {selectedStaff.twoFactorEnabled && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleResetTwoFactor(selectedStaff, e)}
+                      className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-all cursor-pointer shadow-3xs"
+                    >
+                      2FA Korumasını Sıfırla (Kaldır)
+                    </button>
+                  )}
+                </div>
+
                 <button
                   type="submit"
                   className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 py-3 text-xs font-black text-white shadow-md shadow-emerald-600/25 transition-all cursor-pointer"
@@ -1043,6 +1100,16 @@ export default function StaffManager() {
                           }`}>
                             {user.isActive !== false ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                             <span>{user.isActive !== false ? 'Aktif' : 'Duraklatıldı'}</span>
+                          </span>
+
+                          {/* 2FA Güvenlik Rozeti */}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold shadow-3xs border ${
+                            user.twoFactorEnabled
+                              ? 'bg-emerald-100/80 text-emerald-900 border-emerald-300'
+                              : 'bg-slate-100 text-slate-500 border-slate-200'
+                          }`}>
+                            <ShieldCheck className={`h-3 w-3 ${user.twoFactorEnabled ? 'text-emerald-700' : 'text-slate-400'}`} />
+                            <span>{user.twoFactorEnabled ? '2FA Aktif' : '2FA Kapalı'}</span>
                           </span>
                         </div>
 

@@ -25,12 +25,14 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Check
+  Check,
+  Smartphone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatPhoneNumber } from '../../utils/phoneUtils';
 import ImageCropModal from '../common/ImageCropModal';
 import ImageLightboxModal from '../common/ImageLightboxModal';
+import TwoFactorSetupModal from './TwoFactorSetupModal';
 
 export default function UserProfileView() {
   const { currentUser, updateStaff, isAdmin, users } = useAuth();
@@ -60,6 +62,48 @@ export default function UserProfileView() {
   const [showOldPass, setShowOldPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
+
+  // 2FA Security Modal State
+  const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false);
+  const { showConfirm } = useModal();
+
+  const handleTwoFactorComplete = (data) => {
+    if (currentUser?.id) {
+      updateStaff(currentUser.id, {
+        twoFactorEnabled: true,
+        twoFactorSecret: data.twoFactorSecret,
+        twoFactorBackupCodes: data.twoFactorBackupCodes
+      });
+      showAlert({
+        title: '2FA Aktif Edildi',
+        message: 'Google Authenticator ile iki aşamalı doğrulama koruması hesabınız için başarıyla açıldı.',
+        type: 'success'
+      });
+    }
+  };
+
+  const handleDisableTwoFactor = async () => {
+    const confirmed = await showConfirm({
+      title: '2FA Korumasını Kapat',
+      message: 'Google Authenticator iki aşamalı doğrulamayı devre dışı bırakmak istediğinize emin misiniz? Hesabınız yalnızca şifre ile korunacaktır.',
+      confirmText: 'Evet, Devre Dışı Bırak',
+      cancelText: 'Vazgeç',
+      confirmVariant: 'danger'
+    });
+
+    if (confirmed && currentUser?.id) {
+      updateStaff(currentUser.id, {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorBackupCodes: []
+      });
+      showAlert({
+        title: '2FA Kapatıldı',
+        message: 'İki aşamalı doğrulama koruması hesabınızdan kaldırıldı.',
+        type: 'info'
+      });
+    }
+  };
 
   const [isSaved, setIsSaved] = useState(false);
 
@@ -532,6 +576,73 @@ export default function UserProfileView() {
             )}
           </div>
 
+          {/* ══════════════════════════════════════════════════════════════
+              📱 2FA GOOGLE AUTHENTICATOR SECURITY CARD
+             ══════════════════════════════════════════════════════════════ */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 pb-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-2xl border shadow-2xs ${
+                  currentUser?.twoFactorEnabled
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : 'bg-slate-100 text-slate-600 border-slate-300'
+                }`}>
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <span>Google Authenticator (2FA) Güvenliği</span>
+                    <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                      currentUser?.twoFactorEnabled
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-slate-200 text-slate-600 border-slate-300'
+                    }`}>
+                      {currentUser?.twoFactorEnabled ? 'Aktif & Korumalı 🛡️' : 'Devre Dışı'}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Giriş yaparken şifrenize ek olarak telefonunuzdaki Google Authenticator kodunu zorunlu kılar.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {currentUser?.twoFactorEnabled ? (
+                  <button
+                    type="button"
+                    onClick={handleDisableTwoFactor}
+                    className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-all cursor-pointer shadow-2xs hover:scale-102 active:scale-98"
+                  >
+                    2FA Korumasını Kapat
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setTwoFactorModalOpen(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
+                  >
+                    <Smartphone className="h-3.5 w-3.5" />
+                    <span>2FA Kurulumunu Başlat</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {currentUser?.twoFactorEnabled && (
+              <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 flex items-center justify-between text-xs text-emerald-900">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Hesabınız iki aşamalı şifreleme ile tam koruma altındadır.</span>
+                </div>
+                {currentUser?.twoFactorBackupCodes?.length > 0 && (
+                  <span className="text-[11px] font-mono font-bold bg-white px-2 py-0.5 rounded-lg border border-emerald-200 text-emerald-800">
+                    {currentUser.twoFactorBackupCodes.length} Kurtarma Kodu Mevcut
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <button
               type="submit"
@@ -564,6 +675,14 @@ export default function UserProfileView() {
         }}
         onConfirmCrop={handleConfirmCrop}
         title="Profil Fotoğrafını Kırp ve Hizala"
+      />
+
+      {/* 📱 2FA Setup Modal */}
+      <TwoFactorSetupModal
+        isOpen={twoFactorModalOpen}
+        onClose={() => setTwoFactorModalOpen(false)}
+        user={currentUser}
+        onSetupComplete={handleTwoFactorComplete}
       />
     </div>
   );

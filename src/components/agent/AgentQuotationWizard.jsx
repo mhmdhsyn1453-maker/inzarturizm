@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { calculateQuotation, generateRoomMatrix } from '../../services/pricingEngine';
@@ -212,9 +212,15 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     setNotes('');
   };
 
-  // Edit Mode Initialization
+  // Edit Mode Initialization with Ref Guard
+  const loadedQuoteIdRef = useRef(null);
+
   useEffect(() => {
     if (editingQuote) {
+      const quoteKey = editingQuote.id || editingQuote.timestamp || JSON.stringify(editingQuote);
+      if (loadedQuoteIdRef.current === quoteKey) return;
+      loadedQuoteIdRef.current = quoteKey;
+
       const pkgId = editingQuote.packageId || editingQuote.pkgDetails?.id;
       if (pkgId) setSelectedPkgId(pkgId);
       if (editingQuote.selectedMonth) setSelectedMonth(editingQuote.selectedMonth);
@@ -245,8 +251,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         setFixedExpensesIncluded(editingQuote.fixedExpensesIncluded);
       }
       setViewMode('form');
+    } else {
+      loadedQuoteIdRef.current = null;
     }
-  }, [editingQuote, packages]);
+  }, [editingQuote]);
 
   const sortedPackages = useMemo(() => {
     const order = { 'ekonomik': 1, 'standart': 2, 'luxe': 3, 'vip': 3 };
@@ -689,7 +697,9 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 <div
                   key={pkg.id}
                   onClick={() => setSelectedPkgId(pkg.id)}
-                  className={`group cursor-pointer rounded-[26px] p-5 sm:p-6 transition-all duration-300 select-none flex flex-col xl:flex-row xl:items-center justify-between gap-5 hover:-translate-y-1 active:scale-[0.995] ${theme.cardBg}`}
+                  className={`group cursor-pointer rounded-[26px] p-5 sm:p-6 transition-all duration-300 select-none flex flex-col xl:flex-row xl:items-center justify-between gap-5 hover:-translate-y-1 active:scale-[0.995] ${theme.cardBg} ${
+                    !isSelected ? 'opacity-50 grayscale-[30%] hover:opacity-80 hover:grayscale-0' : ''
+                  }`}
                 >
                   {/* Left & Middle Section: Header & Inset Clean Panels */}
                   <div className="space-y-4 flex-1 min-w-0">

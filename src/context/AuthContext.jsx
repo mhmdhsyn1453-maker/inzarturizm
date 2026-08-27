@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEFAULT_USERS } from '../data/defaultTariffData';
 import { syncService } from '../services/syncService';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { verifyTOTPToken } from '../utils/totp';
 
 const AuthContext = createContext();
 
@@ -48,7 +49,7 @@ export function AuthProvider({ children }) {
     }
   }, [currentUser]);
 
-  const login = async (inputIdentifier, password, commit = true) => {
+  const login = async (inputIdentifier, password, commit = true, skip2FACheck = false) => {
     const trimmedInput = inputIdentifier.trim().toLowerCase();
     const trimmedPass = password.trim();
 
@@ -83,6 +84,9 @@ export function AuthProvider({ children }) {
               phone: data.phone || '',
               avatarImage: data.avatar_image || null,
               isActive: data.is_active !== false,
+              twoFactorEnabled: Boolean(data.two_factor_enabled),
+              twoFactorSecret: data.two_factor_secret || null,
+              twoFactorBackupCodes: data.two_factor_backup_codes || [],
               lastLogin: new Date().toISOString()
             };
 
@@ -105,6 +109,15 @@ export function AuthProvider({ children }) {
       return { success: false, message: 'Bu kullanıcı hesabı merkez tarafından askıya alınmıştır/pasiftir!' };
     }
 
+    // Check if user has Google Authenticator 2FA Enabled
+    if (!skip2FACheck && user.twoFactorEnabled && user.twoFactorSecret) {
+      return { 
+        success: true, 
+        requires2FA: true, 
+        tempUser: user 
+      };
+    }
+
     const sessionUser = {
       id: user.id,
       username: user.username,
@@ -117,6 +130,9 @@ export function AuthProvider({ children }) {
       email: user.email || `${user.username}@inzarturizm.com`,
       avatar: user.avatar || '',
       avatarImage: user.avatarImage || null,
+      twoFactorEnabled: Boolean(user.twoFactorEnabled),
+      twoFactorSecret: user.twoFactorSecret || null,
+      twoFactorBackupCodes: user.twoFactorBackupCodes || [],
       lastLogin: new Date().toISOString(),
       sessionToken: 'tkn_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
     };
@@ -132,6 +148,77 @@ export function AuthProvider({ children }) {
         action: 'USER_LOGIN',
         user: user.name,
         details: `${user.name} (@${user.username}) sisteme güvenli giriş yaptı.`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    return { success: true, user: sessionUser };
+  };
+
+  const verify2FAAndLogin = async (tempUser, codeOrBackupCode, commit = true) => {
+    if (!tempUser || !codeOrBackupCode) {
+      return { success: false, message: 'Doğrulama kodu boş bırakılamaz.' };
+    }
+
+    const cleanInput = String(codeOrBackupCode).trim().toUpperCase();
+    let isValid = false;
+    let usedBackupCode = false;
+
+    // 1. Try TOTP code first
+    if (/^\d{6}$/.test(cleanInput)) {
+      isValid = await verifyTOTPToken(tempUser.twoFactorSecret, cleanInput);
+    }
+
+    // 2. Try Backup Codes if not matched
+    if (!isValid && Array.isArray(tempUser.twoFactorBackupCodes)) {
+      const backupIndex = tempUser.twoFactorBackupCodes.findIndex(
+        b => b.toUpperCase().replace(/\s|-/g, '') === cleanInput.replace(/\s|-/g, '')
+      );
+      if (backupIndex >= 0) {
+        isValid = true;
+        usedBackupCode = true;
+        // Consume backup code
+        const updatedBackupCodes = tempUser.twoFactorBackupCodes.filter((_, idx) => idx !== backupIndex);
+        tempUser.twoFactorBackupCodes = updatedBackupCodes;
+        const updatedUsers = users.map(u => u.id === tempUser.id ? { ...u, twoFactorBackupCodes: updatedBackupCodes } : u);
+        setUsers(updatedUsers);
+        syncService.saveUsers(updatedUsers);
+      }
+    }
+
+    if (!isValid) {
+      return { success: false, message: 'Girdiğiniz 6 haneli kod veya kurtarma kodu hatalı!' };
+    }
+
+    const sessionUser = {
+      id: tempUser.id,
+      username: tempUser.username,
+      password: tempUser.password,
+      name: tempUser.name,
+      role: (tempUser.role || 'STAFF').toUpperCase(),
+      city: tempUser.city || 'İstanbul',
+      branch: tempUser.branch || (tempUser.role?.toUpperCase() === 'ADMIN' ? 'Genel Merkez' : 'Fatih Şubesi'),
+      phone: tempUser.phone || '',
+      email: tempUser.email || `${tempUser.username}@inzarturizm.com`,
+      avatar: tempUser.avatar || '',
+      avatarImage: tempUser.avatarImage || null,
+      twoFactorEnabled: true,
+      twoFactorSecret: tempUser.twoFactorSecret,
+      twoFactorBackupCodes: tempUser.twoFactorBackupCodes || [],
+      lastLogin: new Date().toISOString(),
+      sessionToken: 'tkn_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+    };
+
+    if (commit) {
+      setCurrentUser(sessionUser);
+      const updatedUsers = users.map(u => u.id === tempUser.id ? { ...u, lastLogin: new Date().toISOString() } : u);
+      setUsers(updatedUsers);
+      syncService.saveUsers(updatedUsers);
+
+      syncService.addAuditLog({
+        action: 'USER_LOGIN_2FA',
+        user: tempUser.name,
+        details: `${tempUser.name} (@${tempUser.username}) Google Authenticator 2FA ile güvenli giriş yaptı${usedBackupCode ? ' (Kurtarma Kodu Kullanıldı)' : ''}.`,
         timestamp: new Date().toISOString()
       });
     }
@@ -203,6 +290,28 @@ export function AuthProvider({ children }) {
     setUsers(updated);
     syncService.saveUsers(updated);
 
+    if (isSupabaseConfigured && supabase) {
+      const updatedUser = updated.find(u => u.id === staffId);
+      if (updatedUser) {
+        supabase.from('profiles').upsert({
+          id: updatedUser.id,
+          username: updatedUser.username,
+          password: updatedUser.password,
+          name: updatedUser.name,
+          role: updatedUser.role,
+          city: updatedUser.city,
+          branch: updatedUser.branch,
+          phone: updatedUser.phone,
+          avatar_image: updatedUser.avatarImage,
+          is_active: updatedUser.isActive !== false,
+          two_factor_enabled: Boolean(updatedUser.twoFactorEnabled),
+          two_factor_secret: updatedUser.twoFactorSecret || null,
+          two_factor_backup_codes: updatedUser.twoFactorBackupCodes || [],
+          updated_at: new Date().toISOString()
+        }).then();
+      }
+    }
+
     if (currentUser && currentUser.id === staffId) {
       setCurrentUser(prev => ({
         ...prev,
@@ -256,6 +365,7 @@ export function AuthProvider({ children }) {
       isAdmin,
       users,
       login,
+      verify2FAAndLogin,
       logout,
       addStaff,
       updateStaff,

@@ -81,6 +81,16 @@ export default function SavedQuotesList({ onEditQuote }) {
     setCurrentPage(1);
   }, [searchTerm, statusFilter]);
 
+  // Keep selectedQuoteForPdf synchronized with latest savedQuotes updates
+  useEffect(() => {
+    if (selectedQuoteForPdf) {
+      const freshQuote = savedQuotes.find(q => q.id === selectedQuoteForPdf.id);
+      if (freshQuote && freshQuote !== selectedQuoteForPdf) {
+        setSelectedQuoteForPdf(freshQuote);
+      }
+    }
+  }, [savedQuotes, selectedQuoteForPdf]);
+
   // 🔒 Rol Bazlı Teklif İzolasyonu: Admin tüm acentenin tekliflerini görür, Personel yalnızca kendi oluşturduğu teklifleri görür
   const visibleQuotes = useMemo(() => {
     if (isAdmin) return savedQuotes;
@@ -203,6 +213,7 @@ export default function SavedQuotesList({ onEditQuote }) {
 
   const handleEditClick = (quote, e) => {
     e?.stopPropagation();
+    setSelectedQuoteForPdf(null);
     setEditingQuote(quote);
     if (onEditQuote) {
       onEditQuote(quote);

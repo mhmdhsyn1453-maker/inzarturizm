@@ -342,7 +342,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
             }}>
               <div style={{ fontSize: '9.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '6px', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
-                <span>{quotation.isMixedRoomMode ? 'KARMA GRUP KONAKLAMA DAĞILIMI & ODA MALİYETLERİ' : 'SEÇİLEN ODA TİPİ & ODA MALİYETİ'}</span>
+                <span>{quotation.isMixedRoomMode ? 'KARMA GRUP KONAKLAMA DAĞILIMI' : 'SEÇİLEN ODA TİPİ VE KONAKLAMA DÜZENİ'}</span>
               </div>
 
               {quotation.isMixedRoomMode && quotation.mixedRoomsSummary ? (
@@ -352,33 +352,21 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                       <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>1 KİŞİLİK</div>
                       <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.singleRooms} Oda</div>
                       <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.singleRooms * 1} Misafir</div>
-                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
-                        ${getRoomCost(1).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
-                      </div>
                     </div>
                     <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>2 KİŞİLİK</div>
                       <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.doubleRooms} Oda</div>
                       <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.doubleRooms * 2} Misafir</div>
-                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
-                        ${getRoomCost(2).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
-                      </div>
                     </div>
                     <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>3 KİŞİLİK</div>
                       <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.tripleRooms} Oda</div>
                       <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.tripleRooms * 3} Misafir</div>
-                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
-                        ${getRoomCost(3).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
-                      </div>
                     </div>
                     <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                       <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>4 KİŞİLİK</div>
                       <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.quadRooms} Oda</div>
                       <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.quadRooms * 4} Misafir</div>
-                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
-                        ${getRoomCost(4).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
-                      </div>
                     </div>
                   </div>
 
@@ -386,9 +374,6 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                     <div>
                       <span style={{ color: '#475569' }}>Toplam Konaklama: </span>
                       <strong style={{ color: '#0f172a' }}>{quotation.mixedRoomsSummary.totalRooms} Oda ({quotation.mixedRoomsSummary.totalPax} Misafir)</strong>
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: '8.5px' }}>
-                      * Belirtilen tutarlar her oda tipini seçen misafirlerin kişi başı otel konaklama maliyetleridir.
                     </div>
                   </div>
                 </div>
@@ -413,13 +398,10 @@ export default function QuotationPdfModal({ quotation, onClose }) {
 
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '8.5px', fontWeight: '800', color: '#047857', display: 'block' }}>
-                      ODA KİŞİ BAŞI MALİYETİ
+                      KONAKLAMA KAPASİTESİ
                     </span>
-                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b', marginTop: '1px' }}>
-                      ${getRoomCost(quotation.makkahRoomOccupancy || 2).usd?.toLocaleString('tr-TR')} USD
-                    </div>
-                    <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: '600' }}>
-                      ~{getRoomCost(quotation.makkahRoomOccupancy || 2).try?.toLocaleString('tr-TR')} ₺ / Kişi
+                    <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                      {quotation.makkahRoomOccupancy || 2} Kişi / Oda ({quotation.paxCount || 1} Misafir)
                     </div>
                   </div>
                 </div>
@@ -538,7 +520,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px' }}>
                   <div>
                     <div style={{ fontSize: '11px', fontWeight: '800', color: '#064e3b' }}>
-                      {quotation.makkahRoomOccupancy || 2} Kişilik Oda (1 Kişi Toplam Paket Ücreti)
+                      {quotation.makkahRoomOccupancy || 2} Kişilik Oda (Kişi Başı Paket Bedeli)
                     </div>
                     <div style={{ fontSize: '8.5px', color: '#475569', marginTop: '1px' }}>
                       Otel Konaklaması, Vize, Uçak Bileti, Araç/Transferler ve Tüm Dahili Hizmetler Dahildir.

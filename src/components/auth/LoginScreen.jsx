@@ -329,7 +329,7 @@ function FingerprintLottiePlayer({ onDone }) {
 }
 
 export default function LoginScreen() {
-  const { login, users } = useAuth();
+  const { login, verify2FAAndLogin, users } = useAuth();
   
   // Remember Me state
   const [username, setUsername] = useState(() => {
@@ -355,6 +355,13 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   
+  // 2FA Prompt States
+  const [is2FAPrompt, setIs2FAPrompt] = useState(false);
+  const [twoFactorUser, setTwoFactorUser] = useState(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [isBackupMode, setIsBackupMode] = useState(false);
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+
   // CapsLock Detection State
   const [isCapsLockOn, setIsCapsLockOn] = useState(false);
 
@@ -400,9 +407,9 @@ export default function LoginScreen() {
     }
   };
 
-  const startBiometricVerification = (validUser, userStr, passStr) => {
+  const startBiometricVerification = (validUser, userStr, passStr, is2FAVerified = false) => {
     setScannedUser(validUser);
-    setPendingCredentials({ userStr, passStr });
+    setPendingCredentials({ userStr, passStr, is2FAVerified });
     setIsVerified(false);
 
     // 🪙 Trigger 3D coin rotation
@@ -421,7 +428,12 @@ export default function LoginScreen() {
     setIsVerified(true);
     setTimeout(async () => {
       if (pendingCredentials) {
-        await login(pendingCredentials.userStr, pendingCredentials.passStr, true);
+        await login(
+          pendingCredentials.userStr, 
+          pendingCredentials.passStr, 
+          true, 
+          pendingCredentials.is2FAVerified
+        );
       }
     }, 1200);
   };
@@ -454,14 +466,55 @@ export default function LoginScreen() {
         } else {
           triggerError(result.message);
         }
+      } else if (result.requires2FA) {
+        setFailedAttempts(0);
+        setTwoFactorUser(result.tempUser);
+        setIs2FAPrompt(true);
+        setTwoFactorCode('');
+        setIsBackupMode(false);
       } else {
         setFailedAttempts(0);
-        startBiometricVerification(result.user, cleanUser, cleanPass);
+        startBiometricVerification(result.user, cleanUser, cleanPass, false);
       }
     } catch (err) {
       setIsLoading(false);
       triggerError('Giriş yapılırken bir hata oluştu.');
     }
+  };
+
+  const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    if (!twoFactorCode.trim()) {
+      triggerError(isBackupMode ? 'Lütfen kurtarma kodunu giriniz.' : 'Lütfen 6 haneli doğrulama kodunu giriniz.');
+      return;
+    }
+
+    setIsVerifying2FA(true);
+    setErrorMsg('');
+
+    try {
+      // ⚠️ Verify code WITHOUT committing yet so Lottie animation can play on flip!
+      const result = await verify2FAAndLogin(twoFactorUser, twoFactorCode, false);
+      setIsVerifying2FA(false);
+
+      if (result.success) {
+        setIs2FAPrompt(false);
+        // Start 3D coin flip & play Biometric Fingerprint Lottie
+        startBiometricVerification(result.user, twoFactorUser.username, password, true);
+      } else {
+        triggerError(result.message || 'Geçersiz 2FA doğrulama kodu!');
+      }
+    } catch (err) {
+      setIsVerifying2FA(false);
+      triggerError('Doğrulama sırasında bir hata oluştu.');
+    }
+  };
+
+  const handleCancel2FA = () => {
+    setIs2FAPrompt(false);
+    setTwoFactorUser(null);
+    setTwoFactorCode('');
+    setErrorMsg('');
   };
 
   const triggerError = (msg) => {
@@ -568,8 +621,84 @@ export default function LoginScreen() {
               </div>
             ) : null}
 
-            {/* Form Fields */}
-            <form onSubmit={handleSubmit} className="w-full max-w-[340px] sm:max-w-[380px] mx-auto space-y-3.5 flex flex-col items-center">
+            {/* ══════════════════════════════════════════════════════════════
+                🔒 2FA STEP (GOOGLE AUTHENTICATOR PROMPT)
+               ══════════════════════════════════════════════════════════════ */}
+            {is2FAPrompt ? (
+              <form onSubmit={handle2FASubmit} className="w-full max-w-[340px] sm:max-w-[380px] mx-auto space-y-4 flex flex-col items-center animate-scale-in">
+                <div className="flex flex-col items-center text-center space-y-1">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm mb-1">
+                    <ShieldCheck className="h-7 w-7" />
+                  </div>
+                  <h3 className="text-base font-extrabold text-slate-900 font-display">
+                    {isBackupMode ? 'Kurtarma Kodu ile Giriş' : 'Google Authenticator Doğrulaması'}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-[280px]">
+                    {isBackupMode 
+                      ? '5 adet tek kullanımlık kurtarma kodunuzdan birini giriniz.'
+                      : `Sayın ${twoFactorUser?.name || 'Kullanıcı'}, uygulamanızdaki 6 haneli kodu giriniz.`}
+                  </p>
+                </div>
+
+                {/* 6-Digit / Backup Code Input */}
+                <div className="w-full relative">
+                  <input
+                    type="text"
+                    autoFocus
+                    required
+                    maxLength={isBackupMode ? 12 : 6}
+                    inputMode={isBackupMode ? 'text' : 'numeric'}
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(isBackupMode ? e.target.value.toUpperCase() : e.target.value.replace(/\D/g, ''))}
+                    placeholder={isBackupMode ? 'Örn: A7K9-2P4M' : '000000'}
+                    className={`w-full text-center font-mono font-black rounded-full bg-slate-50/90 py-3.5 px-4 text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all ${
+                      isBackupMode ? 'text-base tracking-wider uppercase' : 'text-2xl tracking-[0.4em]'
+                    }`}
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isVerifying2FA || (isBackupMode ? twoFactorCode.length < 6 : twoFactorCode.length !== 6)}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-900 via-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-700 py-3 px-6 font-bold text-white shadow-lg shadow-emerald-900/25 text-sm transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
+                >
+                  {isVerifying2FA ? (
+                    <Clock className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Doğrula ve Sisteme Gir</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+
+                {/* Switch between Authenticator and Backup Code */}
+                <div className="flex flex-col items-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsBackupMode(!isBackupMode);
+                      setTwoFactorCode('');
+                      setErrorMsg('');
+                    }}
+                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline transition-colors cursor-pointer"
+                  >
+                    {isBackupMode ? '← Google Authenticator Kodunu Kullan' : 'Telefonuma Ulaşamıyorum (Kurtarma Kodu Kullan)'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCancel2FA}
+                    className="text-xs text-slate-400 hover:text-slate-700 transition-colors cursor-pointer mt-1"
+                  >
+                    ← Başka Hesapla Giriş Yap
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* Normal Username / Password Form */
+              <form onSubmit={handleSubmit} className="w-full max-w-[340px] sm:max-w-[380px] mx-auto space-y-3.5 flex flex-col items-center">
               
               {/* Porcelain Username Input */}
               <div className="relative group w-full">
@@ -673,6 +802,7 @@ export default function LoginScreen() {
                 <ArrowRight className="h-4 w-4 relative z-10 transition-transform group-hover:translate-x-0.5" />
               </button>
             </form>
+            )}
 
             {/* Bottom NEXUS Platforms Badge */}
             <div
