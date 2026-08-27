@@ -49,16 +49,49 @@ export default function QuotationPdfModal({ quotation, onClose }) {
   const transfers = quotation.transfersSelection || {};
   const roomMatrix = quotation.roomMatrix || [];
 
-  // Extract prices from dynamic room matrix
-  const doubleRoom = roomMatrix.find(r => r.occupancy === 2) || { finalPriceUSD: quotation.finalPriceUSD, finalPriceTRY: quotation.finalPriceTRY };
-  const tripleRoom = roomMatrix.find(r => r.occupancy === 3) || { finalPriceUSD: Math.round((quotation.finalPriceUSD || 0) * 0.93), finalPriceTRY: Math.round((quotation.finalPriceTRY || 0) * 0.93) };
-  const quadRoom = roomMatrix.find(r => r.occupancy === 4) || { finalPriceUSD: Math.round((quotation.finalPriceUSD || 0) * 0.88), finalPriceTRY: Math.round((quotation.finalPriceTRY || 0) * 0.88) };
+  const getRoomCost = (occ) => {
+    if (quotation.roomMatrix && quotation.roomMatrix.length > 0) {
+      const rm = quotation.roomMatrix.find(r => r.occupancy === occ);
+      if (rm) {
+        return {
+          usd: rm.priceUSD || rm.totalHotelUSD || 0,
+          try: rm.priceTRY || Math.round((rm.priceUSD || rm.totalHotelUSD || 0) * (quotation.currenciesUsed?.USD_TRY || 36.50))
+        };
+      }
+    }
+    const mkDays = Number(quotation.makkahDays) || 0;
+    const mdDays = Number(quotation.madinahDays) || 0;
+    const mkRoom = Number(quotation.makkahRoomSAR) || 0;
+    const mdRoom = Number(quotation.madinahRoomSAR) || 0;
+    const mkFood = Number(quotation.makkahFoodSAR) || 0;
+    const mdFood = Number(quotation.madinahFoodSAR) || 0;
+    const sarUsd = quotation.currenciesUsed?.SAR_USD || 3.75;
+    const usdTry = quotation.currenciesUsed?.USD_TRY || (quotation.finalPriceUSD ? (quotation.finalPriceTRY / quotation.finalPriceUSD) : 36.50);
+
+    if (mkRoom > 0 || mdRoom > 0) {
+      const mkDaily = occ > 0 ? (mkRoom / occ) : 0;
+      const mdDaily = occ > 0 ? (mdRoom / occ) : 0;
+      const totalSAR = (mkDaily + mkFood) * mkDays + (mdDaily + mdFood) * mdDays;
+      const usd = Math.round(totalSAR / sarUsd);
+      return { usd, try: Math.round(usd * usdTry) };
+    }
+
+    if (quotation.totalAccommodationSAR) {
+      const baseSAR = (quotation.totalAccommodationSAR / (quotation.makkahRoomOccupancy || 2)) * (2 / occ);
+      const usd = Math.round(baseSAR / sarUsd);
+      return { usd, try: Math.round(usd * usdTry) };
+    }
+
+    const factor = occ === 1 ? 1.7 : occ === 2 ? 1.0 : occ === 3 ? 0.78 : 0.68;
+    const estimatedBaseHotelUSD = Math.round((quotation.finalPriceUSD || 500) * 0.45 * factor);
+    return { usd: estimatedBaseHotelUSD, try: Math.round(estimatedBaseHotelUSD * usdTry) };
+  };
 
   // Transfer labels
   const getTransferDesc = (sel) => {
     if (!sel || sel.vehicleType === 'none') return 'Talep Edilmedi (Kendi İmkânıyla)';
-    if (sel.vehicleType === 'small') return `Küçük Araç (${sel.passengerCount || 2} Kişi Paylaşımlı)`;
-    if (sel.vehicleType === 'big') return `Büyük Otobüs (${sel.passengerCount || 45} Kişi Paylaşımlı)`;
+    if (sel.vehicleType === 'small') return `Özel VIP Araç (${sel.passengerCount || 2} Kişi)`;
+    if (sel.vehicleType === 'big') return `Lüks Otobüs (${sel.passengerCount || 45} Kişi Paylaşımlı)`;
     return 'Dahil';
   };
 
@@ -154,277 +187,420 @@ export default function QuotationPdfModal({ quotation, onClose }) {
               overflow: 'hidden'
             }}
           >
-            {/* Header Section: Frameless Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2.5px solid #064e3b', paddingBottom: '10px' }}>
+            {/* Header Section: Luxury Embossed Emerald & Gold Bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 18px',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%)',
+              color: '#ffffff',
+              boxShadow: '0 4px 12px rgba(6, 78, 59, 0.15)',
+              marginBottom: '10px'
+            }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <img 
-                  src={inzarLogo} 
-                  alt="İnzar Turizm Logo" 
-                  crossOrigin="anonymous"
-                  style={{ height: '60px', width: 'auto', objectFit: 'contain', display: 'block' }}
-                />
+                <div style={{ backgroundColor: '#ffffff', padding: '6px 10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img 
+                    src={inzarLogo} 
+                    alt="İnzar Turizm Logo" 
+                    crossOrigin="anonymous"
+                    style={{ height: '46px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                  />
+                </div>
                 <div>
-                  <h1 style={{ margin: 0, fontSize: '21px', fontWeight: '900', color: '#064e3b' }}>
+                  <h1 style={{ margin: 0, fontSize: '19px', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.2px', lineHeight: 1.1 }}>
                     İNZAR TURİZM
                   </h1>
-                  <p style={{ margin: '1px 0 0 0', fontSize: '10px', fontWeight: '800', color: '#b45309', textTransform: 'uppercase' }}>
-                    Hac & Umre Organizasyonu • Turizm Acentesi
+                  <p style={{ margin: '2px 0 0 0', fontSize: '9px', fontWeight: '800', color: '#fef08a', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                    Hac & Umre Organizasyonu • Lüks Seyahat Hizmetleri
                   </p>
-                  <p style={{ margin: '1px 0 0 0', fontSize: '9px', color: '#64748b' }}>
-                    TÜRSAB Belge No: 8207 • Diyanet Yetkili
+                  <p style={{ margin: '2px 0 0 0', fontSize: '8.5px', color: '#a7f3d0' }}>
+                    TÜRSAB Belge No: 8207 • T.C. Diyanet İşleri Başkanlığı Yetkili Acente
                   </p>
                 </div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
-                <div style={{ display: 'inline-block', backgroundColor: '#064e3b', color: '#ffffff', fontWeight: '800', fontSize: '12px', padding: '6px 14px', borderRadius: '4px' }}>
-                  RESMİ FİYAT TEKLİF FORMU
+                <div style={{ display: 'inline-block', backgroundColor: '#fef08a', color: '#064e3b', fontWeight: '900', fontSize: '10px', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.4px', textTransform: 'uppercase', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  RESMİ FİYAT TEKLİFİ
                 </div>
-                <div style={{ marginTop: '6px', fontSize: '11px', color: '#475569', lineHeight: '1.4' }}>
-                  <div><strong>Teklif No:</strong> INZ-{Date.now().toString().slice(-6)}</div>
+                <div style={{ marginTop: '5px', fontSize: '9px', color: '#d1fae5', lineHeight: '1.35' }}>
+                  <div><strong>Teklif Ref:</strong> INZ-{Date.now().toString().slice(-6)}</div>
                   <div><strong>Tarih:</strong> {todayStr}</div>
-                  <div><strong>Geçerlilik:</strong> {validUntilStr}</div>
+                  <div><strong>Geçerlilik:</strong> {validUntilStr} (15 Gün)</div>
                 </div>
               </div>
             </div>
 
-            {/* Info Summary Banner */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', margin: '14px 0', padding: '12px 16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12px' }}>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: '#065f46', marginBottom: '4px' }}>
-                  SAYIN MİSAFİRİMİZ / REFERANS:
+            {/* Guest & Program Overview Cards (Rounded 12px) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+              <div style={{ padding: '10px 14px', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1.5px solid #e2e8f0', fontSize: '10px' }}>
+                <div style={{ fontSize: '8.5px', fontWeight: '800', textTransform: 'uppercase', color: '#065f46', letterSpacing: '0.5px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#065f46" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>SAYIN MİSAFİRİMİZ / KURUM:</span>
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>{quotation.customerName || 'Değerli Misafirimiz'}</div>
-                <div style={{ color: '#475569', marginTop: '2px' }}>İletişim: <strong>{quotation.customerPhone || '-'}</strong></div>
-                <div style={{ color: '#475569', marginTop: '2px' }}>Grup Kişi Sayısı: <strong>{quotation.paxCount || 1} Kişi</strong></div>
+                <div style={{ fontSize: '13.5px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.2px' }}>{quotation.customerName || 'Değerli Misafirimiz'}</div>
+                <div style={{ color: '#475569', marginTop: '2px' }}>İletişim: <strong style={{ color: '#0f172a' }}>{quotation.customerPhone || '-'}</strong></div>
+                <div style={{ color: '#475569', marginTop: '1px' }}>Grup Kişi Sayısı: <strong style={{ color: '#064e3b' }}>{quotation.paxCount || 1} Misafir</strong></div>
               </div>
 
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: '#065f46', marginBottom: '4px' }}>
-                  PROGRAM & REZERVASYON ÖZETİ:
+              <div style={{ padding: '10px 14px', borderRadius: '12px', backgroundColor: '#f0fdf4', border: '1.5px solid #bbf7d0', fontSize: '10px', textAlign: 'right' }}>
+                <div style={{ fontSize: '8.5px', fontWeight: '800', textTransform: 'uppercase', color: '#065f46', letterSpacing: '0.5px', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                  <span>PROGRAM KÜNYESİ:</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#065f46" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#047857' }}>{quotation.packageName}</div>
+                <div style={{ fontSize: '13.5px', fontWeight: '900', color: '#047857', letterSpacing: '-0.2px' }}>{quotation.packageName}</div>
                 <div style={{ color: '#475569', marginTop: '2px' }}>
-                  Toplam Süre: <strong>{Number(quotation.makkahDays) + Number(quotation.madinahDays)} Gün</strong> 
+                  Toplam Süre: <strong style={{ color: '#0f172a' }}>{Number(quotation.makkahDays) + Number(quotation.madinahDays)} Gün</strong> 
                   {quotation.madinahDays === 0 ? ' (Sadece Mekke)' : quotation.makkahDays === 0 ? ' (Sadece Medine)' : ` (${quotation.makkahDays}G Mekke / ${quotation.madinahDays}G Medine)`}
                 </div>
-                <div style={{ color: '#475569', marginTop: '2px' }}>Dönem: <strong>{quotation.selectedMonthLabel || quotation.selectedMonth || 'Ocak (Sömestr Tatili)'}</strong></div>
+                <div style={{ color: '#475569', marginTop: '1px' }}>Dönem: <strong style={{ color: '#0f172a' }}>{quotation.selectedMonthLabel || quotation.selectedMonth || 'Ocak (Sömestr Tatili)'}</strong></div>
               </div>
             </div>
 
-            {/* Hotel Standards Table */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '6px', borderBottom: '2px solid #a7f3d0', paddingBottom: '4px' }}>
-                KONAKLAMA VE OTEL STANDARTLARI
+            {/* Hotel Standards Table Card (Rounded 12px) */}
+            <div style={{ marginBottom: '10px', borderRadius: '12px', border: '1.5px solid #e2e8f0', overflow: 'hidden', backgroundColor: '#ffffff' }}>
+              <div style={{ padding: '6px 12px', backgroundColor: '#f1f5f9', borderBottom: '1px solid #cbd5e1', fontSize: '9.5px', fontWeight: '800', color: '#064e3b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"/><path d="m9 16 .348-.24c1.465-1.013 3.84-1.013 5.304 0L15 16"/><path d="M8 7h.01"/><path d="M16 7h.01"/><path d="M12 7h.01"/><path d="M12 11h.01"/><path d="M16 11h.01"/><path d="M8 11h.01"/></svg>
+                <span>KONAKLAMA VE OTEL STANDARTLARI</span>
               </div>
-              <table style={{ width: '100%', textAlign: 'left', fontSize: '11px', borderCollapse: 'collapse', border: '1px solid #e2e8f0' }}>
+              <table style={{ width: '100%', textAlign: 'left', fontSize: '9.5px', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f8fafc', color: '#334155', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
-                    <th style={{ padding: '8px 10px' }}>Bölge</th>
-                    <th style={{ padding: '8px 10px' }}>Otel Adı</th>
-                    <th style={{ padding: '8px 10px' }}>Süre</th>
-                    <th style={{ padding: '8px 10px' }}>Mescid Mesafesi</th>
-                    <th style={{ padding: '8px 10px' }}>Yemek Durumu</th>
+                  <tr style={{ backgroundColor: '#f8fafc', color: '#475569', fontWeight: 'bold', borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ padding: '6px 10px' }}>Bölge</th>
+                    <th style={{ padding: '6px 10px' }}>Otel Adı</th>
+                    <th style={{ padding: '6px 10px' }}>Süre</th>
+                    <th style={{ padding: '6px 10px' }}>Mescid Mesafesi</th>
+                    <th style={{ padding: '6px 10px' }}>Yemek Durumu</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: '800', color: '#065f46' }}>MEKKE-İ MÜKERREME</td>
-                    <td style={{ padding: '8px 10px', fontWeight: '600' }}>
+                  <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>MEKKE-İ MÜKERREME</td>
+                    <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
                       {quotation.makkahDays > 0 ? (quotation.pkgDetails?.hotelMakkah || 'Merkezi Otel') : 'Konaklama Yok'}
                     </td>
-                    <td style={{ padding: '8px 10px', fontWeight: 'bold' }}>
+                    <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>
                       {quotation.makkahDays > 0 ? `${quotation.makkahDays} Gece / Gün` : '0 Gün'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#475569' }}>
+                    <td style={{ padding: '6px 10px', color: '#475569' }}>
                       {quotation.makkahDays > 0 ? (quotation.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis') : '-'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: quotation.makkahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '600' }}>
-                      {quotation.makkahDays > 0 ? 'Sabah & Akşam Tabldot/Büfe' : 'Dahil Değil'}
+                    <td style={{ padding: '6px 10px', color: quotation.makkahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '700' }}>
+                      {quotation.makkahDays > 0 ? (quotation.pkgDetails?.mealMakkah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '8px 10px', fontWeight: '800', color: '#92400e' }}>MEDİNE-İ MÜNEVVERE</td>
-                    <td style={{ padding: '8px 10px', fontWeight: '600' }}>
+                    <td style={{ padding: '6px 10px', fontWeight: '800', color: '#92400e' }}>MEDİNE-İ MÜNEVVERE</td>
+                    <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
                       {quotation.madinahDays > 0 ? (quotation.pkgDetails?.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}
                     </td>
-                    <td style={{ padding: '8px 10px', fontWeight: 'bold' }}>
+                    <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>
                       {quotation.madinahDays > 0 ? `${quotation.madinahDays} Gece / Gün` : '0 Gün'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: '#475569' }}>
+                    <td style={{ padding: '6px 10px', color: '#475569' }}>
                       {quotation.madinahDays > 0 ? (quotation.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi') : '-'}
                     </td>
-                    <td style={{ padding: '8px 10px', color: quotation.madinahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '600' }}>
-                      {quotation.madinahDays > 0 ? 'Sabah & Akşam Tabldot/Büfe' : 'Dahil Değil'}
+                    <td style={{ padding: '6px 10px', color: quotation.madinahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '700' }}>
+                      {quotation.madinahDays > 0 ? (quotation.pkgDetails?.mealMadinah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Transfer Routes Detail */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '6px', borderBottom: '2px solid #a7f3d0', paddingBottom: '4px' }}>
-                ULAŞIM VE İÇ HAT TRANSFERLERİ
+            {/* Transfers (Rounded 12px Card) */}
+            <div style={{ marginBottom: '10px', borderRadius: '12px', border: '1.5px solid #e2e8f0', padding: '8px 12px', backgroundColor: '#ffffff' }}>
+              <div style={{ fontSize: '9.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '6px', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 11 2 11.5 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                <span>ULAŞIM VE İÇ HAT TRANSFERLERİ (ARAÇ DURUMU)</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '10.5px' }}>
-                <div style={{ padding: '8px 10px', borderRadius: '6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontWeight: 'bold', color: '#334155', display: 'block' }}>Cidde - Mekke:</span>
-                  <span style={{ color: transfers.jedMek?.vehicleType === 'none' ? '#dc2626' : '#047857', fontWeight: '600' }}>
-                    {getTransferDesc(transfers.jedMek)}
-                  </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '9px' }}>
+                <div style={{ padding: '6px 10px', borderRadius: '8px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontWeight: '800', color: '#475569', display: 'block', fontSize: '8.5px' }}>Cidde - Mekke:</span>
+                  <span style={{ fontWeight: '700', color: '#064e3b', fontSize: '10px', marginTop: '1px', display: 'block' }}>{getTransferText(transfers.jedMek)}</span>
                 </div>
-                <div style={{ padding: '8px 10px', borderRadius: '6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontWeight: 'bold', color: '#334155', display: 'block' }}>Mekke - Medine:</span>
-                  <span style={{ color: transfers.mekMed?.vehicleType === 'none' ? '#dc2626' : '#047857', fontWeight: '600' }}>
-                    {getTransferDesc(transfers.mekMed)}
-                  </span>
+                <div style={{ padding: '6px 10px', borderRadius: '8px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontWeight: '800', color: '#475569', display: 'block', fontSize: '8.5px' }}>Mekke - Medine:</span>
+                  <span style={{ fontWeight: '700', color: '#064e3b', fontSize: '10px', marginTop: '1px', display: 'block' }}>{getTransferText(transfers.mekMed)}</span>
                 </div>
-                <div style={{ padding: '8px 10px', borderRadius: '6px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <span style={{ fontWeight: 'bold', color: '#334155', display: 'block' }}>Medine - Havaalanı:</span>
-                  <span style={{ color: transfers.medAir?.vehicleType === 'none' ? '#dc2626' : '#047857', fontWeight: '600' }}>
-                    {getTransferDesc(transfers.medAir)}
-                  </span>
+                <div style={{ padding: '6px 10px', borderRadius: '8px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontWeight: '800', color: '#475569', display: 'block', fontSize: '8.5px' }}>Medine - Havaalanı:</span>
+                  <span style={{ fontWeight: '700', color: '#064e3b', fontSize: '10px', marginTop: '1px', display: 'block' }}>{getTransferText(transfers.medAir)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Room Price Cards or Mixed Rooms Group Pricing */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '8px', borderBottom: '2px solid #a7f3d0', paddingBottom: '4px' }}>
-                {quotation.isMixedRoomMode ? 'KARMA GRUP KONAKLAMA DAĞILIMI & FİYATLANDIRMA' : 'FİYATLANDIRMA SEÇENEKLERİ (ODA TİPİNE GÖRE KİŞİ BAŞI)'}
+            {/* Pricing Matrix: ONLY CHOSEN ROOM (Rounded 12px Card) */}
+            <div style={{
+              marginBottom: '10px',
+              borderRadius: '12px',
+              border: '1.5px solid #e2e8f0',
+              padding: '10px 14px',
+              backgroundColor: '#ffffff'
+            }}>
+              <div style={{ fontSize: '9.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '6px', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+                <span>{quotation.isMixedRoomMode ? 'KARMA GRUP KONAKLAMA DAĞILIMI & ODA MALİYETLERİ' : 'SEÇİLEN ODA TİPİ & ODA MALİYETİ'}</span>
               </div>
 
               {quotation.isMixedRoomMode && quotation.mixedRoomsSummary ? (
-                <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1.5px solid #86efac' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center', marginBottom: '10px' }}>
-                    <div style={{ padding: '8px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '800', color: '#475569' }}>1 KİŞİLİK</div>
-                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.singleRooms} Oda</div>
-                      <div style={{ fontSize: '9px', color: '#64748b' }}>{quotation.mixedRoomsSummary.singleRooms * 1} Misafir</div>
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', textAlign: 'center', marginBottom: '8px' }}>
+                    <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>1 KİŞİLİK</div>
+                      <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.singleRooms} Oda</div>
+                      <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.singleRooms * 1} Misafir</div>
+                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
+                        ${getRoomCost(1).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
+                      </div>
                     </div>
-                    <div style={{ padding: '8px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '800', color: '#475569' }}>2 KİŞİLİK</div>
-                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.doubleRooms} Oda</div>
-                      <div style={{ fontSize: '9px', color: '#64748b' }}>{quotation.mixedRoomsSummary.doubleRooms * 2} Misafir</div>
+                    <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>2 KİŞİLİK</div>
+                      <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.doubleRooms} Oda</div>
+                      <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.doubleRooms * 2} Misafir</div>
+                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
+                        ${getRoomCost(2).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
+                      </div>
                     </div>
-                    <div style={{ padding: '8px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '800', color: '#475569' }}>3 KİŞİLİK</div>
-                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.tripleRooms} Oda</div>
-                      <div style={{ fontSize: '9px', color: '#64748b' }}>{quotation.mixedRoomsSummary.tripleRooms * 3} Misafir</div>
+                    <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>3 KİŞİLİK</div>
+                      <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.tripleRooms} Oda</div>
+                      <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.tripleRooms * 3} Misafir</div>
+                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
+                        ${getRoomCost(3).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
+                      </div>
                     </div>
-                    <div style={{ padding: '8px', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '800', color: '#475569' }}>4 KİŞİLİK</div>
-                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.quadRooms} Oda</div>
-                      <div style={{ fontSize: '9px', color: '#64748b' }}>{quotation.mixedRoomsSummary.quadRooms * 4} Misafir</div>
+                    <div style={{ padding: '6px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#475569' }}>4 KİŞİLİK</div>
+                      <div style={{ fontSize: '12px', fontWeight: '900', color: '#064e3b' }}>{quotation.mixedRoomsSummary.quadRooms} Oda</div>
+                      <div style={{ fontSize: '8px', color: '#64748b' }}>{quotation.mixedRoomsSummary.quadRooms * 4} Misafir</div>
+                      <div style={{ marginTop: '3px', padding: '3px', borderTop: '1px dashed #cbd5e1', fontSize: '9px', fontWeight: '800', color: '#047857' }}>
+                        ${getRoomCost(4).usd} <span style={{ fontSize: '7.5px', fontWeight: 'normal', color: '#64748b' }}>/Kişi</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #bbf7d0', paddingTop: '8px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '4px', fontSize: '9.5px' }}>
                     <div>
                       <span style={{ color: '#475569' }}>Toplam Konaklama: </span>
-                      <strong style={{ color: '#0f172a' }}>{quotation.mixedRoomsSummary.totalRooms} Oda ({quotation.mixedRoomsSummary.totalPax} Kişi)</strong>
+                      <strong style={{ color: '#0f172a' }}>{quotation.mixedRoomsSummary.totalRooms} Oda ({quotation.mixedRoomsSummary.totalPax} Misafir)</strong>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ color: '#475569' }}>Grup Toplam Teklif: </span>
-                      <strong style={{ fontSize: '15px', color: '#064e3b' }}>${(quotation.finalPriceUSD * (quotation.paxCount || 1)).toLocaleString('tr-TR')} USD</strong>
-                      <span style={{ fontSize: '10.5px', color: '#64748b', marginLeft: '6px' }}>(Ort. ${quotation.finalPriceUSD?.toLocaleString('tr-TR')} USD / Kişi)</span>
+                    <div style={{ color: '#64748b', fontSize: '8.5px' }}>
+                      * Belirtilen tutarlar her oda tipini seçen misafirlerin kişi başı otel konaklama maliyetleridir.
                     </div>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', textAlign: 'center' }}>
-                  {/* 2 Kişilik */}
-                  <div style={{ padding: '10px', borderRadius: '8px', border: quotation.makkahRoomOccupancy === 2 ? '2px solid #059669' : '1px solid #cbd5e1', backgroundColor: quotation.makkahRoomOccupancy === 2 ? '#ecfdf5' : '#f8fafc' }}>
-                    <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#334155', display: 'block' }}>2 KİŞİLİK ODA</span>
-                    <div style={{ fontSize: '17px', fontWeight: '900', color: '#064e3b', marginTop: '3px' }}>
-                      ${doubleRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
-                    </div>
-                    <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>
-                      ~{doubleRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                    </div>
-                  </div>
-
-                  {/* 3 Kişilik */}
-                  <div style={{ padding: '10px', borderRadius: '8px', border: quotation.makkahRoomOccupancy === 3 ? '2px solid #059669' : '1px solid #cbd5e1', backgroundColor: quotation.makkahRoomOccupancy === 3 ? '#ecfdf5' : '#f8fafc' }}>
-                    <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#334155', display: 'block' }}>3 KİŞİLİK ODA</span>
-                    <div style={{ fontSize: '17px', fontWeight: '900', color: '#064e3b', marginTop: '3px' }}>
-                      ${tripleRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
-                    </div>
-                    <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>
-                      ~{tripleRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div>
+                    <span style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>
+                      SEÇİLEN ODA KATEGORİSİ
+                    </span>
+                    <div style={{ fontSize: '13.5px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                      {quotation.makkahRoomOccupancy || 2} Kişilik Oda
                     </div>
                   </div>
 
-                  {/* 4 Kişilik */}
-                  <div style={{ padding: '10px', borderRadius: '8px', border: quotation.makkahRoomOccupancy === 4 ? '2px solid #059669' : '1px solid #cbd5e1', backgroundColor: quotation.makkahRoomOccupancy === 4 ? '#ecfdf5' : '#f8fafc' }}>
-                    <span style={{ fontSize: '10.5px', fontWeight: '800', color: '#334155', display: 'block' }}>4 KİŞİLİK ODA</span>
-                    <div style={{ fontSize: '17px', fontWeight: '900', color: '#064e3b', marginTop: '3px' }}>
-                      ${quadRoom.finalPriceUSD?.toLocaleString('tr-TR')} USD
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '8.5px', fontWeight: '800', color: '#047857', display: 'block' }}>
+                      ODA KİŞİ BAŞI MALİYETİ
+                    </span>
+                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b', marginTop: '1px' }}>
+                      ${getRoomCost(quotation.makkahRoomOccupancy || 2).usd?.toLocaleString('tr-TR')} USD
                     </div>
-                    <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>
-                      ~{quadRoom.finalPriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                    <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: '600' }}>
+                      ~{getRoomCost(quotation.makkahRoomOccupancy || 2).try?.toLocaleString('tr-TR')} ₺ / Kişi
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Included & Excluded Services (100% Genuine Dynamic Matching) */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#064e3b', marginBottom: '8px', borderBottom: '2px solid #a7f3d0', paddingBottom: '4px' }}>
-                DAHİL / HARİÇ HİZMETLER DÖKÜMÜ
+            {/* Inclusions & Exclusions List (Rounded 12px Box) */}
+            <div style={{ marginBottom: '10px', borderRadius: '12px', border: '1.5px solid #e2e8f0', padding: '8px 12px', backgroundColor: '#ffffff' }}>
+              <div style={{ fontSize: '9.5px', fontWeight: '800', textTransform: 'uppercase', color: '#064e3b', marginBottom: '4px', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                <span>FİYATA DAHİL OLAN HİZMETLER VE AYRICALIKLAR</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '20px', rowGap: '5px', fontSize: '10.5px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '3.5px', fontSize: '9px' }}>
                 
-                {/* Uçak */}
-                <div style={{ color: (fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8' }}>
-                  {(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '✓ Gidiş-Dönüş Uçak Bileti (Dahil)' : '— Uçak Bileti (Dahil Değil / Kendi Temin Eder)'}
+                <div style={{ color: (fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
+                  {(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '✓ Gidiş-Dönüş Uçak Bileti (Dahil)' : '— Uçak Bileti (Dahil Değil)'}
                 </div>
 
-                {/* Vize */}
-                <div style={{ color: (fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8' }}>
-                  {(fixed.visaTaxSAR || fixed.visaSAR) ? '✓ Suudi Arabistan Elektronik Umre Vizesi (Dahil)' : '— Umre Vizesi (Dahil Değil)'}
+                <div style={{ color: (fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
+                  {(fixed.visaTaxSAR || fixed.visaSAR) ? '✓ Suudi Arabistan Umre Vizesi (Dahil)' : '— Umre Vizesi (Dahil Değil)'}
                 </div>
 
-                {/* Sigorta */}
-                <div style={{ color: fixed.insuranceSAR ? '#065f46' : '#94a3b8' }}>
-                  {fixed.insuranceSAR ? '✓ Kapsamlı Sağlık ve Seyahat Sigortası (Dahil)' : '— Seyahat Sigortası (Dahil Değil)'}
+                <div style={{ color: fixed.insuranceSAR ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
+                  {fixed.insuranceSAR ? '✓ Kapsamlı Sağlık & Seyahat Sigortası (Dahil)' : '— Seyahat Sigortası (Dahil Değil)'}
                 </div>
 
-                {/* Rehberlik */}
-                <div style={{ color: (fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8' }}>
+                <div style={{ color: (fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
                   {(fixed.guideSAR || fixed.guidanceSAR) ? '✓ Kutsal Mekan Ziyaretleri & Rehberlik (Dahil)' : '— Rehberlik Hizmeti (Dahil Değil)'}
                 </div>
 
-                {/* Çanta */}
-                <div style={{ color: (fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8' }}>
-                  {(fixed.bagSAR || fixed.scarfSAR) ? '✓ İnzar Turizm Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
+                <div style={{ color: (fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
+                  {(fixed.bagSAR || fixed.scarfSAR) ? '✓ Seyahat Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
                 </div>
 
-                {/* Zemzem */}
-                <div style={{ color: fixed.zamzamSAR ? '#065f46' : '#94a3b8' }}>
+                <div style={{ color: fixed.zamzamSAR ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
                   {fixed.zamzamSAR ? '✓ 5 Litre Orijinal Zemzem Suyu İkramı (Dahil)' : '— Zemzem İkramı (Dahil Değil)'}
                 </div>
 
-                {/* Oteller */}
-                <div style={{ color: (quotation.makkahDays > 0 || quotation.madinahDays > 0) ? '#065f46' : '#94a3b8' }}>
-                  {(quotation.makkahDays > 0 || quotation.madinahDays > 0) ? '✓ Belirtilen Sürede Otel Konaklamaları (Dahil)' : '— Otel Konaklaması (Dahil Değil)'}
+                <div style={{ color: (quotation.makkahDays > 0 || quotation.madinahDays > 0) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
+                  {(quotation.makkahDays > 0 || quotation.madinahDays > 0) ? '✓ Otellerde Program Süresince Konaklama (Dahil)' : '— Otel Konaklaması (Dahil Değil)'}
                 </div>
 
-                {/* 7/24 Destek */}
-                <div style={{ color: '#065f46' }}>
-                  ✓ 7/24 İnzar Turizm Saha & Koordinasyon Desteği
+                <div style={{ color: '#065f46', fontWeight: '700' }}>
+                  ✓ 7/24 Havalimanı Karşılama, Transfer & Saha Koordinasyon Desteği
                 </div>
 
               </div>
             </div>
 
-            {/* Footer / Signatures */}
-            <div style={{ marginTop: '28px', paddingTop: '14px', borderTop: '2px solid #cbd5e1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px', fontSize: '10px', color: '#64748b' }}>
+            {/* Total Service Bedeli (Rounded 12px Card) */}
+            <div style={{ 
+              marginBottom: '10px', 
+              borderRadius: '12px', 
+              border: '1.5px solid #a7f3d0', 
+              padding: '8px 12px', 
+              backgroundColor: '#ecfdf5' 
+            }}>
+              <div style={{ 
+                fontSize: '9.5px', 
+                fontWeight: '800', 
+                textTransform: 'uppercase', 
+                color: '#064e3b', 
+                marginBottom: '6px', 
+                letterSpacing: '0.4px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px' 
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-2-2"/></svg>
+                <span>{quotation.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
+              </div>
+
+              {quotation.isMixedRoomMode && quotation.mixedRoomsBreakdown ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', textAlign: 'center' }}>
+                  <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>1 KİŞİLİK ODA</div>
+                    <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                      ${quotation.mixedRoomsBreakdown.single.priceUSD?.toLocaleString('tr-TR')} USD
+                    </div>
+                    <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
+                      ~{quotation.mixedRoomsBreakdown.single.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>2 KİŞİLİK ODA</div>
+                    <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                      ${quotation.mixedRoomsBreakdown.double.priceUSD?.toLocaleString('tr-TR')} USD
+                    </div>
+                    <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
+                      ~{quotation.mixedRoomsBreakdown.double.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>3 KİŞİLİK ODA</div>
+                    <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                      ${quotation.mixedRoomsBreakdown.triple.priceUSD?.toLocaleString('tr-TR')} USD
+                    </div>
+                    <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
+                      ~{quotation.mixedRoomsBreakdown.triple.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>4 KİŞİLİK ODA</div>
+                    <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                      ${quotation.mixedRoomsBreakdown.quad.priceUSD?.toLocaleString('tr-TR')} USD
+                    </div>
+                    <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
+                      ~{quotation.mixedRoomsBreakdown.quad.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#064e3b' }}>
+                      {quotation.makkahRoomOccupancy || 2} Kişilik Oda (1 Kişi Toplam Paket Ücreti)
+                    </div>
+                    <div style={{ fontSize: '8.5px', color: '#475569', marginTop: '1px' }}>
+                      Otel Konaklaması, Vize, Uçak Bileti, Araç/Transferler ve Tüm Dahili Hizmetler Dahildir.
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '15px', fontWeight: '900', color: '#064e3b' }}>
+                      ${quotation.finalPriceUSD?.toLocaleString('tr-TR')} USD
+                    </div>
+                    <div style={{ fontSize: '9px', color: '#047857', fontWeight: '800' }}>
+                      ~{quotation.finalPriceTRY?.toLocaleString('tr-TR')} ₺ (Kişi Başı)
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Vurgulu Toplam Bedel (Standalone) */}
+            <div style={{ 
+              marginBottom: '10px',
+              padding: '10px 16px', 
+              borderRadius: '12px', 
+              backgroundColor: '#064e3b', 
+              color: '#ffffff',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              boxShadow: '0 4px 12px rgba(6, 78, 59, 0.25)',
+              border: '1.5px solid #047857'
+            }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '800', color: '#1e293b', textTransform: 'uppercase' }}>Açıklamalar & Şartlar:</p>
-                <ul style={{ margin: '3px 0 0 0', paddingLeft: '14px', lineHeight: '1.4' }}>
+                <div style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px', color: '#fef08a' }}>
+                  {quotation.isMixedRoomMode && quotation.mixedRoomsSummary ? 'GRUP GENEL TOPLAM HİZMET BEDELİ' : `TOPLAM HİZMET BEDELİ (${Number(quotation.paxCount) || 1} KİŞİ)`}
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#fbbf24', letterSpacing: '-0.3px', lineHeight: '1' }}>
+                  ${((quotation.isMixedRoomMode && quotation.mixedRoomsSummary?.groupGrandTotalUSD) ? quotation.mixedRoomsSummary.groupGrandTotalUSD : ((quotation.finalPriceUSD || 0) * (Number(quotation.paxCount) || 1))).toLocaleString('tr-TR')} USD
+                </div>
+                <div style={{ fontSize: '10px', color: '#d1fae5', fontWeight: '700', marginTop: '2px' }}>
+                  ~{((quotation.isMixedRoomMode && quotation.mixedRoomsSummary?.groupGrandTotalTRY) ? quotation.mixedRoomsSummary.groupGrandTotalTRY : ((quotation.finalPriceTRY || 0) * (Number(quotation.paxCount) || 1))).toLocaleString('tr-TR')} ₺ (TCMB Kuruna Göre)
+                </div>
+              </div>
+            </div>
+
+            {/* Footer / Signatures (Rounded 12px Card) */}
+            <div style={{
+              borderRadius: '12px',
+              border: '1.5px solid #cbd5e1',
+              padding: '8px 12px',
+              backgroundColor: '#f8fafc',
+              display: 'grid',
+              gridTemplateColumns: '1.2fr 1fr',
+              gap: '16px',
+              fontSize: '8.5px',
+              color: '#64748b'
+            }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '800', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.2px' }}>Açıklamalar & Şartlar:</p>
+                <ul style={{ margin: '2px 0 0 0', paddingLeft: '12px', lineHeight: '1.35' }}>
                   <li>Fiyatlar döviz kuru TCMB serbest piyasaya göre anlık hesaplanmıştır.</li>
                   <li>Kesin kayıt için pasaport fotokopisi ve kapora ödemesi gerekmektedir.</li>
                   <li>Uçuş saatleri ve hava yolu şirketleri kontenjan durumuna göre teyit edilir.</li>
@@ -433,11 +609,11 @@ export default function QuotationPdfModal({ quotation, onClose }) {
 
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '11px' }}>İNZAR TURİZM GENEL MERKEZİ</div>
-                  <div style={{ color: '#475569', marginTop: '2px' }}>Yetkili Temsilci: <strong>{quotation.agentName || quotation.createdByName || 'Satış Departmanı'}</strong></div>
+                  <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '9.5px' }}>İNZAR TURİZM GENEL MERKEZİ</div>
+                  <div style={{ color: '#475569', marginTop: '1px' }}>Yetkili Satış Danışmanı: <strong>{quotation.agentName || quotation.createdByName || 'Satış Departmanı'}</strong></div>
                 </div>
-                <div style={{ paddingTop: '12px' }}>
-                  <div style={{ display: 'inline-block', borderBottom: '1px dashed #94a3b8', width: '140px', textAlign: 'center', color: '#94a3b8', fontSize: '9px' }}>
+                <div style={{ paddingTop: '4px' }}>
+                  <div style={{ display: 'inline-block', borderBottom: '1.5px dashed #94a3b8', width: '130px', textAlign: 'center', color: '#94a3b8', fontSize: '8px' }}>
                     Kaşe / Yetkili İmza
                   </div>
                 </div>

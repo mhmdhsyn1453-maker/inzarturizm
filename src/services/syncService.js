@@ -109,6 +109,8 @@ class SyncService {
           hotelMadinah: p.hotel_madinah,
           distanceMakkah: p.distance_makkah,
           distanceMadinah: p.distance_madinah,
+          mealMakkah: p.meal_makkah || p.mealMakkah || 'Sabah & Akşam Açık Büfe / Tabldot',
+          mealMadinah: p.meal_madinah || p.mealMadinah || 'Sabah & Akşam Açık Büfe / Tabldot',
           defaultDaysMakkah: p.default_days_makkah,
           defaultDaysMadinah: p.default_days_madinah,
           makkahFoodPriceSAR: p.makkah_prices?.food || 40,
@@ -336,6 +338,8 @@ class SyncService {
             hotel_madinah: pkg.hotelMadinah || '',
             distance_makkah: pkg.distanceMakkah || '',
             distance_madinah: pkg.distanceMadinah || '',
+            meal_makkah: pkg.mealMakkah || 'Sabah & Akşam Açık Büfe / Tabldot',
+            meal_madinah: pkg.mealMadinah || 'Sabah & Akşam Açık Büfe / Tabldot',
             default_days_makkah: pkg.defaultDaysMakkah || 10,
             default_days_madinah: pkg.defaultDaysMadinah || 4,
             makkah_prices: {

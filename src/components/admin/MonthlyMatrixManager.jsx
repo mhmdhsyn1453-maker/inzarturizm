@@ -263,43 +263,59 @@ export default function MonthlyMatrixManager() {
             
             {/* Mekke Hotel */}
             <div className="bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 transition-all hover:border-slate-300">
-              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                <span>🕋 Mekke Oteli & Mesafesi</span>
+              <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                <span>🕋 Mekke Oteli & Bilgileri</span>
+                <span className="text-[10px] text-emerald-700 font-semibold">PDF'te Gözükür</span>
               </label>
               <input
                 type="text"
                 value={localPkg.hotelMakkah || ''}
                 onChange={(e) => setLocalPkg({ ...localPkg, hotelMakkah: e.target.value })}
-                placeholder="Otel adı..."
+                placeholder="Otel adı... (Örn: Merkez Otel)"
                 className="w-full bg-white font-semibold text-slate-900 rounded-xl px-3 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 text-xs shadow-2xs"
               />
               <input
                 type="text"
                 value={localPkg.distanceMakkah || ''}
                 onChange={(e) => setLocalPkg({ ...localPkg, distanceMakkah: e.target.value })}
-                placeholder="Mesafe..."
+                placeholder="Mesafe... (Örn: 1200m Ring Servis)"
                 className="w-full bg-white text-slate-600 rounded-xl px-3 py-1 border border-slate-200 focus:outline-none focus:border-emerald-600 text-[11px]"
+              />
+              <input
+                type="text"
+                value={localPkg.mealMakkah || ''}
+                onChange={(e) => setLocalPkg({ ...localPkg, mealMakkah: e.target.value })}
+                placeholder="Yemek Durumu (Örn: Sabah & Akşam Açık Büfe)"
+                className="w-full bg-emerald-50/60 font-medium text-emerald-900 rounded-xl px-3 py-1 border border-emerald-300/80 focus:outline-none focus:border-emerald-600 text-[11px]"
               />
             </div>
 
             {/* Medine Hotel */}
             <div className="bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 transition-all hover:border-slate-300">
-              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                <span>🕌 Medine Oteli & Mesafesi</span>
+              <label className="text-[11px] font-bold text-slate-700 flex items-center justify-between">
+                <span>🕌 Medine Oteli & Bilgileri</span>
+                <span className="text-[10px] text-emerald-700 font-semibold">PDF'te Gözükür</span>
               </label>
               <input
                 type="text"
                 value={localPkg.hotelMadinah || ''}
                 onChange={(e) => setLocalPkg({ ...localPkg, hotelMadinah: e.target.value })}
-                placeholder="Otel adı..."
+                placeholder="Otel adı... (Örn: Al Eiman Taibah)"
                 className="w-full bg-white font-semibold text-slate-900 rounded-xl px-3 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 text-xs shadow-2xs"
               />
               <input
                 type="text"
                 value={localPkg.distanceMadinah || ''}
                 onChange={(e) => setLocalPkg({ ...localPkg, distanceMadinah: e.target.value })}
-                placeholder="Mesafe..."
+                placeholder="Mesafe... (Örn: 350m Yürüme Mesafesi)"
                 className="w-full bg-white text-slate-600 rounded-xl px-3 py-1 border border-slate-200 focus:outline-none focus:border-emerald-600 text-[11px]"
+              />
+              <input
+                type="text"
+                value={localPkg.mealMadinah || ''}
+                onChange={(e) => setLocalPkg({ ...localPkg, mealMadinah: e.target.value })}
+                placeholder="Yemek Durumu (Örn: Sabah & Akşam Açık Büfe)"
+                className="w-full bg-emerald-50/60 font-medium text-emerald-900 rounded-xl px-3 py-1 border border-emerald-300/80 focus:outline-none focus:border-emerald-600 text-[11px]"
               />
             </div>
 

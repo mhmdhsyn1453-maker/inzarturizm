@@ -36,6 +36,8 @@ export const DEFAULT_PACKAGES = [
     hotelMadinah: 'Al Eiman Taibah / Maden Hotel (350m)',
     distanceMakkah: '1200m (24 Saat Ücretsiz Ring Servis)',
     distanceMadinah: '350m (Yürüme Mesafesi)',
+    mealMakkah: 'Sabah & Akşam Tabldot (Türk Mutfağı)',
+    mealMadinah: 'Sabah & Akşam Tabldot (Türk Mutfağı)',
     isFeatured: false,
     color: '#0284c7', // Sky Blue
     badge: 'Ekonomik Tercih',
@@ -87,6 +89,8 @@ export const DEFAULT_PACKAGES = [
     hotelMadinah: 'Rove Al Madinah / Leader Al Muna',
     distanceMakkah: '0-250m (Harem Avlusu)',
     distanceMadinah: '150m (Mescid-i Nebevi Karşısı)',
+    mealMakkah: 'Sabah & Akşam Açık Büfe',
+    mealMadinah: 'Sabah & Akşam Açık Büfe',
     isFeatured: true,
     color: '#059669', // Emerald
     badge: 'En Çok Tercih Edilen',
@@ -137,6 +141,8 @@ export const DEFAULT_PACKAGES = [
     hotelMadinah: 'Oberoi Madinah / Dar Al Taqwa',
     distanceMakkah: '0m (Saat Kulesi Doğrudan Avlu)',
     distanceMadinah: '0m (Mescid Avlusunda)',
+    mealMakkah: 'Sabah & Akşam Lüks Açık Büfe',
+    mealMadinah: 'Sabah & Akşam Lüks Açık Büfe',
     isFeatured: false,
     color: '#d97706', // Gold / Amber
     badge: 'VIP & Ultra Lüks',

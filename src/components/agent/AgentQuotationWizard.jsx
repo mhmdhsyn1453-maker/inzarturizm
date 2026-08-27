@@ -537,7 +537,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start font-sans">
             {/* Left 7/8 Columns: Configuration Form */}
-            <div className="lg:col-span-7 xl:col-span-8 space-y-6 pb-24">
+            <div className="lg:col-span-7 xl:col-span-8 min-w-0 space-y-6 pb-24">
 
         {/* Step 1: Seyahat Dönemi / Ayı */}
         <div id="step-1" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
@@ -1018,68 +1018,69 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       : 'bg-white border-slate-200/90 shadow-3xs hover:border-slate-300'
                   }`}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 min-w-0">
                     
-                    {/* 1. Sol: Güzergah Adı ve İkonu (Sabit Genişlik) */}
-                    <div className="flex items-center gap-2.5 font-bold text-xs text-slate-900 lg:w-56 shrink-0">
+                    {/* 1. Sol: Güzergah Adı ve İkonu */}
+                    <div className="flex items-center gap-2.5 font-bold text-xs text-slate-900 xl:w-52 shrink-0 min-w-0">
                       <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
                         sel.vehicleType === 'none' ? 'bg-slate-100 text-slate-400' : 'bg-sky-100 text-sky-700 shadow-3xs'
                       }`}>
                         <Car className="h-4 w-4 shrink-0" />
                       </div>
-                      <div>
-                        <span className="font-extrabold text-slate-900 block leading-tight">{route.label}</span>
-                        <span className="text-[10px] text-slate-400 font-semibold">Özel Transfer Rotası</span>
+                      <div className="min-w-0">
+                        <span className="font-extrabold text-slate-900 block leading-tight truncate">{route.label}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold block">Özel Transfer Rotası</span>
                       </div>
                     </div>
 
-                    {/* 2. Orta: Araç Seçim Butonları (Her 3 Satırda Tam Aynı Hizada) */}
-                    <div className="flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200/80 rounded-full select-none shrink-0 self-start lg:self-auto">
-                      {/* Binek Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleTransferChange(route.id, 'vehicleType', 'small')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
-                          sel.vehicleType === 'small'
-                            ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white shadow-xs shadow-sky-600/30'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                        }`}
-                      >
-                        Binek ({smallCost} SAR)
-                      </button>
+                    {/* 2. Orta & Sağ: Araç Seçim Butonları + Kişi Sayacı & Formül Kutusu */}
+                    <div className="flex flex-wrap items-center gap-2.5 justify-start xl:justify-end flex-1 min-w-0">
+                      {/* Araç Seçim Butonları */}
+                      <div className="flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200/80 rounded-full select-none shrink-0">
+                        {/* Binek Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleTransferChange(route.id, 'vehicleType', 'small')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
+                            sel.vehicleType === 'small'
+                              ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white shadow-xs shadow-sky-600/30'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          Binek ({smallCost} SAR)
+                        </button>
 
-                      {/* Otobüs Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleTransferChange(route.id, 'vehicleType', 'big')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
-                          sel.vehicleType === 'big'
-                            ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs shadow-emerald-800/30'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                        }`}
-                      >
-                        Otobüs ({bigCost} SAR)
-                      </button>
+                        {/* Otobüs Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleTransferChange(route.id, 'vehicleType', 'big')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
+                            sel.vehicleType === 'big'
+                              ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs shadow-emerald-800/30'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          Otobüs ({bigCost} SAR)
+                        </button>
 
-                      {/* Yok Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleTransferChange(route.id, 'vehicleType', 'none')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
-                          sel.vehicleType === 'none'
-                            ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-xs shadow-rose-500/30'
-                            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
-                        }`}
-                      >
-                        Yok
-                      </button>
-                    </div>
+                        {/* Yok Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleTransferChange(route.id, 'vehicleType', 'none')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
+                            sel.vehicleType === 'none'
+                              ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-xs shadow-rose-500/30'
+                              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'
+                          }`}
+                        >
+                          Yok
+                        </button>
+                      </div>
 
-                    {/* 3. Sağ: Kişi Sayacı & Formül Kutusu (Sağa Tam Hizalı) */}
-                    <div className="flex items-center gap-2 flex-wrap lg:justify-end lg:flex-1 min-h-[34px]">
+                      {/* Kişi Sayacı & Formül Kutusu */}
                       {sel.vehicleType !== 'none' ? (
-                        <div className="flex items-center gap-2 animate-fade-scale flex-wrap">
-                          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 shadow-3xs">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 shadow-3xs shrink-0">
                             <span className="text-[11px] font-bold text-slate-500 pl-0.5">Kişi:</span>
                             <button
                               type="button"
@@ -1103,12 +1104,13 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                           </div>
 
                           {/* Kişi Başı Bölüşüm Sonucu */}
-                          <span className="text-[11px] font-mono font-bold text-sky-900 bg-sky-50 px-3 py-1 rounded-xl border border-sky-200 shadow-3xs whitespace-nowrap">
-                            {sel.vehicleType === 'small' ? smallCost : bigCost} SAR ÷ {sel.passengerCount || 1} Kişi = <strong className="text-sky-950 font-black">{Math.round((sel.vehicleType === 'small' ? smallCost : bigCost) / (sel.passengerCount || 1))} SAR/kişi</strong>
+                          <span className="text-[11px] font-mono font-bold text-sky-900 bg-sky-50 px-2.5 py-1 rounded-xl border border-sky-200 shadow-3xs inline-flex items-center gap-1 flex-wrap">
+                            <span className="text-slate-500">{sel.vehicleType === 'small' ? smallCost : bigCost} SAR ÷ {sel.passengerCount || 1} =</span>
+                            <strong className="text-sky-950 font-black">{Math.round((sel.vehicleType === 'small' ? smallCost : bigCost) / (sel.passengerCount || 1))} SAR/kişi</strong>
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[11px] font-medium text-slate-400 bg-slate-100/70 px-3 py-1 rounded-full border border-slate-200/60 select-none">
+                        <span className="text-[11px] font-semibold text-slate-400 bg-slate-100/80 px-3 py-1 rounded-full border border-slate-200/60 select-none">
                           Transfer Pakete Dahil Edilmedi
                         </span>
                       )}
@@ -1260,7 +1262,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       </div>
 
       {/* Right 4/5 Columns: Slightly Wider Fixed Full-Height Receipt Panel */}
-      <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] flex flex-col justify-start">
+      <div className="lg:col-span-5 xl:col-span-4 min-w-0 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] flex flex-col justify-start">
         <LiveQuoteCard
           quotation={currentQuotation}
           activePackage={activePackage}
