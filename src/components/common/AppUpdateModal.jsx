@@ -82,7 +82,9 @@ export default function AppUpdateModal() {
         {/* Notes */}
         {updateInfo.releaseNotes && (
           <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed bg-black/20 p-2.5 rounded-2xl border border-white/5 font-sans">
-            {typeof updateInfo.releaseNotes === 'string' ? updateInfo.releaseNotes : 'Performans iyileştirmeleri ve yeni özellikler içerir.'}
+            {typeof updateInfo.releaseNotes === 'string'
+              ? updateInfo.releaseNotes.replace(/<[^>]*>?/gm, '').trim()
+              : 'Performans iyileştirmeleri ve yeni özellikler içerir.'}
           </p>
         )}
 
