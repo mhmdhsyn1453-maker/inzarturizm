@@ -24,9 +24,12 @@ import {
   Crown,
   Eye,
   EyeOff,
-  AlertCircle,
-  Check,
-  Smartphone
+  AlertCircle, 
+  Check, 
+  Smartphone,
+  FolderDown,
+  Download,
+  RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatPhoneNumber } from '../../utils/phoneUtils';
@@ -66,6 +69,34 @@ export default function UserProfileView() {
   // 2FA Security Modal State
   const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false);
   const { showConfirm } = useModal();
+
+  // 📄 PDF İndirme Davranışı Tercihi State
+  const [pdfPref, setPdfPref] = useState(() => {
+    const dontAsk = localStorage.getItem('INZAR_PDF_DONT_ASK_AGAIN') === 'true';
+    const pref = localStorage.getItem('INZAR_PDF_SAVE_LOCATION_PREF');
+    if (!dontAsk) return 'always_ask';
+    return pref || 'always_ask';
+  });
+
+  const handleUpdatePdfPref = (newPref) => {
+    setPdfPref(newPref);
+    if (newPref === 'always_ask') {
+      localStorage.removeItem('INZAR_PDF_DONT_ASK_AGAIN');
+      localStorage.removeItem('INZAR_PDF_SAVE_LOCATION_PREF');
+    } else {
+      localStorage.setItem('INZAR_PDF_DONT_ASK_AGAIN', 'true');
+      localStorage.setItem('INZAR_PDF_SAVE_LOCATION_PREF', newPref);
+    }
+    showAlert({
+      title: 'İndirme Tercihi Güncellendi',
+      message: newPref === 'always_ask' 
+        ? 'PDF indirirken her defasında kayıt konumu tercihi sorulacaktır.' 
+        : newPref === 'picker'
+        ? 'PDF indirirken her zaman doğrudan klasör seçme penceresi (Farklı Kaydet) açılacaktır.'
+        : 'PDF indirirken her zaman doğrudan İndirilenler klasörüne hızlıca kaydedilecektir.',
+      type: 'success'
+    });
+  };
 
   const handleTwoFactorComplete = (data) => {
     if (currentUser?.id) {
@@ -641,6 +672,127 @@ export default function UserProfileView() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════
+              📄 PDF İNDİRME & SİSTEM DAVRANIŞI TERCİHLERİ KARTI
+             ══════════════════════════════════════════════════════════════ */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100/60 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-white border border-slate-300 text-emerald-700 shadow-2xs">
+                  <FolderDown className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <span>PDF İndirme & Kayıt Konumu Tercihi</span>
+                    <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                      pdfPref === 'always_ask'
+                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    }`}>
+                      {pdfPref === 'always_ask' ? 'Her Defasında Soruyor' : pdfPref === 'picker' ? 'Farklı Kaydet Sabit' : 'Hızlı İndir Sabit'}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    "PDF İndir" butonuna bastığınızda sistemin nasıl davranacağını buradan dilediğiniz an değiştirebilirsiniz.
+                  </p>
+                </div>
+              </div>
+
+              {pdfPref !== 'always_ask' && (
+                <button
+                  type="button"
+                  onClick={() => handleUpdatePdfPref('always_ask')}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98 shrink-0"
+                  title="Varsayılan duruma sıfırla"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Seçimi Sıfırla (Her Zaman Sor)</span>
+                </button>
+              )}
+            </div>
+
+            {/* 3 Tercih Seçenek Kartı */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* 1. Her Defasında Sor */}
+              <button
+                type="button"
+                onClick={() => handleUpdatePdfPref('always_ask')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                  pdfPref === 'always_ask'
+                    ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-white/70 hover:bg-white border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-8 w-8 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center">
+                    <FolderDown className="h-4 w-4" />
+                  </div>
+                  {pdfPref === 'always_ask' && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-900">Her Defasında Sor</div>
+                  <div className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                    Her butona basıldığında mini modal açılarak seçenek sorulur.
+                  </div>
+                </div>
+              </button>
+
+              {/* 2. Her Zaman Farklı Kaydet */}
+              <button
+                type="button"
+                onClick={() => handleUpdatePdfPref('picker')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                  pdfPref === 'picker'
+                    ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-white/70 hover:bg-white border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+                    <FolderDown className="h-4 w-4" />
+                  </div>
+                  {pdfPref === 'picker' && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-900">Her Zaman Farklı Kaydet</div>
+                  <div className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                    Sormadan doğrudan Windows Dosya Gezginini açar, klasör seçtirir.
+                  </div>
+                </div>
+              </button>
+
+              {/* 3. Her Zaman Hızlı İndir */}
+              <button
+                type="button"
+                onClick={() => handleUpdatePdfPref('direct')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                  pdfPref === 'direct'
+                    ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-white/70 hover:bg-white border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-8 w-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center">
+                    <Download className="h-4 w-4" />
+                  </div>
+                  {pdfPref === 'direct' && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-900">Her Zaman Hızlı İndir</div>
+                  <div className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                    Sormadan doğrudan İndirilenler klasörüne kaydeder.
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

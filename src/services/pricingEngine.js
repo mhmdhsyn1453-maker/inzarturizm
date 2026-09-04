@@ -1,13 +1,148 @@
-// İnzar Turizm - Aylık Otonom Tarife & Teklif Hesaplama Motoru
-// Seçilen seyahat ayına göre merkez otel fiyatlarını otonom çeker ve Excel formüllerini uygular.
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+// Format helper
+function addDaysToDateStr(dateStr, days) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+// Belirli bir şehir için gün gün otel oda ve yemek maliyetini hesaplar
+function calculateCityStayRates({
+  startDateStr,
+  nights,
+  city, // 'makkah' | 'madinah'
+  pkg,
+  selectedHotelId = null,
+  includeMeals = true,
+  selectedMonthFallback = 'nov'
+}) {
+  const totalNights = Number(nights) || 0;
+  if (totalNights <= 0) {
+    return {
+      avgRoomSAR: 0,
+      avgFoodSAR: 0,
+      totalRoomSAR: 0,
+      totalFoodSAR: 0,
+      daysBreakdown: [],
+      hasTariff: true,
+      unpricedDaysCount: 0,
+      missingTariffReason: null
+    };
+  }
+
+  const hotelList = city === 'makkah' ? (pkg.makkahHotels || []) : (pkg.madinahHotels || []);
+  const hotel = (selectedHotelId && hotelList.find(h => h.id === selectedHotelId)) || hotelList[0];
+
+  let totalRoomCost = 0;
+  let totalFoodCost = 0;
+  let unpricedDaysCount = 0;
+  const daysBreakdown = [];
+
+  let curr = startDateStr ? new Date(startDateStr) : null;
+
+  for (let i = 0; i < totalNights; i++) {
+    let dayIso = curr ? curr.toISOString().split('T')[0] : '';
+    let monthKey = selectedMonthFallback;
+    
+    if (curr && !isNaN(curr.getTime())) {
+      monthKey = MONTH_KEYS[curr.getMonth()] || selectedMonthFallback;
+    }
+
+    let dayRoomPrice = 0;
+    let dayFoodPrice = 0;
+    let isDayPriced = false;
+
+    // 1. Otelin Tarih Aralığı Fiyat Tarifeleri (dateRanges) kontrolü
+    if (dayIso && hotel && Array.isArray(hotel.dateRanges) && hotel.dateRanges.length > 0) {
+      const matchedRange = hotel.dateRanges.find(r => {
+        if (!r.startDate || !r.endDate) return false;
+        return dayIso >= r.startDate && dayIso <= r.endDate && Number(r.roomPriceSAR) > 0;
+      });
+
+      if (matchedRange) {
+        dayRoomPrice = Number(matchedRange.roomPriceSAR) || 0;
+        dayFoodPrice = includeMeals ? (Number(matchedRange.foodPriceSAR) || 0) : 0;
+        isDayPriced = true;
+      }
+    }
+
+    // 2. Eğer takvimden tarih seçilmemişse (sadece ay seçimi varsa) monthlyPrices devreye girer
+    if (!startDateStr && !isDayPriced) {
+      if (hotel?.monthlyPrices?.[monthKey]?.roomSAR) {
+        dayRoomPrice = Number(hotel.monthlyPrices[monthKey].roomSAR) || 0;
+        isDayPriced = dayRoomPrice > 0;
+      } else {
+        const mPrice = pkg.monthlyPrices?.[monthKey] || pkg.monthlyPrices?.nov || {};
+        dayRoomPrice = city === 'makkah' ? (Number(mPrice.makkahRoomSAR) || 0) : (Number(mPrice.madinahRoomSAR) || 0);
+        isDayPriced = dayRoomPrice > 0;
+      }
+
+      if (includeMeals && dayFoodPrice === 0) {
+        if (hotel?.monthlyPrices?.[monthKey]?.foodSAR) {
+          dayFoodPrice = Number(hotel.monthlyPrices[monthKey].foodSAR) || 0;
+        } else {
+          const mPrice = pkg.monthlyPrices?.[monthKey] || pkg.monthlyPrices?.nov || {};
+          const fallbackFood = city === 'makkah' ? 35 : 45;
+          dayFoodPrice = Number(mPrice[`${city}FoodSAR`] !== undefined ? mPrice[`${city}FoodSAR`] : (pkg[`${city}FoodPriceSAR`] || pkg[`${city}FoodSAR`] || fallbackFood));
+        }
+      }
+    }
+
+    if (!isDayPriced) {
+      unpricedDaysCount++;
+    }
+
+    totalRoomCost += dayRoomPrice;
+    totalFoodCost += dayFoodPrice;
+
+    daysBreakdown.push({
+      date: dayIso,
+      dayIndex: i + 1,
+      monthKey,
+      roomPriceSAR: dayRoomPrice,
+      foodPriceSAR: dayFoodPrice,
+      isDayPriced
+    });
+
+    if (curr) {
+      curr.setDate(curr.getDate() + 1);
+    }
+  }
+
+  const hasTariff = totalNights > 0 && unpricedDaysCount === 0 && totalRoomCost > 0;
+  const avgRoomSAR = totalNights > 0 ? (totalRoomCost / totalNights) : 0;
+  const avgFoodSAR = totalNights > 0 ? (totalFoodCost / totalNights) : 0;
+
+  return {
+    avgRoomSAR,
+    avgFoodSAR,
+    totalRoomSAR: totalRoomCost,
+    totalFoodSAR: totalFoodCost,
+    daysBreakdown,
+    hasTariff,
+    unpricedDaysCount,
+    missingTariffReason: !hasTariff ? `${city === 'makkah' ? 'Mekke' : 'Medine'} oteli için Genel Merkez henüz bu tarih aralığında fiyat belirlememiştir.` : null
+  };
+}
 
 export function calculateQuotation({
   pkg, // Seçili paket objesi
+  startDate = '',
+  endDate = '',
+  routeOrder = 'makkah_first', // 'makkah_first' (Önce Mekke Sonra Medine) | 'madinah_first' (Önce Medine Sonra Mekke)
   selectedMonth = 'nov',
   makkahDays = 7,
   makkahRoomOccupancy = 2, // 1, 2, 3, 4, 5
   madinahDays = 3,
   madinahRoomOccupancy = 2, // 1, 2, 3, 4, 5
+  selectedMakkahHotelId = null,
+  selectedMadinahHotelId = null,
+  includeMeals = true,
+  includeMakkahMeals = undefined,
+  includeMadinahMeals = undefined,
   transfersSelection = {
     jedMek: { vehicleType: 'small', passengerCount: 2 },
     mekMed: { vehicleType: 'small', passengerCount: 2 },
@@ -39,6 +174,9 @@ export function calculateQuotation({
 }) {
   if (!pkg) return null;
 
+  const isMakkahFoodInc = includeMakkahMeals !== undefined ? Boolean(includeMakkahMeals) : Boolean(includeMeals);
+  const isMadinahFoodInc = includeMadinahMeals !== undefined ? Boolean(includeMadinahMeals) : Boolean(includeMeals);
+
   const sarUsdRate = currencies.SAR_USD || 3.75;
   const usdTryRate = currencies.USD_TRY || 36.50;
   const eurUsdRate = currencies.EUR_USD || 1.08;
@@ -48,13 +186,45 @@ export function calculateQuotation({
   const targetMargin = customProfitMargin !== null ? customProfitMargin : defaultPkgMargin;
   const profitMarginPercent = applyProfitMargin ? targetMargin : 0;
 
-  // 1. Seçilen Aya Göre Otonom Otel Oda ve Yemek Fiyatı (SAR)
-  const monthRate = pkg.monthlyPrices?.[selectedMonth] || pkg.monthlyPrices?.nov || { makkahRoomSAR: 100, madinahRoomSAR: 500 };
-  const makkahRoomSAR = Number(monthRate.makkahRoomSAR) || 0;
-  const madinahRoomSAR = Number(monthRate.madinahRoomSAR) || 0;
+  // 1. Seyahat Rota Etap Tarihlerinin Belirlenmesi
+  let makkahStartDate = startDate;
+  let madinahStartDate = startDate;
 
-  const makkahFoodSAR = Number(monthRate.makkahFoodSAR !== undefined ? monthRate.makkahFoodSAR : (pkg.makkahFoodPriceSAR || pkg.makkahFoodSAR || 0));
-  const madinahFoodSAR = Number(monthRate.madinahFoodSAR !== undefined ? monthRate.madinahFoodSAR : (pkg.madinahFoodPriceSAR || pkg.madinahFoodSAR || 0));
+  if (routeOrder === 'madinah_first') {
+    // 🕌 1. Etap Medine, 2. Etap Mekke
+    madinahStartDate = startDate;
+    makkahStartDate = startDate && madinahDays > 0 ? addDaysToDateStr(startDate, Number(madinahDays)) : startDate;
+  } else {
+    // 🕋 1. Etap Mekke, 2. Etap Medine (Varsayılan)
+    makkahStartDate = startDate;
+    madinahStartDate = startDate && makkahDays > 0 ? addDaysToDateStr(startDate, Number(makkahDays)) : startDate;
+  }
+
+  // 2. Günlük Ağırlıklı Dinamik Oda & Yemek Fiyatlarının Hesaplanması
+  const makkahStay = calculateCityStayRates({
+    startDateStr: makkahStartDate,
+    nights: makkahDays,
+    city: 'makkah',
+    pkg,
+    selectedHotelId: selectedMakkahHotelId,
+    includeMeals: isMakkahFoodInc,
+    selectedMonthFallback: selectedMonth
+  });
+
+  const madinahStay = calculateCityStayRates({
+    startDateStr: madinahStartDate,
+    nights: madinahDays,
+    city: 'madinah',
+    pkg,
+    selectedHotelId: selectedMadinahHotelId,
+    includeMeals: isMadinahFoodInc,
+    selectedMonthFallback: selectedMonth
+  });
+
+  const makkahRoomSAR = makkahStay.avgRoomSAR;
+  const makkahFoodSAR = makkahStay.avgFoodSAR;
+  const madinahRoomSAR = madinahStay.avgRoomSAR;
+  const madinahFoodSAR = madinahStay.avgFoodSAR;
 
   // 2. Mekke & Medine Konaklama & Yemek
   let makkahTotalSAR = 0;
@@ -75,14 +245,17 @@ export function calculateQuotation({
 
   routeKeys.forEach(r => {
     const sel = transfersSelection[r.id] || { vehicleType: 'none', passengerCount: 0 };
+    let vehicleName = 'Dahil Değil';
     let vehicleCost = 0;
     let perPersonCost = 0;
 
     if (sel.vehicleType === 'small') {
       vehicleCost = pkg.transfers?.[r.smallKey] || 0;
+      vehicleName = pkg.transfers?.[`${r.id}SmallLabel`] || 'Küçük Araç (Sedan / GMC)';
       perPersonCost = (sel.passengerCount > 0) ? (vehicleCost / sel.passengerCount) : 0;
     } else if (sel.vehicleType === 'big') {
       vehicleCost = pkg.transfers?.[r.bigKey] || 0;
+      vehicleName = pkg.transfers?.[`${r.id}BigLabel`] || 'Büyük Araç (HiAce / Otobüs)';
       perPersonCost = (sel.passengerCount > 0) ? (vehicleCost / sel.passengerCount) : 0;
     }
 
@@ -91,35 +264,43 @@ export function calculateQuotation({
       routeId: r.id,
       label: r.label,
       vehicleType: sel.vehicleType,
+      vehicleName,
       vehicleCost,
       passengerCount: sel.passengerCount,
       perPersonCostSAR: perPersonCost
     });
   });
 
-  // Sabit Giderler
+  // Sabit Giderler & Dahili Hizmetler
   let fixedExpensesTotalSAR = 0;
   const fixedExpensesBreakdown = [];
-  const fixedList = [
-    { key: 'flightTicketSAR', label: 'Uçak Bileti' },
-    { key: 'visaTaxSAR', label: 'Vize + Vergi' },
-    { key: 'insuranceSAR', label: 'Sigorta' },
-    { key: 'bagSAR', label: 'Çanta' },
-    { key: 'scarfSAR', label: 'Fular / Eşarp' },
-    { key: 'guideSAR', label: 'Rehberlik / Görevli' },
-    { key: 'commissionSAR', label: 'Personel Komisyonu' },
-    { key: 'bonusSAR', label: 'Prim' },
-    { key: 'zamzamSAR', label: '5L Zemzem' },
-    { key: 'branchExpenseSAR', label: 'Genel Gider' },
-  ];
 
-  fixedList.forEach(item => {
-    const isInc = !!fixedExpensesIncluded[item.key];
-    const cost = isInc ? (pkg.fixedExpenses?.[item.key] || 0) : 0;
+  const rawFixedList = Array.isArray(pkg.fixedExpensesList) && pkg.fixedExpensesList.length > 0
+    ? pkg.fixedExpensesList
+    : [
+        { id: 'flightTicketSAR', name: 'Uçak Bileti' },
+        { id: 'visaTaxSAR', name: 'Vize + Vergi' },
+        { id: 'insuranceSAR', name: 'Sigorta' },
+        { id: 'bagSAR', name: 'Çanta' },
+        { id: 'scarfSAR', name: 'Fular / Eşarp' },
+        { id: 'guideSAR', name: 'Rehberlik / Görevli' },
+        { id: 'commissionSAR', name: 'Personel Komisyonu' },
+        { id: 'bonusSAR', name: 'Prim' },
+        { id: 'zamzamSAR', name: '5L Zemzem' },
+        { id: 'branchExpenseSAR', name: 'Genel Gider' },
+      ];
+
+  rawFixedList.forEach(item => {
+    const itemKey = item.id || item.key;
+    const itemLabel = item.name || item.label;
+    const isInc = !!fixedExpensesIncluded[itemKey];
+    const unitCost = item.priceSAR !== undefined ? Number(item.priceSAR) : (pkg.fixedExpenses?.[itemKey] || 0);
+    const cost = isInc ? unitCost : 0;
+    
     fixedExpensesTotalSAR += cost;
     fixedExpensesBreakdown.push({
-      key: item.key,
-      label: item.label,
+      key: itemKey,
+      label: itemLabel,
       included: isInc,
       costSAR: cost
     });
@@ -263,15 +444,39 @@ export function calculateQuotation({
   const profitMarginAmountUSD = baseCostUSD * (profitMarginPercent / 100);
 
   // 8. Diğer Para Birimleri
-  const finalPriceTRY = finalPriceUSD * usdTryRate;
-  const finalPriceEUR = finalPriceUSD / eurUsdRate;
-  const finalPriceSAR = finalPriceUSD * sarUsdRate;
+  const finalPriceTRY = (finalPriceUSD || 0) * usdTryRate;
+  const finalPriceEUR = (finalPriceUSD || 0) / eurUsdRate;
+  const finalPriceSAR = (finalPriceUSD || 0) * sarUsdRate;
+  const isMakkahUnpriced = Number(makkahDays) > 0 && !makkahStay.hasTariff;
+  const isMadinahUnpriced = Number(madinahDays) > 0 && !madinahStay.hasTariff;
+  const hasValidTariff = !isMakkahUnpriced && !isMadinahUnpriced;
+
+  let tariffWarning = null;
+  if (!hasValidTariff) {
+    if (isMakkahUnpriced && isMadinahUnpriced) {
+      tariffWarning = 'Genel Merkez bu tarih aralığı için henüz Mekke ve Medine otel fiyat tarifesi belirlememiştir.';
+    } else if (isMakkahUnpriced) {
+      tariffWarning = 'Genel Merkez bu tarih aralığı için henüz Mekke otel fiyat tarifesi belirlememiştir.';
+    } else {
+      tariffWarning = 'Genel Merkez bu tarih aralığı için henüz Medine otel fiyat tarifesi belirlememiştir.';
+    }
+  }
 
   return {
     packageId: pkg.id,
     packageName: pkg.name,
     packageProfitMargin: defaultPkgMargin,
     applyProfitMargin,
+    hasValidTariff,
+    isUnpriced: !hasValidTariff,
+    tariffWarning,
+    startDate,
+    endDate,
+    routeOrder,
+    makkahStartDate,
+    madinahStartDate,
+    makkahStay,
+    madinahStay,
     selectedMonth,
     makkahDays,
     makkahRoomOccupancy,
@@ -311,11 +516,18 @@ export function calculateQuotation({
 
 // 2'li, 3'lü, 4'lü, 1'li Saf Konaklama & Yemek Karşılaştırma Matrisi (Detaylı Matematiksel Formüllü)
 export function generateRoomMatrix(
-  pkg, 
-  selectedMonth = 'nov', 
-  makkahDays = 7, 
-  madinahDays = 4, 
-  currencies = { SAR_USD: 3.75, USD_TRY: 36.50, EUR_USD: 1.08 }
+  pkg,
+  selectedMonth = 'nov',
+  makkahDays = 7,
+  madinahDays = 3,
+  currencies = { SAR_USD: 3.75, USD_TRY: 36.50, EUR_USD: 1.08 },
+  startDate = '',
+  routeOrder = 'makkah_first',
+  selectedMakkahHotelId = null,
+  selectedMadinahHotelId = null,
+  includeMeals = true,
+  includeMakkahMeals = undefined,
+  includeMadinahMeals = undefined
 ) {
   const occupancies = [
     { count: 1, label: 'Tek Kişilik Oda', desc: 'Özel Tek Kişilik Oda' },
@@ -326,20 +538,48 @@ export function generateRoomMatrix(
 
   if (!pkg) return [];
 
+  const isMakkahFoodInc = includeMakkahMeals !== undefined ? Boolean(includeMakkahMeals) : Boolean(includeMeals);
+  const isMadinahFoodInc = includeMadinahMeals !== undefined ? Boolean(includeMadinahMeals) : Boolean(includeMeals);
+
   const sarUsdRate = currencies?.SAR_USD || 3.75;
   const usdTryRate = currencies?.USD_TRY || 36.50;
   const eurUsdRate = currencies?.EUR_USD || 1.08;
 
-  const monthRates = pkg.monthlyPrices?.[selectedMonth] || pkg.monthlyPrices?.nov || {
-    makkahRoomSAR: pkg.baseMakkahRoomSAR || 100,
-    madinahRoomSAR: pkg.baseMadinahRoomSAR || 500,
-  };
+  let makkahStartDate = startDate;
+  let madinahStartDate = startDate;
 
-  const makkahRoomSAR = Number(monthRates.makkahRoomSAR) || Number(pkg.baseMakkahRoomSAR) || 0;
-  const makkahFoodSAR = Number(monthRates.makkahFoodSAR !== undefined ? monthRates.makkahFoodSAR : (pkg.makkahFoodPriceSAR || pkg.makkahFoodSAR || 0));
+  if (routeOrder === 'madinah_first') {
+    madinahStartDate = startDate;
+    makkahStartDate = startDate && madinahDays > 0 ? addDaysToDateStr(startDate, Number(madinahDays)) : startDate;
+  } else {
+    makkahStartDate = startDate;
+    madinahStartDate = startDate && makkahDays > 0 ? addDaysToDateStr(startDate, Number(makkahDays)) : startDate;
+  }
 
-  const madinahRoomSAR = Number(monthRates.madinahRoomSAR) || Number(pkg.baseMadinahRoomSAR) || 0;
-  const madinahFoodSAR = Number(monthRates.madinahFoodSAR !== undefined ? monthRates.madinahFoodSAR : (pkg.madinahFoodPriceSAR || pkg.madinahFoodSAR || 0));
+  const makkahStay = calculateCityStayRates({
+    startDateStr: makkahStartDate,
+    nights: makkahDays,
+    city: 'makkah',
+    pkg,
+    selectedHotelId: selectedMakkahHotelId,
+    includeMeals: isMakkahFoodInc,
+    selectedMonthFallback: selectedMonth
+  });
+
+  const madinahStay = calculateCityStayRates({
+    startDateStr: madinahStartDate,
+    nights: madinahDays,
+    city: 'madinah',
+    pkg,
+    selectedHotelId: selectedMadinahHotelId,
+    includeMeals: isMadinahFoodInc,
+    selectedMonthFallback: selectedMonth
+  });
+
+  const makkahRoomSAR = makkahStay.avgRoomSAR;
+  const makkahFoodSAR = makkahStay.avgFoodSAR;
+  const madinahRoomSAR = madinahStay.avgRoomSAR;
+  const madinahFoodSAR = madinahStay.avgFoodSAR;
 
   const numMakkahDays = Number(makkahDays) || 0;
   const numMadinahDays = Number(madinahDays) || 0;
@@ -392,6 +632,8 @@ export function generateRoomMatrix(
       madinahTotalSAR: Math.round(madinahTotalSAR),
       madinahUSD: Math.round(madinahUSD),
       // Toplamlar
+      hasTariff: makkahStay.hasTariff && madinahStay.hasTariff,
+      isUnpriced: !makkahStay.hasTariff || !madinahStay.hasTariff,
       totalHotelSAR: Math.round(totalHotelSAR),
       totalHotelUSD: Math.round(totalHotelUSD),
       priceUSD: Math.round(totalHotelUSD),

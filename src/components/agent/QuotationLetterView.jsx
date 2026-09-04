@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  Printer, 
   Download, 
   Send, 
   CheckCircle2, 
   Share2,
-  FileCheck
+  FileCheck,
+  Loader2
 } from 'lucide-react';
-import { generateQuotationPdf, generateWhatsAppMessage } from '../../services/pdfService';
+import { generateQuotationPdf, generateWhatsAppMessage, downloadDirectQuotationPdf, shareQuoteOnWhatsApp } from '../../services/pdfService';
+import { useModal } from '../../context/ModalContext';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
 
 export default function QuotationLetterView({ 
@@ -18,6 +19,7 @@ export default function QuotationLetterView({
   isSaved, 
   activeCurrency = 'USD' 
 }) {
+  const { showPdfSaveLocationModal } = useModal();
   const [isDownloading, setIsDownloading] = useState(false);
 
   if (!quotation) {
@@ -114,12 +116,19 @@ export default function QuotationLetterView({
   };
 
   const handleDownloadPdf = async () => {
+    const mode = await showPdfSaveLocationModal(quotation.customerName ? `${quotation.customerName}_Umre_Teklifi.pdf` : 'Inzar_Umre_Teklifi.pdf');
+    if (!mode) return;
+
     try {
       setIsDownloading(true);
-      await generateQuotationPdf('inzar-app-printable-letter', quotation);
+      await downloadDirectQuotationPdf(quotation, mode);
     } catch (err) {
       console.error('PDF error:', err);
-      alert('PDF oluşturulamadı, Yazdır butonundan PDF Olarak Kaydet seçeneğini kullanabilirsiniz.');
+      try {
+        await generateQuotationPdf('inzar-app-printable-letter', quotation);
+      } catch (e2) {
+        alert('PDF oluşturulamadı.');
+      }
     } finally {
       setIsDownloading(false);
     }
@@ -224,17 +233,17 @@ export default function QuotationLetterView({
               textAlign: 'right'
             }}>
               <div style={{ fontSize: '8.5px', fontWeight: '800', textTransform: 'uppercase', color: '#065f46', letterSpacing: '0.5px', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                <span>PROGRAM KÜNYESİ:</span>
+                <span>PROGRAM KÜNYESİ & ROTA:</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#065f46" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
               </div>
               <div style={{ fontSize: '13.5px', fontWeight: '900', color: '#047857', letterSpacing: '-0.2px' }}>
                 {quotation.packageName}
               </div>
               <div style={{ color: '#475569', marginTop: '2px' }}>
-                Toplam Süre: <strong style={{ color: '#0f172a' }}>{Number(quotation.makkahDays) + Number(quotation.madinahDays)} Gün</strong>
+                Seyahat Tarihi: <strong style={{ color: '#0f172a' }}>{quotation.startDate ? `${quotation.startDate} - ${quotation.endDate || ''}` : (quotation.selectedMonthLabel || 'Belirtilmedi')}</strong>
               </div>
               <div style={{ color: '#475569', marginTop: '1px' }}>
-                Dönem: <strong style={{ color: '#0f172a' }}>{quotation.selectedMonthLabel || quotation.selectedMonth || 'Ocak'}</strong>
+                Süre & Rota: <strong style={{ color: '#064e3b' }}>{Number(quotation.makkahDays) + Number(quotation.madinahDays)} Gece ({quotation.routeOrder === 'madinah_first' ? 'Medine ➔ Mekke' : 'Mekke ➔ Medine'})</strong>
               </div>
             </div>
           </div>
@@ -265,7 +274,7 @@ export default function QuotationLetterView({
             <table style={{ width: '100%', textAlign: 'left', fontSize: '9.5px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc', color: '#475569', fontWeight: 'bold', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '6px 10px' }}>Bölge</th>
+                  <th style={{ padding: '6px 10px' }}>Durak / Bölge</th>
                   <th style={{ padding: '6px 10px' }}>Otel Adı</th>
                   <th style={{ padding: '6px 10px' }}>Süre</th>
                   <th style={{ padding: '6px 10px' }}>Mescid Mesafesi</th>
@@ -273,20 +282,85 @@ export default function QuotationLetterView({
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>MEKKE-İ MÜKERREME</td>
-                  <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>{quotation.pkgDetails?.hotelMakkah || 'Merkezi Otel'}</td>
-                  <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>{quotation.makkahDays} Gece</td>
-                  <td style={{ padding: '6px 10px', color: '#475569' }}>{quotation.pkgDetails?.distanceMakkah || '-'}</td>
-                  <td style={{ padding: '6px 10px', color: '#047857', fontWeight: '700' }}>{quotation.pkgDetails?.mealMakkah || 'Dahil'}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '6px 10px', fontWeight: '800', color: '#92400e' }}>MEDİNE-İ MÜNEVVERE</td>
-                  <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>{quotation.pkgDetails?.hotelMadinah || 'Merkezi Otel'}</td>
-                  <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>{quotation.madinahDays} Gece</td>
-                  <td style={{ padding: '6px 10px', color: '#475569' }}>{quotation.pkgDetails?.distanceMadinah || '-'}</td>
-                  <td style={{ padding: '6px 10px', color: '#047857', fontWeight: '700' }}>{quotation.pkgDetails?.mealMadinah || 'Dahil'}</td>
-                </tr>
+                {quotation.routeOrder === 'madinah_first' ? (
+                  <>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <img src="/medine.png" alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <span>1. MEDİNE-İ MÜNEVVERE</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
+                        {quotation.selectedMadinahHotel?.name || quotation.pkgDetails?.hotelMadinah || 'Medine Oteli'}
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>{quotation.madinahDays} Gece</td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.selectedMadinahHotel?.distance || quotation.pkgDetails?.distanceMadinah || 'Merkezi / Yürüme Mesafesi'}
+                      </td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.includeMadinahMeals !== false ? `${quotation.selectedMadinahHotel?.mealType || quotation.pkgDetails?.mealMadinah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <img src="/mekke.png" alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <span>2. MEKKE-İ MÜKERREME</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
+                        {quotation.selectedMakkahHotel?.name || quotation.pkgDetails?.hotelMakkah || 'Mekke Oteli'}
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>{quotation.makkahDays} Gece</td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.selectedMakkahHotel?.distance || quotation.pkgDetails?.distanceMakkah || 'Merkezi / Yürüme Mesafesi'}
+                      </td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.includeMakkahMeals !== false ? `${quotation.selectedMakkahHotel?.mealType || quotation.pkgDetails?.mealMakkah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)'}
+                      </td>
+                    </tr>
+                  </>
+                ) : (
+                  <>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <img src="/mekke.png" alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <span>1. MEKKE-İ MÜKERREME</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
+                        {quotation.selectedMakkahHotel?.name || quotation.pkgDetails?.hotelMakkah || 'Mekke Oteli'}
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>{quotation.makkahDays} Gece</td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.selectedMakkahHotel?.distance || quotation.pkgDetails?.distanceMakkah || 'Merkezi / Yürüme Mesafesi'}
+                      </td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.includeMakkahMeals !== false ? `${quotation.selectedMakkahHotel?.mealType || quotation.pkgDetails?.mealMakkah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <img src="/medine.png" alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <span>2. MEDİNE-İ MÜNEVVERE</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
+                        {quotation.selectedMadinahHotel?.name || quotation.pkgDetails?.hotelMadinah || 'Medine Oteli'}
+                      </td>
+                      <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>{quotation.madinahDays} Gece</td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.selectedMadinahHotel?.distance || quotation.pkgDetails?.distanceMadinah || 'Merkezi / Yürüme Mesafesi'}
+                      </td>
+                      <td style={{ padding: '6px 10px', color: '#475569' }}>
+                        {quotation.includeMadinahMeals !== false ? `${quotation.selectedMadinahHotel?.mealType || quotation.pkgDetails?.mealMadinah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)'}
+                      </td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -474,49 +548,32 @@ export default function QuotationLetterView({
               <span>{isMixed ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
             </div>
 
-            {isMixed && quotation.mixedRoomsBreakdown ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', textAlign: 'center' }}>
-                <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>1 KİŞİLİK ODA</div>
-                  <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
-                    ${quotation.mixedRoomsBreakdown.single.priceUSD?.toLocaleString('tr-TR')} USD
-                  </div>
-                  <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
-                    ~{quotation.mixedRoomsBreakdown.single.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                  </div>
-                </div>
+            {isMixed && quotation.mixedRoomsBreakdown ? (() => {
+              const activeTypes = [
+                { key: 'single', label: '1 KİŞİLİK ODA', count: quotation.mixedRooms?.single || 0, data: quotation.mixedRoomsBreakdown.single },
+                { key: 'double', label: '2 KİŞİLİK ODA', count: quotation.mixedRooms?.double || 0, data: quotation.mixedRoomsBreakdown.double },
+                { key: 'triple', label: '3 KİŞİLİK ODA', count: quotation.mixedRooms?.triple || 0, data: quotation.mixedRoomsBreakdown.triple },
+                { key: 'quad', label: '4 KİŞİLİK ODA', count: quotation.mixedRooms?.quad || 0, data: quotation.mixedRoomsBreakdown.quad }
+              ].filter(r => r.count > 0);
 
-                <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>2 KİŞİLİK ODA</div>
-                  <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
-                    ${quotation.mixedRoomsBreakdown.double.priceUSD?.toLocaleString('tr-TR')} USD
-                  </div>
-                  <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
-                    ~{quotation.mixedRoomsBreakdown.double.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                  </div>
-                </div>
+              const cols = activeTypes.length > 0 ? activeTypes.length : 1;
 
-                <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>3 KİŞİLİK ODA</div>
-                  <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
-                    ${quotation.mixedRoomsBreakdown.triple.priceUSD?.toLocaleString('tr-TR')} USD
-                  </div>
-                  <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
-                    ~{quotation.mixedRoomsBreakdown.triple.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                  </div>
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '6px', textAlign: 'center' }}>
+                  {activeTypes.map(r => (
+                    <div key={r.key} style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>{r.label} ({r.count} Oda)</div>
+                      <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
+                        ${r.data?.priceUSD?.toLocaleString('tr-TR')} USD
+                      </div>
+                      <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
+                        ~{r.data?.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46' }}>4 KİŞİLİK ODA</div>
-                  <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', marginTop: '1px' }}>
-                    ${quotation.mixedRoomsBreakdown.quad.priceUSD?.toLocaleString('tr-TR')} USD
-                  </div>
-                  <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
-                    ~{quotation.mixedRoomsBreakdown.quad.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                  </div>
-                </div>
-              </div>
-            ) : (
+              );
+            })() : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px' }}>
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: '800', color: '#064e3b' }}>

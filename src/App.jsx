@@ -8,6 +8,7 @@ import AgentQuotationWizard from './components/agent/AgentQuotationWizard';
 import SavedQuotesList from './components/agent/SavedQuotesList';
 import MonthlyMatrixManager from './components/admin/MonthlyMatrixManager';
 import StaffManager from './components/admin/StaffManager';
+import WhatsAppTemplateManager from './components/admin/WhatsAppTemplateManager';
 import AuditLogView from './components/admin/AuditLogView';
 import AnnouncementsView from './components/common/AnnouncementsView';
 import UserProfileView from './components/profile/UserProfileView';
@@ -16,6 +17,7 @@ import AppUpdateModal from './components/common/AppUpdateModal';
 
 export default function App() {
   const { currentUser, isAdmin } = useAuth();
+  const isHqOrAdmin = isAdmin || currentUser?.role?.toUpperCase() === 'HQ_ASSISTANT';
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState('wizard');
 
@@ -49,7 +51,8 @@ export default function App() {
                 {activeTab === 'wizard' && <AgentQuotationWizard setActiveTab={setActiveTab} />}
                 {activeTab === 'quotes' && <SavedQuotesList onEditQuote={(quote) => setActiveTab('wizard')} />}
                 {activeTab === 'announcements' && <AnnouncementsView />}
-                {activeTab === 'monthly_matrix' && isAdmin && <MonthlyMatrixManager />}
+                {activeTab === 'monthly_matrix' && isHqOrAdmin && <MonthlyMatrixManager />}
+                {activeTab === 'whatsapp_template' && isHqOrAdmin && <WhatsAppTemplateManager />}
                 {activeTab === 'staff' && isAdmin && <StaffManager />}
                 {activeTab === 'logs' && isAdmin && <AuditLogView />}
                 {activeTab === 'profile' && <UserProfileView />}

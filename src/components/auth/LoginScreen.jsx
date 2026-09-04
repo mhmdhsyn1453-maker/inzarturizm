@@ -3,12 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import lottie from 'lottie-web';
 import fingerprintAnimation from '../../assets/fingerprint_verification.json';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
-import { 
-  Lock, 
-  User, 
+import {
+  Lock,
+  User,
   Crown,
-  ShieldCheck, 
-  ArrowRight, 
+  ShieldCheck,
+  ArrowRight,
   AlertCircle,
   AlertTriangle,
   Clock,
@@ -91,15 +91,15 @@ function RealisticPasswordEye({ isFocused, isPasswordVisible, onToggle }) {
       title={isPasswordVisible ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
       className="relative w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-700 hover:bg-emerald-50/60 transition-all duration-200 cursor-pointer select-none group"
     >
-      <svg 
-        viewBox="0 0 24 24" 
+      <svg
+        viewBox="0 0 24 24"
         className="w-5 h-5 fill-none stroke-current stroke-[1.7] overflow-visible"
       >
         {isClosed ? (
           <g className="transition-all duration-200">
-            <path 
-              d="M3.5 12.8C6.5 15.8 10 17 12 17C14 17 17.5 15.8 20.5 12.8" 
-              strokeLinecap="round" 
+            <path
+              d="M3.5 12.8C6.5 15.8 10 17 12 17C14 17 17.5 15.8 20.5 12.8"
+              strokeLinecap="round"
               className="stroke-slate-400 group-hover:stroke-emerald-700 transition-colors"
             />
             <path d="M6 14.8L4.5 16.8" strokeLinecap="round" className="stroke-slate-400/80" />
@@ -108,26 +108,26 @@ function RealisticPasswordEye({ isFocused, isPasswordVisible, onToggle }) {
           </g>
         ) : (
           <g>
-            <path 
-              d="M2.5 12C4.8 7.2 8.2 5 12 5C15.8 5 19.2 7.2 21.5 12C19.2 16.8 15.8 19 12 19C8.2 19 4.8 16.8 2.5 12Z" 
+            <path
+              d="M2.5 12C4.8 7.2 8.2 5 12 5C15.8 5 19.2 7.2 21.5 12C19.2 16.8 15.8 19 12 19C8.2 19 4.8 16.8 2.5 12Z"
               className="stroke-slate-400 group-hover:stroke-emerald-700 transition-colors"
             />
-            <circle 
-              cx={12 + pupilOffset.x} 
-              cy={12 + pupilOffset.y} 
-              r="3.3" 
+            <circle
+              cx={12 + pupilOffset.x}
+              cy={12 + pupilOffset.y}
+              r="3.3"
               className="fill-emerald-600 stroke-slate-900 stroke-[0.8] transition-transform duration-75 ease-out"
             />
-            <circle 
-              cx={12 + pupilOffset.x} 
-              cy={12 + pupilOffset.y} 
-              r="1.6" 
+            <circle
+              cx={12 + pupilOffset.x}
+              cy={12 + pupilOffset.y}
+              r="1.6"
               className="fill-slate-950"
             />
-            <circle 
-              cx={12 + pupilOffset.x - 0.9} 
-              cy={12 + pupilOffset.y - 0.9} 
-              r="0.75" 
+            <circle
+              cx={12 + pupilOffset.x - 0.9}
+              cy={12 + pupilOffset.y - 0.9}
+              r="0.75"
               className="fill-white drop-shadow-xs"
             />
           </g>
@@ -315,7 +315,7 @@ function FingerprintLottiePlayer({ onDone }) {
         anim.removeEventListener('enterFrame', handleEnterFrame);
         anim.removeEventListener('complete', handleComplete);
         anim.destroy();
-      } catch (e) {}
+      } catch (e) { }
     };
   }, []);
 
@@ -330,7 +330,7 @@ function FingerprintLottiePlayer({ onDone }) {
 
 export default function LoginScreen() {
   const { login, verify2FAAndLogin, users } = useAuth();
-  
+
   // Remember Me state
   const [username, setUsername] = useState(() => {
     try {
@@ -354,7 +354,7 @@ export default function LoginScreen() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  
+
   // 2FA Prompt States
   const [is2FAPrompt, setIs2FAPrompt] = useState(false);
   const [twoFactorUser, setTwoFactorUser] = useState(null);
@@ -367,13 +367,13 @@ export default function LoginScreen() {
 
   // Interactive Cursor Ambient Glow Position
   const [mousePos, setMousePos] = useState({ x: -500, y: -500 });
-  
+
   // 🪙 3D Vertical Coin Flip & Biometric State
   const [isFlipped, setIsFlipped] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [scannedUser, setScannedUser] = useState(null);
   const [pendingCredentials, setPendingCredentials] = useState(null);
-  
+
   // Rate-limiting / Brute-force protection
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTimer, setLockoutTimer] = useState(0);
@@ -429,9 +429,9 @@ export default function LoginScreen() {
     setTimeout(async () => {
       if (pendingCredentials) {
         await login(
-          pendingCredentials.userStr, 
-          pendingCredentials.passStr, 
-          true, 
+          pendingCredentials.userStr,
+          pendingCredentials.passStr,
+          true,
           pendingCredentials.is2FAVerified
         );
       }
@@ -543,11 +543,11 @@ export default function LoginScreen() {
   };
 
   return (
-    <div 
+    <div
       onMouseMove={handleMouseMove}
       className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-white"
     >
-      
+
       {/* 1. LAYER: Minimalist Soft Slate Ambient Lighting on Pure White */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 -left-20 h-[550px] w-[550px] rounded-full bg-slate-100/70 blur-[130px] animate-breathe-1" />
@@ -566,13 +566,13 @@ export default function LoginScreen() {
 
       {/* 🪐 3D PERSPECTIVE CONTAINER WITH EMERALD BREATHING GLOW & ORBIT BEAM */}
       <div className={`relative w-full max-w-[620px] aspect-square z-10 [perspective:1400px] transition-transform duration-300 ${isShaking ? 'animate-shake' : 'animate-fade-scale'}`}>
-        
+
         {/* 💚 Ultra-Luxurious Emerald Breathing Glow Underneath Circle Form */}
         <div className="absolute -inset-6 sm:-inset-10 rounded-full bg-gradient-to-tr from-emerald-600/40 via-teal-500/35 to-emerald-400/45 pointer-events-none -z-20 animate-emerald-breathe shadow-[0_0_80px_rgba(5,150,105,0.35)]" />
 
         {/* ✨ Outer Rotating Light Ring (Strictly External) */}
         <div className="absolute -inset-[5px] rounded-full overflow-hidden pointer-events-none -z-10 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
-          <div 
+          <div
             className="w-full h-full rounded-full animate-orbit-spin"
             style={{
               background: 'conic-gradient(from 0deg, transparent 0deg, transparent 275deg, rgba(16,185,129,0.5) 320deg, rgba(20,184,166,0.85) 350deg, rgba(255,255,255,0.95) 360deg)'
@@ -581,17 +581,16 @@ export default function LoginScreen() {
         </div>
 
         {/* 🪙 3D VERTICAL FLIPPING CARD BODY (Y-AXIS FLIP WITH SOUND) */}
-        <div 
-          className={`relative w-full h-full rounded-full transition-transform duration-700 ease-out [transform-style:preserve-3d] ${
-            isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
-          }`}
+        <div
+          className={`relative w-full h-full rounded-full transition-transform duration-700 ease-out [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
+            }`}
         >
 
           {/* ══════════════════════════════════════════════════════════════
               🔹 FRONT FACE: PRESTIGIOUS LOGIN FORM
              ══════════════════════════════════════════════════════════════ */}
           <div className="absolute inset-0 w-full h-full rounded-full pt-8 pb-10 px-10 sm:px-14 bg-white border-2 border-white/90 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 [backface-visibility:hidden]">
-            
+
             {/* Logo Section (Pure, Large & Elegant) */}
             <div className="mb-6 sm:mb-7 flex flex-col items-center">
               <div className="flex items-center justify-center">
@@ -634,7 +633,7 @@ export default function LoginScreen() {
                     {isBackupMode ? 'Kurtarma Kodu ile Giriş' : 'Google Authenticator Doğrulaması'}
                   </h3>
                   <p className="text-xs text-slate-500 max-w-[280px]">
-                    {isBackupMode 
+                    {isBackupMode
                       ? '5 adet tek kullanımlık kurtarma kodunuzdan birini giriniz.'
                       : `Sayın ${twoFactorUser?.name || 'Kullanıcı'}, uygulamanızdaki 6 haneli kodu giriniz.`}
                   </p>
@@ -651,9 +650,8 @@ export default function LoginScreen() {
                     value={twoFactorCode}
                     onChange={(e) => setTwoFactorCode(isBackupMode ? e.target.value.toUpperCase() : e.target.value.replace(/\D/g, ''))}
                     placeholder={isBackupMode ? 'Örn: A7K9-2P4M' : '000000'}
-                    className={`w-full text-center font-mono font-black rounded-full bg-slate-50/90 py-3.5 px-4 text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all ${
-                      isBackupMode ? 'text-base tracking-wider uppercase' : 'text-2xl tracking-[0.4em]'
-                    }`}
+                    className={`w-full text-center font-mono font-black rounded-full bg-slate-50/90 py-3.5 px-4 text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all ${isBackupMode ? 'text-base tracking-wider uppercase' : 'text-2xl tracking-[0.4em]'
+                      }`}
                   />
                 </div>
 
@@ -699,109 +697,107 @@ export default function LoginScreen() {
             ) : (
               /* Normal Username / Password Form */
               <form onSubmit={handleSubmit} className="w-full max-w-[340px] sm:max-w-[380px] mx-auto space-y-3.5 flex flex-col items-center">
-              
-              {/* Porcelain Username Input */}
-              <div className="relative group w-full">
-                <User className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 absolute left-4.5 top-3.5 transition-colors duration-200" />
-                <input
-                  type="text"
-                  required
-                  disabled={lockoutTimer > 0 || isFlipped}
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Kullanıcı Adı (ör. merkez, mustafa)"
-                  className="w-full rounded-full bg-slate-50/90 pl-11 pr-5 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-semibold disabled:opacity-50"
-                />
-              </div>
 
-              {/* Porcelain Password Input + Swiss Crystal Lens Eye */}
-              <div className="w-full flex flex-col items-center">
+                {/* Porcelain Username Input */}
                 <div className="relative group w-full">
-                  <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 absolute left-4.5 top-3.5 transition-colors duration-200" />
+                  <User className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 absolute left-4.5 top-3.5 transition-colors duration-200" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type="text"
                     required
                     disabled={lockoutTimer > 0 || isFlipped}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setIsPasswordFocused(true)}
-                    onBlur={() => {
-                      setIsPasswordFocused(false);
-                      setIsCapsLockOn(false);
-                    }}
-                    onKeyDown={handlePasswordKeyEvents}
-                    onKeyUp={handlePasswordKeyEvents}
-                    placeholder="Giriş Şifresi"
-                    className="w-full rounded-full bg-slate-50/90 pl-11 pr-20 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-mono font-bold disabled:opacity-50"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Kullanıcı Adı (ör. merkez, mustafa)"
+                    className="w-full rounded-full bg-slate-50/90 pl-11 pr-5 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-semibold disabled:opacity-50"
                   />
-
-                  {/* Right-side Action: CapsLock Indicator + Swiss Crystal Lens Eye */}
-                  <div className="absolute right-3 top-2 flex items-center gap-1.5">
-                    {isCapsLockOn && (
-                      <span 
-                        title="CapsLock Açık"
-                        className="flex items-center text-amber-500 text-xs animate-pulse"
-                      >
-                        <AlertTriangle className="h-4 w-4" />
-                      </span>
-                    )}
-                    
-                    <RealisticPasswordEye 
-                      isFocused={isPasswordFocused}
-                      isPasswordVisible={showPassword}
-                      onToggle={() => setShowPassword(!showPassword)}
-                    />
-                  </div>
                 </div>
 
-                {/* Centered Subtle CapsLock Text */}
-                {isCapsLockOn && (
-                  <div 
-                    style={{ width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    className="gap-1.5 text-xs text-amber-700/85 font-medium animate-slide-down pt-1.5 select-none"
-                  >
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                    <span>Büyük Harf (CapsLock) Açık</span>
-                  </div>
-                )}
-              </div>
-
-              {/* iOS Style "Beni Hatırla" Toggle Switch Button */}
-              <div className="w-full flex items-center justify-center pt-0.5">
-                <button
-                  type="button"
-                  onClick={toggleRememberMe}
-                  className="group inline-flex items-center gap-2.5 py-1 px-3.5 rounded-full hover:bg-slate-100/60 transition-all cursor-pointer select-none"
-                >
-                  <div
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      rememberMe ? 'bg-emerald-600' : 'bg-slate-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        rememberMe ? 'translate-x-4' : 'translate-x-0'
-                      }`}
+                {/* Porcelain Password Input + Swiss Crystal Lens Eye */}
+                <div className="w-full flex flex-col items-center">
+                  <div className="relative group w-full">
+                    <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 absolute left-4.5 top-3.5 transition-colors duration-200" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      disabled={lockoutTimer > 0 || isFlipped}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => {
+                        setIsPasswordFocused(false);
+                        setIsCapsLockOn(false);
+                      }}
+                      onKeyDown={handlePasswordKeyEvents}
+                      onKeyUp={handlePasswordKeyEvents}
+                      placeholder="Giriş Şifresi"
+                      className="w-full rounded-full bg-slate-50/90 pl-11 pr-20 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-mono font-bold disabled:opacity-50"
                     />
-                  </div>
-                  <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">
-                    Beni Hatırla
-                  </span>
-                </button>
-              </div>
 
-              {/* Royal Emerald Silk Shimmer Button */}
-              <button
-                type="submit"
-                disabled={isLoading || lockoutTimer > 0 || isFlipped}
-                className="relative overflow-hidden group w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-900 via-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-700 py-3.5 px-6 font-bold text-white shadow-lg shadow-emerald-900/25 text-sm transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
-              >
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-                
-                <span className="relative z-10">{isLoading ? 'Doğrulanıyor...' : 'Güvenli Giriş Yap'}</span>
-                <ArrowRight className="h-4 w-4 relative z-10 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </form>
+                    {/* Right-side Action: CapsLock Indicator + Swiss Crystal Lens Eye */}
+                    <div className="absolute right-3 top-2 flex items-center gap-1.5">
+                      {isCapsLockOn && (
+                        <span
+                          title="CapsLock Açık"
+                          className="flex items-center text-amber-500 text-xs animate-pulse"
+                        >
+                          <AlertTriangle className="h-4 w-4" />
+                        </span>
+                      )}
+
+                      <RealisticPasswordEye
+                        isFocused={isPasswordFocused}
+                        isPasswordVisible={showPassword}
+                        onToggle={() => setShowPassword(!showPassword)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Centered Subtle CapsLock Text */}
+                  {isCapsLockOn && (
+                    <div
+                      style={{ width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      className="gap-1.5 text-xs text-amber-700/85 font-medium animate-slide-down pt-1.5 select-none"
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                      <span>Büyük Harf (CapsLock) Açık</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* iOS Style "Beni Hatırla" Toggle Switch Button */}
+                <div className="w-full flex items-center justify-center pt-0.5">
+                  <button
+                    type="button"
+                    onClick={toggleRememberMe}
+                    className="group inline-flex items-center gap-2.5 py-1 px-3.5 rounded-full hover:bg-slate-100/60 transition-all cursor-pointer select-none"
+                  >
+                    <div
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${rememberMe ? 'bg-emerald-600' : 'bg-slate-300'
+                        }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${rememberMe ? 'translate-x-4' : 'translate-x-0'
+                          }`}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">
+                      Beni Hatırla
+                    </span>
+                  </button>
+                </div>
+
+                {/* Royal Emerald Silk Shimmer Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading || lockoutTimer > 0 || isFlipped}
+                  className="relative overflow-hidden group w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-900 via-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-700 py-3.5 px-6 font-bold text-white shadow-lg shadow-emerald-900/25 text-sm transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
+                >
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+                  <span className="relative z-10">{isLoading ? 'Doğrulanıyor...' : 'Güvenli Giriş Yap'}</span>
+                  <ArrowRight className="h-4 w-4 relative z-10 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </form>
             )}
 
             {/* Bottom NEXUS Platforms Badge */}

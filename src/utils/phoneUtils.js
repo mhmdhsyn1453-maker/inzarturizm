@@ -39,3 +39,23 @@ export function cleanPhoneNumber(formatted) {
   const digits = String(formatted).replace(/\D/g, '');
   return digits;
 }
+
+// 🇹🇷 Türkçe Kurallarına Uygun Title Case (İlk Harf Büyük, Sonrakiler Küçük: "ahmet mehmet" -> "Ahmet Mehmet")
+export function formatTurkishTitleCase(str) {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .map(word => {
+      if (!word) return '';
+      const first = word.charAt(0).toLocaleUpperCase('tr-TR');
+      const rest = word.slice(1).toLocaleLowerCase('tr-TR');
+      return first + rest;
+    })
+    .join(' ');
+}
+
+// 🇹🇷 Türkçe Kurallarına Uygun Tamamen BÜYÜK HARF ("akbalık" -> "AKBALIK", "ışık" -> "IŞIK")
+export function formatTurkishUpperCase(str) {
+  if (!str) return '';
+  return str.toLocaleUpperCase('tr-TR');
+}

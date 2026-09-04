@@ -138,10 +138,18 @@ export function DataProvider({ children }) {
   };
 
   const updatePackage = useCallback((pkgId, updatedFields, note = '') => {
-    const updated = packages.map(p => p.id === pkgId ? { ...p, ...updatedFields } : p);
-    setPackages(updated);
-    syncService.savePackages(updated, currentUser, note || `${updatedFields.name || pkgId} paketi güncellendi.`);
-  }, [packages, currentUser]);
+    setPackages(prev => {
+      const updated = prev.map(p => p.id === pkgId ? { ...p, ...updatedFields } : p);
+      syncService.savePackages(updated, currentUser, note || `${updatedFields.name || pkgId} paketi güncellendi.`);
+      return updated;
+    });
+  }, [currentUser]);
+
+  const updateAllPackages = useCallback((updatedPackagesArray, note = '') => {
+    const sorted = sortPackagesList(updatedPackagesArray);
+    setPackages(sorted);
+    syncService.savePackages(sorted, currentUser, note || 'Tüm paket ve otel tarih aralıkları güncellendi.');
+  }, [currentUser]);
 
   const addPackage = useCallback((newPkg, note = '') => {
     const updated = [...packages, { ...newPkg, id: 'pkg_' + Date.now() }];
@@ -297,6 +305,7 @@ export function DataProvider({ children }) {
       hotReloadAlert,
       dismissHotReloadAlert: () => setHotReloadAlert(null),
       updatePackage,
+      updateAllPackages,
       addPackage,
       deletePackage,
       updateCurrencies,

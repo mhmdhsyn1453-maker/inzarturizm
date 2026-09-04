@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { generateQuotationPdf, shareQuoteOnWhatsApp } from '../../services/pdfService';
+import { generateQuotationPdf, shareQuoteOnWhatsApp, downloadDirectQuotationPdf } from '../../services/pdfService';
+import { useModal } from '../../context/ModalContext';
 import { 
   Download, 
   Printer, 
   X, 
   CheckCircle2, 
-  FileText,
+  FileText, 
   Send,
   AlertCircle
 } from 'lucide-react';
@@ -13,15 +14,19 @@ import confetti from 'canvas-confetti';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
 
 export default function QuotationPdfModal({ quotation, onClose }) {
+  const { showPdfSaveLocationModal } = useModal();
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleDownload = async () => {
+    const mode = await showPdfSaveLocationModal(quotation.customerName ? `${quotation.customerName}_Umre_Teklifi.pdf` : 'Inzar_Umre_Teklifi.pdf');
+    if (!mode) return;
+
     try {
       setIsGenerating(true);
       setErrorMsg(null);
-      await generateQuotationPdf('inzar-pdf-document', quotation);
+      await downloadDirectQuotationPdf(quotation, mode);
       setDownloadSuccess(true);
       confetti({
         particleCount: 50,
@@ -277,7 +282,12 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>MEKKE-İ MÜKERREME</td>
+                    <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <img src="/mekke.png" alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                        <span>MEKKE-İ MÜKERREME</span>
+                      </div>
+                    </td>
                     <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
                       {quotation.makkahDays > 0 ? (quotation.pkgDetails?.hotelMakkah || 'Merkezi Otel') : 'Konaklama Yok'}
                     </td>
@@ -288,22 +298,27 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                       {quotation.makkahDays > 0 ? (quotation.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis') : '-'}
                     </td>
                     <td style={{ padding: '6px 10px', color: quotation.makkahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '700' }}>
-                      {quotation.makkahDays > 0 ? (quotation.pkgDetails?.mealMakkah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}
+                      {quotation.makkahDays > 0 ? (quotation.includeMakkahMeals !== false ? `${quotation.selectedMakkahHotel?.mealType || quotation.pkgDetails?.mealMakkah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '6px 10px', fontWeight: '800', color: '#92400e' }}>MEDİNE-İ MÜNEVVERE</td>
+                    <td style={{ padding: '6px 10px', fontWeight: '800', color: '#92400e' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <img src="/medine.png" alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                        <span>MEDİNE-İ MÜNEVVERE</span>
+                      </div>
+                    </td>
                     <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
-                      {quotation.madinahDays > 0 ? (quotation.pkgDetails?.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}
+                      {quotation.madinahDays > 0 ? (quotation.selectedMadinahHotel?.name || quotation.pkgDetails?.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}
                     </td>
                     <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>
                       {quotation.madinahDays > 0 ? `${quotation.madinahDays} Gece / Gün` : '0 Gün'}
                     </td>
                     <td style={{ padding: '6px 10px', color: '#475569' }}>
-                      {quotation.madinahDays > 0 ? (quotation.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi') : '-'}
+                      {quotation.madinahDays > 0 ? (quotation.selectedMadinahHotel?.distance || quotation.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi') : '-'}
                     </td>
                     <td style={{ padding: '6px 10px', color: quotation.madinahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '700' }}>
-                      {quotation.madinahDays > 0 ? (quotation.pkgDetails?.mealMadinah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}
+                      {quotation.madinahDays > 0 ? (quotation.includeMadinahMeals !== false ? `${quotation.selectedMadinahHotel?.mealType || quotation.pkgDetails?.mealMadinah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}
                     </td>
                   </tr>
                 </tbody>

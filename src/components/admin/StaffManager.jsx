@@ -358,51 +358,7 @@ export default function StaffManager() {
           <div className="pearl-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
             <form onSubmit={handleCreateSubmit} className="space-y-6">
               
-              {/* Role Selection */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                <label className="block text-xs font-black text-slate-800 uppercase tracking-wider">
-                  Kullanıcı Rolü & Yetki Düzeyi
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setCreateForm({ ...createForm, role: 'STAFF', avatar: '' })}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                      createForm.role === 'STAFF'
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
-                        : 'border-slate-200 bg-white hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2 font-bold text-xs">
-                        <User className="h-4 w-4 text-emerald-700" />
-                        <span>Satış & Teklif Personeli</span>
-                      </div>
-                      {createForm.role === 'STAFF' && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                    </div>
-                    <p className="text-[11px] text-slate-500">Teklif oluşturabilir, resmi teklif mektubu hazırlayabilir ve duyuruları görebilir.</p>
-                  </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setCreateForm({ ...createForm, role: 'ADMIN', avatar: '' })}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                      createForm.role === 'ADMIN'
-                        ? 'border-amber-500 bg-amber-50 text-amber-950 ring-2 ring-amber-500/20 shadow-xs'
-                        : 'border-slate-200 bg-white hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2 font-bold text-xs">
-                        <Crown className="h-4 w-4 text-amber-600" />
-                        <span>Genel Merkez Yöneticisi (Admin)</span>
-                      </div>
-                      {createForm.role === 'ADMIN' && <CheckCircle2 className="h-4 w-4 text-amber-600" />}
-                    </div>
-                    <p className="text-[11px] text-slate-500">Tam yetkilidir; otel fiyatlarını, personelleri ve sirkülerleri yönetebilir.</p>
-                  </button>
-                </div>
-              </div>
 
               {/* Avatar Upload in Create Form */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -491,6 +447,60 @@ export default function StaffManager() {
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
                   />
+                </div>
+
+                {/* Yetki / Rol Seçimi */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Kullanıcı Rolü & Yetkisi *</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({ ...createForm, role: 'STAFF' })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                        createForm.role === 'STAFF'
+                          ? 'bg-sky-50 border-sky-500 ring-2 ring-sky-500/20 text-sky-950 shadow-xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <User className="h-4 w-4 text-sky-600" />
+                        <span>Temsilci / Personel</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">Teklif hazırlar, müşteri dönüşlerini kaydeder.</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({ ...createForm, role: 'HQ_ASSISTANT' })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                        createForm.role === 'HQ_ASSISTANT'
+                          ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 shadow-xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                        <span>Genel Merkez Yardımcısı</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">Teklifleri inceler, Merkez Onayı / Reddi verir.</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({ ...createForm, role: 'ADMIN' })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                        createForm.role === 'ADMIN'
+                          ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-500/20 text-amber-950 shadow-xs'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <Crown className="h-4 w-4 text-amber-600" />
+                        <span>Genel Merkez Yöneticisi</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">Sistem, personel ve fiyatlara tam erişim.</p>
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -708,7 +718,8 @@ export default function StaffManager() {
                       value={editForm.role}
                       onChange={(val) => setEditForm({ ...editForm, role: val })}
                       options={[
-                        { id: 'STAFF', label: 'Satış Personeli' },
+                        { id: 'STAFF', label: 'Temsilci / Personel' },
+                        { id: 'HQ_ASSISTANT', label: 'Genel Merkez Yardımcısı' },
                         { id: 'ADMIN', label: 'Genel Merkez Yöneticisi' },
                       ]}
                     />
@@ -993,7 +1004,9 @@ export default function StaffManager() {
             ) : (
               <div className="space-y-3">
                 {filteredUsers.map((user) => {
-                  const isAdminRole = user.role?.toUpperCase() === 'ADMIN';
+                  const roleUpper = user.role?.toUpperCase();
+                  const isAdminRole = roleUpper === 'ADMIN';
+                  const isHqAssistant = roleUpper === 'HQ_ASSISTANT';
 
                   return (
                     <div
@@ -1010,7 +1023,11 @@ export default function StaffManager() {
                             className={`flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black shadow-xs shrink-0 overflow-hidden transition-all duration-300 ${
                               user.avatarImage || user.avatar ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-emerald-500' : ''
                             } ${
-                              isAdminRole ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-900 border border-amber-300' : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-900 border border-emerald-300'
+                              isAdminRole 
+                                ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-900 border border-amber-300' 
+                                : isHqAssistant
+                                ? 'bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-900 border border-indigo-300'
+                                : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-900 border border-emerald-300'
                             }`}
                             title={user.avatarImage || user.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
                           >
@@ -1018,6 +1035,8 @@ export default function StaffManager() {
                               <img src={user.avatarImage || user.avatar} alt={user.name} className="h-full w-full object-cover" />
                             ) : isAdminRole ? (
                               <Crown className="h-6 w-6 text-amber-600" />
+                            ) : isHqAssistant ? (
+                              <ShieldCheck className="h-6 w-6 text-indigo-600" />
                             ) : (
                               <User className="h-6 w-6 text-emerald-700" />
                             )}
@@ -1034,10 +1053,12 @@ export default function StaffManager() {
                               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold shadow-3xs ${
                                 isAdminRole
                                   ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                                  : isHqAssistant
+                                  ? 'bg-indigo-100 text-indigo-950 border border-indigo-300'
                                   : 'bg-emerald-100 text-emerald-950 border border-emerald-300'
                               }`}>
-                                {isAdminRole ? <Crown className="h-2.5 w-2.5 text-amber-700" /> : <User className="h-2.5 w-2.5 text-emerald-700" />}
-                                <span>{isAdminRole ? 'Genel Merkez' : 'Satış Personeli'}</span>
+                                {isAdminRole ? <Crown className="h-2.5 w-2.5 text-amber-700" /> : isHqAssistant ? <ShieldCheck className="h-2.5 w-2.5 text-indigo-700" /> : <User className="h-2.5 w-2.5 text-emerald-700" />}
+                                <span>{isAdminRole ? 'Genel Merkez' : isHqAssistant ? 'Genel Merkez Yardımcısı' : 'Temsilci / Personel'}</span>
                               </span>
                             </div>
 

@@ -1,3 +1,4 @@
+// Inzar Turizm - Modern Responsive Sidebar v1.0.12
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -17,14 +18,29 @@ import {
   ChevronRight, 
   Megaphone, 
   Database,
-  UserCheck
+  UserCheck,
+  MessageSquare
 } from 'lucide-react';
+
+const WhatsAppIcon = ({ className = 'h-4 w-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm5.77 14.15c-.24.68-1.2 1.25-1.66 1.3-.43.05-.98.24-3.13-.65-2.26-.94-3.7-3.23-3.81-3.38-.11-.15-.91-1.21-.91-2.31 0-1.1.58-1.64.78-1.87.2-.23.44-.29.58-.29.15 0 .3 0 .42.01.13.01.3.05.47.45.17.41.6 1.46.65 1.57.05.11.08.24.02.38-.06.14-.09.23-.18.34-.09.11-.19.25-.27.33-.1.1-.2.21-.09.4.11.19.49.81 1.05 1.31.73.65 1.34.85 1.53.94.19.09.3.08.41-.05.11-.13.48-.56.61-.75.13-.19.26-.16.44-.09.18.07 1.15.54 1.35.64.2.1.33.15.38.23.05.08.05.48-.19 1.16z" />
+  </svg>
+);
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const { currentUser, isAdmin, logout } = useAuth();
-  const { unreadAnnouncementsCount, markAnnouncementsAsRead } = useData();
+  const { unreadAnnouncementsCount, markAnnouncementsAsRead, savedQuotes } = useData();
   const { showLogoutConfirm } = useModal();
   const [collapsed, setCollapsed] = useState(false);
+
+  const isHqAssistant = currentUser?.role?.toUpperCase() === 'HQ_ASSISTANT';
+  const isHqOrAdmin = isAdmin || isHqAssistant;
+
+  // Genel Merkez ve Genel Merkez Yardımcısı için Merkez Onayı Bekleyen Teklif Sayısı
+  const pendingHqCount = (isHqOrAdmin && Array.isArray(savedQuotes)) 
+    ? savedQuotes.filter(q => q.status === 'customer_approved').length 
+    : 0;
 
   const handleLogoutClick = async () => {
     const confirmed = await showLogoutConfirm(currentUser?.name || 'Kullanıcı');
@@ -52,7 +68,10 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       id: 'quotes',
       label: 'Verilen Teklifler',
       icon: FileText,
-      desc: 'Geçmiş Teklif Listesi',
+      desc: isHqOrAdmin ? 'Merkez Onayı & Teklifler' : 'Geçmiş Teklif Listesi',
+      badgeCount: pendingHqCount,
+      badgeColor: 'bg-amber-600',
+      badgeText: 'Onay Bekliyor',
       adminOnly: false
     },
     {
@@ -68,7 +87,16 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       icon: Megaphone,
       desc: 'Kurumsal Bilgilendirmeler',
       badgeCount: unreadAnnouncementsCount,
+      badgeColor: 'bg-rose-600',
+      badgeText: 'Yeni',
       adminOnly: false
+    },
+    {
+      id: 'whatsapp_template',
+      label: 'WhatsApp Şablonu',
+      icon: WhatsAppIcon,
+      desc: 'Otonom Mesaj & Metin Ayarı',
+      hqOnly: true
     },
     {
       id: 'staff',
@@ -122,7 +150,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 </h1>
                 <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
                   <span>UTH&TP</span>
-                  <span className="text-[8.5px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">v1.0.11</span>
+                  <span className="text-[8.5px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">v1.0.12</span>
                 </p>
               </div>
             </div>
@@ -146,6 +174,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           <nav className="p-3 space-y-1.5 overflow-y-auto max-h-[calc(100vh-170px)]">
             {menuItems.map(item => {
               if (item.adminOnly && !isAdmin) return null;
+              if (item.hqOnly && !isHqOrAdmin) return null;
               const Icon = item.icon;
               const isActive = activeTab === item.id;
 
@@ -187,8 +216,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold truncate">{item.label}</span>
                       {item.badgeCount > 0 && (
-                        <span className="text-[10px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full shadow-2xs animate-pulse">
-                          {item.badgeCount} Yeni
+                        <span className={`text-[10px] font-black ${item.badgeColor || 'bg-rose-600'} text-white px-2 py-0.5 rounded-full shadow-2xs animate-pulse`}>
+                          {item.badgeCount} {item.badgeText || 'Yeni'}
                         </span>
                       )}
                     </div>
@@ -221,12 +250,16 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-xs shadow-xs overflow-hidden ${
               isAdmin
                 ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                : isHqAssistant
+                ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
                 : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
             }`}>
               {currentUser?.avatarImage ? (
                 <img src={currentUser.avatarImage} alt="Profil" className="h-full w-full object-cover pointer-events-none" />
               ) : isAdmin ? (
                 <ShieldCheck className="h-5 w-5 text-amber-700" />
+              ) : isHqAssistant ? (
+                <ShieldCheck className="h-5 w-5 text-indigo-700" />
               ) : (
                 <User className="h-5 w-5 text-emerald-700" />
               )}
@@ -241,7 +274,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 {currentUser?.name}
               </div>
               <div className="text-[10px] font-semibold text-emerald-700 truncate">
-                {isAdmin ? 'Genel Merkez' : (currentUser?.city || 'Personel')}
+                {isAdmin ? 'Genel Merkez Yöneticisi' : isHqAssistant ? 'Genel Merkez Yardımcısı' : (currentUser?.city || 'Personel')}
               </div>
             </div>
           </button>

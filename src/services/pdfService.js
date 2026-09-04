@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import inzarLogo from '../assets/inzarturizmlogo.png';
+import { syncService } from './syncService';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -320,18 +321,28 @@ export function openQuotationInNewPage(quote) {
           </thead>
           <tbody>
             <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 6px 10px; font-weight: 800; color: #065f46;">MEKKE-İ MÜKERREME</td>
-              <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.makkahDays > 0 ? (quote.pkgDetails?.hotelMakkah || 'Merkezi Otel') : 'Konaklama Yok'}</td>
-              <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.makkahDays > 0 ? quote.makkahDays + ' Gece / Gün' : '0 Gün'}</td>
-              <td style="padding: 6px 10px; color: #475569;">${quote.makkahDays > 0 ? (quote.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis') : '-'}</td>
-              <td style="padding: 6px 10px; color: ${quote.makkahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.makkahDays > 0 ? (quote.pkgDetails?.mealMakkah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}</td>
+              <td style="padding: 6px 10px; font-weight: 800; color: #065f46;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <img src="/mekke.png" alt="Mekke" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                  <span>MEKKE-İ MÜKERREME</span>
+                </div>
+              </td>
+              <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.makkahDays > 0 ? (escapeHtml(quote.selectedMakkahHotel?.name || quote.pkgDetails?.hotelMakkah || 'Merkezi Otel')) : 'Konaklama Yok'}</td>
+              <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.makkahDays > 0 ? quote.makkahDays + ' Gece' : '0 Gece'}</td>
+              <td style="padding: 6px 10px; color: #475569;">${quote.makkahDays > 0 ? (escapeHtml(quote.selectedMakkahHotel?.distance || quote.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis')) : '-'}</td>
+              <td style="padding: 6px 10px; color: ${quote.makkahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.makkahDays > 0 ? (quote.includeMakkahMeals !== false ? `${escapeHtml(quote.selectedMakkahHotel?.mealType || quote.pkgDetails?.mealMakkah || 'Açık Büfe')} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}</td>
             </tr>
             <tr>
-              <td style="padding: 6px 10px; font-weight: 800; color: #92400e;">MEDİNE-İ MÜNEVVERE</td>
-              <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.madinahDays > 0 ? (quote.pkgDetails?.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}</td>
-              <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.madinahDays > 0 ? quote.madinahDays + ' Gece / Gün' : '0 Gün'}</td>
-              <td style="padding: 6px 10px; color: #475569;">${quote.madinahDays > 0 ? (quote.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi') : '-'}</td>
-              <td style="padding: 6px 10px; color: ${quote.madinahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.madinahDays > 0 ? (quote.pkgDetails?.mealMadinah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}</td>
+              <td style="padding: 6px 10px; font-weight: 800; color: #92400e;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <img src="/medine.png" alt="Medine" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                  <span>MEDİNE-İ MÜNEVVERE</span>
+                </div>
+              </td>
+              <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.madinahDays > 0 ? (escapeHtml(quote.selectedMadinahHotel?.name || quote.pkgDetails?.hotelMadinah || 'Merkezi Otel')) : 'Konaklama Yok'}</td>
+              <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.madinahDays > 0 ? quote.madinahDays + ' Gece' : '0 Gece'}</td>
+              <td style="padding: 6px 10px; color: #475569;">${quote.madinahDays > 0 ? (escapeHtml(quote.selectedMadinahHotel?.distance || quote.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi')) : '-'}</td>
+              <td style="padding: 6px 10px; color: ${quote.madinahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.madinahDays > 0 ? (quote.includeMadinahMeals !== false ? `${escapeHtml(quote.selectedMadinahHotel?.mealType || quote.pkgDetails?.mealMadinah || 'Açık Büfe')} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}</td>
             </tr>
           </tbody>
         </table>
@@ -511,49 +522,32 @@ export function openQuotationInNewPage(quote) {
           <span>${quote.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
         </div>
 
-        ${quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? `
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center;">
-            <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-              <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">1 KİŞİLİK ODA</div>
-              <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-                $${quote.mixedRoomsBreakdown.single.priceUSD?.toLocaleString('tr-TR')} USD
-              </div>
-              <div style="font-size: 8px; color: #047857; font-weight: 700;">
-                ~${quote.mixedRoomsBreakdown.single.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-              </div>
-            </div>
+        ${quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? (() => {
+          const activeTypes = [
+            { key: 'single', label: '1 KİŞİLİK ODA', count: quote.mixedRooms?.single || 0, data: quote.mixedRoomsBreakdown.single },
+            { key: 'double', label: '2 KİŞİLİK ODA', count: quote.mixedRooms?.double || 0, data: quote.mixedRoomsBreakdown.double },
+            { key: 'triple', label: '3 KİŞİLİK ODA', count: quote.mixedRooms?.triple || 0, data: quote.mixedRoomsBreakdown.triple },
+            { key: 'quad', label: '4 KİŞİLİK ODA', count: quote.mixedRooms?.quad || 0, data: quote.mixedRoomsBreakdown.quad }
+          ].filter(r => r.count > 0);
 
-            <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-              <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">2 KİŞİLİK ODA</div>
-              <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-                $${quote.mixedRoomsBreakdown.double.priceUSD?.toLocaleString('tr-TR')} USD
-              </div>
-              <div style="font-size: 8px; color: #047857; font-weight: 700;">
-                ~${quote.mixedRoomsBreakdown.double.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-              </div>
-            </div>
+          const cols = activeTypes.length > 0 ? activeTypes.length : 1;
 
-            <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-              <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">3 KİŞİLİK ODA</div>
-              <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-                $${quote.mixedRoomsBreakdown.triple.priceUSD?.toLocaleString('tr-TR')} USD
-              </div>
-              <div style="font-size: 8px; color: #047857; font-weight: 700;">
-                ~${quote.mixedRoomsBreakdown.triple.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-              </div>
+          return `
+            <div style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6px; text-align: center;">
+              ${activeTypes.map(r => `
+                <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
+                  <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">${r.label} (${r.count} Oda)</div>
+                  <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
+                    $${r.data?.priceUSD?.toLocaleString('tr-TR')} USD
+                  </div>
+                  <div style="font-size: 8px; color: #047857; font-weight: 700;">
+                    ~${r.data?.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                  </div>
+                </div>
+              `).join('')}
             </div>
-
-            <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-              <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">4 KİŞİLİK ODA</div>
-              <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-                $${quote.mixedRoomsBreakdown.quad.priceUSD?.toLocaleString('tr-TR')} USD
-              </div>
-              <div style="font-size: 8px; color: #047857; font-weight: 700;">
-                ~${quote.mixedRoomsBreakdown.quad.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-              </div>
-            </div>
-          </div>
-        ` : `
+          `;
+        })() : `
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px;">
             <div>
               <div style="font-size: 11px; font-weight: 800; color: #064e3b;">
@@ -697,16 +691,17 @@ export async function generateQuotationPdf(elementId, quotationData) {
 
   const fileName = formatAsciiFileName(quotationData?.customerName, quotationData?.packageName);
 
-  // 1. Create a 100% Unclipped, Isolated Off-screen Container attached to body
+  // 1. Create a 100% Unclipped, Isolated Container attached to body
   const clone = originalElement.cloneNode(true);
   clone.id = 'pdf-render-clone-target';
   clone.style.width = '794px';
   clone.style.height = '1122px';
   clone.style.maxHeight = '1122px';
   clone.style.position = 'fixed';
-  clone.style.left = '-99999px';
-  clone.style.top = '0px';
+  clone.style.left = '-10000px';
+  clone.style.top = '-10000px';
   clone.style.zIndex = '-9999';
+  clone.style.pointerEvents = 'none';
   clone.style.background = '#ffffff';
   clone.style.boxSizing = 'border-box';
   clone.style.overflow = 'hidden';
@@ -724,14 +719,15 @@ export async function generateQuotationPdf(elementId, quotationData) {
   document.body.appendChild(clone);
 
   try {
-    // 2. Ensure all images inside clone are fully loaded
+    // 2. Ensure all images inside clone are fully loaded with timeout protection
     const images = clone.getElementsByTagName('img');
     await Promise.all(
       Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
+        if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          setTimeout(resolve, 400);
         });
       })
     );
@@ -762,39 +758,55 @@ export async function generateQuotationPdf(elementId, quotationData) {
   }
 }
 
-// Generate formatted WhatsApp message text
+// Generate formatted WhatsApp message text with Headquarters Template Engine
 export function generateWhatsAppMessage(quote) {
+  let template = '';
+  try {
+    template = syncService.getWhatsAppTemplate();
+  } catch (e) {}
+
+  if (!template) {
+    template = `*İNZAR TURİZM - UMRE FİYAT TEKLİFİ*
+
+Sayın *{MUSTERI_ADI}*, danışmış olduğunuz Umre programı detayları ve özel fiyat teklifiniz hazırlanmıştır.
+
+Resmi teklif mektubunuz ve detaylı fiyat dökümünüz ekteki PDF belgesinde yer almaktadır.
+
+*Paket:* {PAKET_ADI}
+*Mekke Oteli:* {MEKKE_OTELI} ({MEKKE_GECE} Gece)
+*Medine Oteli:* {MEDINE_OTELI} ({MEDINE_GECE} Gece)
+*Toplam Süre:* {TOPLAM_GUN} Gün
+*Kişi Başı Teklif:* *{FIYAT_USD} USD* (~{FIYAT_TL} ₺)
+
+*Temsilci:* {TEMSILCI}
+
+Hayırlı ve bereketli ibadetler dileriz.`;
+  }
+
   const clientName = quote.customerName || 'Değerli Misafirimiz';
-  
-  const msg = `*İNZAR TURİZM - KUTSAL TOPRAKLAR UMRE TEKLİFİ*
-Sayın *${clientName}*, danışmış olduğunuz Umre programı detayları ve özel fiyat teklifiniz aşağıda sunulmuştur:
+  const pkgName = quote.packageName || 'Umre Programı';
+  const mkHotel = quote.makkahHotelName || quote.selectedMakkahHotelName || 'Merkezi Otel';
+  const mdHotel = quote.madinahHotelName || quote.selectedMadinahHotelName || 'Merkezi Otel';
+  const mkDays = quote.makkahDays || 0;
+  const mdDays = quote.madinahDays || 0;
+  const totalDays = (Number(mkDays) || 0) + (Number(mdDays) || 0);
+  const roomType = quote.makkahRoomOccupancy ? `${quote.makkahRoomOccupancy} Kişilik Oda` : 'Standart Oda';
+  const priceUSD = quote.finalPriceUSD?.toLocaleString('tr-TR') || '0';
+  const priceTRY = quote.finalPriceTRY?.toLocaleString('tr-TR') || '0';
+  const repName = quote.agentName || quote.createdByName || 'İnzar Turizm Satış Danışmanı';
 
-*PAKET:* ${quote.packageName}
-*MEKKE:* ${quote.pkgDetails?.hotelMakkah || 'Merkezi Otel'} (${quote.makkahDays} Gece/Gün)
-*MEDİNE:* ${quote.pkgDetails?.hotelMadinah || 'Merkezi Otel'} (${quote.madinahDays} Gece/Gün)
-*TOPLAM SÜRE:* ${Number(quote.makkahDays) + Number(quote.madinahDays)} Gün
-*SEÇİLEN ODA:* ${quote.makkahRoomOccupancy} Kişilik Oda
-
-*KİŞİ BAŞI TEKLİF:*
-*${quote.finalPriceUSD?.toLocaleString('tr-TR')} USD* / Kişi Başı
-*Yaklaşık TL Karşılığı:* ~${quote.finalPriceTRY?.toLocaleString('tr-TR')} ₺
-*Euro Karşılığı:* ~${quote.finalPriceEUR?.toLocaleString('tr-TR')} €
-
-*FİYATA DAHİL HİZMETLER:*
-• Gidiş-Dönüş Uçak Bileti
-• Suudi Arabistan Umre Vizesi ve Vergileri
-• Kapsamlı Seyahat & Sağlık Sigortası
-• Mekke & Medine Otel Konaklamaları
-• Sabah & Akşam Açık Büfe / Tabldot Yemek
-• Lüks Klimalı Araçlarla Tüm İç Hat Transferleri
-• Mekke ve Medine Kutsal Ziyaret Yerleri Rehberliği
-• İnzar Turizm Seyahat Çantası, Sırt Çantası ve Omuz Çantası
-• Kurumsal Fular/Eşarp & İhram Rehberi
-• 5 Litre Orijinal Zemzem İkramı
-
-*Temsilci:* ${quote.agentName || quote.createdByName || 'İnzar Turizm Satış Danışmanı'}
-
-Hayırlı ve kabul olunmuş bir Umre dileriz.`;
+  let msg = template
+    .replace(/{MUSTERI_ADI}/g, clientName)
+    .replace(/{PAKET_ADI}/g, pkgName)
+    .replace(/{MEKKE_OTELI}/g, mkHotel)
+    .replace(/{MEDINE_OTELI}/g, mdHotel)
+    .replace(/{MEKKE_GECE}/g, String(mkDays))
+    .replace(/{MEDINE_GECE}/g, String(mdDays))
+    .replace(/{TOPLAM_GUN}/g, String(totalDays))
+    .replace(/{ODA_TIPI}/g, roomType)
+    .replace(/{FIYAT_USD}/g, priceUSD)
+    .replace(/{FIYAT_TL}/g, priceTRY)
+    .replace(/{TEMSILCI}/g, repName);
 
   return encodeURIComponent(msg);
 }
@@ -806,6 +818,7 @@ export async function generateDirectPdfBlob(quote) {
   
   const transfers = quote.transfersSelection || {};
   const roomMatrix = quote.roomMatrix || [];
+  const fixed = quote.fixedExpensesIncluded || {};
 
   const getRoomCost = (occ) => {
     if (quote.roomMatrix && quote.roomMatrix.length > 0) {
@@ -865,9 +878,10 @@ export async function generateDirectPdfBlob(quote) {
   clone.style.height = '1122px';
   clone.style.maxHeight = '1122px';
   clone.style.position = 'fixed';
-  clone.style.left = '-99999px';
-  clone.style.top = '0px';
+  clone.style.left = '-10000px';
+  clone.style.top = '-10000px';
   clone.style.zIndex = '-9999';
+  clone.style.pointerEvents = 'none';
   clone.style.background = '#ffffff';
   clone.style.color = '#0f172a';
   clone.style.padding = '26px 34px';
@@ -964,18 +978,28 @@ export async function generateDirectPdfBlob(quote) {
         </thead>
         <tbody>
           <tr style="border-bottom: 1px solid #f1f5f9;">
-            <td style="padding: 6px 10px; font-weight: 800; color: #065f46;">MEKKE-İ MÜKERREME</td>
-            <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.makkahDays > 0 ? (quote.pkgDetails?.hotelMakkah || 'Merkezi Otel') : 'Konaklama Yok'}</td>
-            <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.makkahDays > 0 ? quote.makkahDays + ' Gece / Gün' : '0 Gün'}</td>
-            <td style="padding: 6px 10px; color: #475569;">${quote.makkahDays > 0 ? (quote.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis') : '-'}</td>
-            <td style="padding: 6px 10px; color: ${quote.makkahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.makkahDays > 0 ? (quote.pkgDetails?.mealMakkah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}</td>
+            <td style="padding: 6px 10px; font-weight: 800; color: #065f46;">
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <img src="/mekke.png" alt="Mekke" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                <span>MEKKE-İ MÜKERREME</span>
+              </div>
+            </td>
+            <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.makkahDays > 0 ? (escapeHtml(quote.selectedMakkahHotel?.name || quote.pkgDetails?.hotelMakkah || 'Merkezi Otel')) : 'Konaklama Yok'}</td>
+            <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.makkahDays > 0 ? quote.makkahDays + ' Gece' : '0 Gece'}</td>
+            <td style="padding: 6px 10px; color: #475569;">${quote.makkahDays > 0 ? (escapeHtml(quote.selectedMakkahHotel?.distance || quote.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis')) : '-'}</td>
+            <td style="padding: 6px 10px; color: ${quote.makkahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.makkahDays > 0 ? (quote.includeMakkahMeals !== false ? `${escapeHtml(quote.selectedMakkahHotel?.mealType || quote.pkgDetails?.mealMakkah || 'Açık Büfe')} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}</td>
           </tr>
           <tr>
-            <td style="padding: 6px 10px; font-weight: 800; color: #92400e;">MEDİNE-İ MÜNEVVERE</td>
-            <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.madinahDays > 0 ? (quote.pkgDetails?.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}</td>
-            <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.madinahDays > 0 ? quote.madinahDays + ' Gece / Gün' : '0 Gün'}</td>
-            <td style="padding: 6px 10px; color: #475569;">${quote.madinahDays > 0 ? (quote.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi') : '-'}</td>
-            <td style="padding: 6px 10px; color: ${quote.madinahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.madinahDays > 0 ? (quote.pkgDetails?.mealMadinah || 'Sabah & Akşam Tabldot/Büfe') : 'Dahil Değil'}</td>
+            <td style="padding: 6px 10px; font-weight: 800; color: #92400e;">
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <img src="/medine.png" alt="Medine" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                <span>MEDİNE-İ MÜNEVVERE</span>
+              </div>
+            </td>
+            <td style="padding: 6px 10px; font-weight: 700; color: #0f172a;">${quote.madinahDays > 0 ? (escapeHtml(quote.selectedMadinahHotel?.name || quote.pkgDetails?.hotelMadinah || 'Merkezi Otel')) : 'Konaklama Yok'}</td>
+            <td style="padding: 6px 10px; font-weight: bold; color: #334155;">${quote.madinahDays > 0 ? quote.madinahDays + ' Gece' : '0 Gece'}</td>
+            <td style="padding: 6px 10px; color: #475569;">${quote.madinahDays > 0 ? (escapeHtml(quote.selectedMadinahHotel?.distance || quote.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi')) : '-'}</td>
+            <td style="padding: 6px 10px; color: ${quote.madinahDays > 0 ? '#047857' : '#94a3b8'}; font-weight: 700;">${quote.madinahDays > 0 ? (quote.includeMadinahMeals !== false ? `${escapeHtml(quote.selectedMadinahHotel?.mealType || quote.pkgDetails?.mealMadinah || 'Açık Büfe')} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}</td>
           </tr>
         </tbody>
       </table>
@@ -1101,7 +1125,7 @@ export async function generateDirectPdfBlob(quote) {
         <div style="color: ${(fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
           ${(fixed.bagSAR || fixed.scarfSAR) ? '✓ Seyahat Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
         </div>
-        <div style="color: fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
+        <div style="color: ${fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
           ${fixed.zamzamSAR ? '✓ 5 Litre Orijinal Zemzem Suyu İkramı (Dahil)' : '— Zemzem İkramı (Dahil Değil)'}
         </div>
         <div style="color: ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
@@ -1136,49 +1160,32 @@ export async function generateDirectPdfBlob(quote) {
         <span>${quote.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
       </div>
 
-      ${quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? `
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center;">
-          <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-            <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">1 KİŞİLİK ODA</div>
-            <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-              $${quote.mixedRoomsBreakdown.single.priceUSD?.toLocaleString('tr-TR')} USD
-            </div>
-            <div style="font-size: 8px; color: #047857; font-weight: 700;">
-              ~${quote.mixedRoomsBreakdown.single.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-            </div>
-          </div>
+      ${quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? (() => {
+        const activeTypes = [
+          { key: 'single', label: '1 KİŞİLİK ODA', count: quote.mixedRooms?.single || 0, data: quote.mixedRoomsBreakdown.single },
+          { key: 'double', label: '2 KİŞİLİK ODA', count: quote.mixedRooms?.double || 0, data: quote.mixedRoomsBreakdown.double },
+          { key: 'triple', label: '3 KİŞİLİK ODA', count: quote.mixedRooms?.triple || 0, data: quote.mixedRoomsBreakdown.triple },
+          { key: 'quad', label: '4 KİŞİLİK ODA', count: quote.mixedRooms?.quad || 0, data: quote.mixedRoomsBreakdown.quad }
+        ].filter(r => r.count > 0);
 
-          <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-            <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">2 KİŞİLİK ODA</div>
-            <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-              $${quote.mixedRoomsBreakdown.double.priceUSD?.toLocaleString('tr-TR')} USD
-            </div>
-            <div style="font-size: 8px; color: #047857; font-weight: 700;">
-              ~${quote.mixedRoomsBreakdown.double.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-            </div>
-          </div>
+        const cols = activeTypes.length > 0 ? activeTypes.length : 1;
 
-          <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-            <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">3 KİŞİLİK ODA</div>
-            <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-              $${quote.mixedRoomsBreakdown.triple.priceUSD?.toLocaleString('tr-TR')} USD
-            </div>
-            <div style="font-size: 8px; color: #047857; font-weight: 700;">
-              ~${quote.mixedRoomsBreakdown.triple.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-            </div>
+        return `
+          <div style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6px; text-align: center;">
+            ${activeTypes.map(r => `
+              <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
+                <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">${r.label} (${r.count} Oda)</div>
+                <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
+                  $${r.data?.priceUSD?.toLocaleString('tr-TR')} USD
+                </div>
+                <div style="font-size: 8px; color: #047857; font-weight: 700;">
+                  ~${r.data?.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
+                </div>
+              </div>
+            `).join('')}
           </div>
-
-          <div style="padding: 6px 8px; background-color: #ffffff; border-radius: 8px; border: 1px solid #bbf7d0;">
-            <div style="font-size: 8.5px; font-weight: 800; color: #065f46;">4 KİŞİLİK ODA</div>
-            <div style="font-size: 13px; font-weight: 900; color: #0f172a; margin-top: 1px;">
-              $${quote.mixedRoomsBreakdown.quad.priceUSD?.toLocaleString('tr-TR')} USD
-            </div>
-            <div style="font-size: 8px; color: #047857; font-weight: 700;">
-              ~${quote.mixedRoomsBreakdown.quad.priceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-            </div>
-          </div>
-        </div>
-      ` : `
+        `;
+      })() : `
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px;">
           <div>
             <div style="font-size: 11px; font-weight: 800; color: #064e3b;">
@@ -1251,7 +1258,7 @@ export async function generateDirectPdfBlob(quote) {
         <div style="color: ${(fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
           ${(fixed.bagSAR || fixed.scarfSAR) ? '✓ Seyahat Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
         </div>
-        <div style="color: fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
+        <div style="color: ${fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
           ${fixed.zamzamSAR ? '✓ 5 Litre Orijinal Zemzem Suyu İkramı (Dahil)' : '— Zemzem İkramı (Dahil Değil)'}
         </div>
         <div style="color: ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
@@ -1304,10 +1311,11 @@ export async function generateDirectPdfBlob(quote) {
     const images = clone.getElementsByTagName('img');
     await Promise.all(
       Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
+        if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
         return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          setTimeout(resolve, 400);
         });
       })
     );
@@ -1319,7 +1327,13 @@ export async function generateDirectPdfBlob(quote) {
       logging: false,
       backgroundColor: '#ffffff',
       width: 794,
-      height: 1122
+      height: 1122,
+      windowWidth: 794,
+      windowHeight: 1122,
+      x: 0,
+      y: 0,
+      scrollX: 0,
+      scrollY: 0
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.98);
@@ -1336,36 +1350,70 @@ export async function generateDirectPdfBlob(quote) {
   }
 }
 
-export async function downloadDirectQuotationPdf(quote) {
-  const { pdf, fileName } = await generateDirectPdfBlob(quote);
-  pdf.save(fileName);
-  return fileName;
+export async function downloadDirectQuotationPdf(quote, preferredMode = null) {
+  try {
+    const { pdf, fileName, blob } = await generateDirectPdfBlob(quote);
+    
+    // Modu belirle ('picker' | 'direct')
+    const mode = preferredMode || localStorage.getItem('INZAR_PDF_SAVE_LOCATION_PREF') || 'direct';
+
+    // 1. Kullanıcı Konum Seçmek istiyorsa ve Tarayıcı showSaveFilePicker destekliyorsa
+    if (mode === 'picker' && 'showSaveFilePicker' in window && blob) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: 'PDF Belgesi (*.pdf)',
+            accept: { 'application/pdf': ['.pdf'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return fileName;
+      } catch (pickerErr) {
+        // Kullanıcı dosya seçiciyi kapattıysa (iptal)
+        if (pickerErr.name === 'AbortError') {
+          return null;
+        }
+        console.warn('showSaveFilePicker failed, falling back to direct download:', pickerErr);
+      }
+    }
+
+    // 2. Standart İndirme (Doğrudan İndirilenler klasörüne)
+    if (blob) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode) a.parentNode.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 1500);
+    } else {
+      pdf.save(fileName);
+    }
+    return fileName;
+  } catch (err) {
+    console.error('Direct PDF download error:', err);
+    throw err;
+  }
 }
 
 export async function shareQuoteOnWhatsApp(quote) {
   const phone = quote.customerPhone ? quote.customerPhone.replace(/[^0-9]/g, '') : '';
   
-  try {
-    const { file, fileName } = await generateDirectPdfBlob(quote);
-    
-    // Check if Web Share API level 2 with files is supported (e.g. Mobile browsers, Chrome/Safari on mobile)
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: fileName,
-        text: `${quote.customerName || 'Misafir'} - İnzar Turizm Umre Teklif Belgesi`
-      });
-      return { sharedViaNative: true };
-    }
-  } catch (err) {
-    console.log('Web share with file unavailable or cancelled:', err);
-  }
-
-  // Fallback for desktop: Download PDF file & open WhatsApp chat so user can attach it immediately
+  // 1. PDF'i mutlaka indir
   try {
     await downloadDirectQuotationPdf(quote);
-  } catch (e) {}
+  } catch (err) {
+    console.error('WhatsApp öncesi PDF indirme hatası:', err);
+  }
 
+  // 2. WhatsApp penceresini aç
   const encoded = generateWhatsAppMessage(quote);
   const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
   window.open(url, '_blank');

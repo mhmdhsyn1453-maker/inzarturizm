@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'STAFF' CHECK (role IN ('ADMIN', 'STAFF')),
+  role TEXT NOT NULL DEFAULT 'STAFF' CHECK (role IN ('ADMIN', 'STAFF', 'HQ_ASSISTANT')),
   city TEXT DEFAULT 'İstanbul',
   branch TEXT DEFAULT 'Merkez',
   phone TEXT,
@@ -39,8 +39,12 @@ CREATE TABLE IF NOT EXISTS public.packages (
   hotel_madinah TEXT NOT NULL,
   distance_makkah TEXT NOT NULL,
   distance_madinah TEXT NOT NULL,
+  meal_makkah TEXT DEFAULT 'Açık Büfe',
+  meal_madinah TEXT DEFAULT 'Açık Büfe',
   default_days_makkah INTEGER DEFAULT 10,
   default_days_madinah INTEGER DEFAULT 4,
+  makkah_hotels JSONB DEFAULT '[]'::jsonb,
+  madinah_hotels JSONB DEFAULT '[]'::jsonb,
   makkah_prices JSONB NOT NULL,
   madinah_prices JSONB NOT NULL,
   fixed_expenses JSONB NOT NULL,
@@ -48,20 +52,7 @@ CREATE TABLE IF NOT EXISTS public.packages (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- C. MONTHS_CONFIG (12 Aylık Sezon Matrisi & Özel Dönemler)
-CREATE TABLE IF NOT EXISTS public.months_config (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  label TEXT NOT NULL,
-  season TEXT NOT NULL,
-  is_peak BOOLEAN DEFAULT false,
-  badge TEXT,
-  subtitle TEXT,
-  sort_order INTEGER NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- D. CURRENCIES (Döviz Kurları)
+-- C. CURRENCIES (Döviz Kurları)
 CREATE TABLE IF NOT EXISTS public.currencies (
   id TEXT PRIMARY KEY DEFAULT 'current_rates',
   usd_try NUMERIC NOT NULL,
@@ -73,15 +64,47 @@ CREATE TABLE IF NOT EXISTS public.currencies (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- D. CUSTOMERS (Müşteri ve Ziyaretçi Kayıtları)
+CREATE TABLE IF NOT EXISTS public.customers (
+  id TEXT PRIMARY KEY,
+  tc_no TEXT,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  created_by_id TEXT,
+  created_by_name TEXT,
+  branch TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- E. QUOTES (Verilen Teklifler)
 CREATE TABLE IF NOT EXISTS public.quotes (
   id TEXT PRIMARY KEY,
   customer_name TEXT NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  tc_no TEXT,
   customer_phone TEXT,
   package_id TEXT NOT NULL,
   package_name TEXT NOT NULL,
   selected_month TEXT NOT NULL,
   selected_month_label TEXT,
+  start_date TEXT,
+  end_date TEXT,
+  route_order TEXT DEFAULT 'makkah_first',
+  route_schedule JSONB,
+  selected_makkah_hotel_id TEXT,
+  selected_madinah_hotel_id TEXT,
+  include_meals BOOLEAN DEFAULT true,
+  include_makkah_meals BOOLEAN DEFAULT true,
+  include_madinah_meals BOOLEAN DEFAULT true,
+  is_mixed_room_mode BOOLEAN DEFAULT false,
+  mixed_rooms JSONB,
+  mixed_rooms_breakdown JSONB,
+  mixed_rooms_summary JSONB,
   makkah_days INTEGER DEFAULT 10,
   madinah_days INTEGER DEFAULT 4,
   pax_count INTEGER DEFAULT 1,
@@ -91,7 +114,13 @@ CREATE TABLE IF NOT EXISTS public.quotes (
   final_price_try NUMERIC NOT NULL,
   final_price_eur NUMERIC NOT NULL,
   currency TEXT DEFAULT 'USD',
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'revised', 'approved_revised')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'customer_approved', 'hq_approved', 'hq_rejected', 'approved', 'rejected', 'revised', 'approved_revised', 'expired')),
+  valid_until TIMESTAMPTZ,
+  customer_approved_at TIMESTAMPTZ,
+  customer_approved_by TEXT,
+  hq_approved_at TIMESTAMPTZ,
+  hq_approved_by TEXT,
+  hq_note TEXT,
   created_by_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_by_name TEXT NOT NULL,
   branch TEXT NOT NULL,
@@ -127,8 +156,8 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 -- 3. GERÇEK ZAMANLI (REALTIME) YAYINLARIN AKTİF EDİLMESİ
 -- ==============================================================================
 ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.customers;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.packages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.months_config;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.currencies;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.announcements;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.audit_logs;
@@ -139,8 +168,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 -- ==============================================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.packages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.months_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.currencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
@@ -148,24 +177,19 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 -- Okuma Politikaları (Tüm oturum açmış kullanıcılar okuyabilir)
 CREATE POLICY "Profiles read allowed" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Packages read allowed" ON public.packages FOR SELECT USING (true);
-CREATE POLICY "Months read allowed" ON public.months_config FOR SELECT USING (true);
 CREATE POLICY "Currencies read allowed" ON public.currencies FOR SELECT USING (true);
+CREATE POLICY "Customers read allowed" ON public.customers FOR SELECT USING (true);
 CREATE POLICY "Quotes read allowed" ON public.quotes FOR SELECT USING (true);
 CREATE POLICY "Announcements read allowed" ON public.announcements FOR SELECT USING (true);
 CREATE POLICY "Audit logs read allowed" ON public.audit_logs FOR SELECT USING (true);
 
 -- Yazma Politikaları
--- Teklifleri herkes oluşturabilir ve güncelleyebilir
 CREATE POLICY "Quotes insert allowed" ON public.quotes FOR INSERT WITH CHECK (true);
 CREATE POLICY "Quotes update allowed" ON public.quotes FOR UPDATE USING (true);
 CREATE POLICY "Quotes delete allowed" ON public.quotes FOR DELETE USING (true);
-
--- Audit logları herkes ekleyebilir
+CREATE POLICY "Customers all allowed" ON public.customers FOR ALL USING (true);
 CREATE POLICY "Audit logs insert allowed" ON public.audit_logs FOR INSERT WITH CHECK (true);
-
--- Paket, kur, ay ve duyuruları güncelleme izni
 CREATE POLICY "Packages update allowed" ON public.packages FOR ALL USING (true);
-CREATE POLICY "Months update allowed" ON public.months_config FOR ALL USING (true);
 CREATE POLICY "Currencies update allowed" ON public.currencies FOR ALL USING (true);
 CREATE POLICY "Announcements update allowed" ON public.announcements FOR ALL USING (true);
 CREATE POLICY "Profiles update allowed" ON public.profiles FOR ALL USING (true);
