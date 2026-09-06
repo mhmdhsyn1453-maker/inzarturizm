@@ -1396,6 +1396,62 @@ Hayırlı günler dileriz.
     return template;
   }
 
+  saveAsDefaultWhatsAppTemplate(type, template, user = null) {
+    try {
+      const customDefaults = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_CUSTOM_DEFAULTS') || '{}');
+      if (typeof type === 'object') {
+        Object.assign(customDefaults, type);
+      } else {
+        customDefaults[type] = template;
+      }
+      localStorage.setItem('INZAR_WHATSAPP_CUSTOM_DEFAULTS', JSON.stringify(customDefaults));
+    } catch (e) {}
+
+    this.saveWhatsAppTemplate(type, template, user);
+
+    this.addAuditLog({
+      action: 'WHATSAPP_DEFAULT_TEMPLATE_SAVED',
+      user: user?.name || 'Genel Merkez',
+      details: `WhatsApp ${type} şablonu yeni kurumsal varsayılan olarak kaydedildi.`,
+      timestamp: new Date().toISOString()
+    });
+
+    if (this.isSupabaseReady) {
+      supabase.from('app_settings').upsert({
+        key: `whatsapp_default_${type}`,
+        value: typeof template === 'string' ? template : JSON.stringify(template),
+        updated_at: new Date().toISOString()
+      }).then(({ error }) => {
+        if (error) console.error('Supabase default template upsert error:', error);
+      });
+    }
+
+    return template;
+  }
+
+  resetWhatsAppTemplateToFactory(type, user = null) {
+    try {
+      const allTemplates = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
+      const customDefaults = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_CUSTOM_DEFAULTS') || '{}');
+      delete allTemplates[type];
+      delete customDefaults[type];
+      localStorage.setItem('INZAR_WHATSAPP_TEMPLATES', JSON.stringify(allTemplates));
+      localStorage.setItem('INZAR_WHATSAPP_CUSTOM_DEFAULTS', JSON.stringify(customDefaults));
+      if (type === 'quote') {
+        localStorage.removeItem('INZAR_WHATSAPP_TEMPLATE');
+      }
+    } catch (e) {}
+
+    this.addAuditLog({
+      action: 'WHATSAPP_TEMPLATE_FACTORY_RESET',
+      user: user?.name || 'Genel Merkez',
+      details: `WhatsApp ${type} şablonu fabrika ayarlarına sıfırlandı.`,
+      timestamp: new Date().toISOString()
+    });
+
+    return this.getWhatsAppTemplate(type);
+  }
+
   resetToDefaults(user = null) {
     localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(DEFAULT_PACKAGES));
     localStorage.setItem(STORAGE_KEYS.CURRENCIES, JSON.stringify(DEFAULT_CURRENCIES));

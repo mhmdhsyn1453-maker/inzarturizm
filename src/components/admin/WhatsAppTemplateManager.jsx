@@ -17,8 +17,11 @@ import {
   XCircle,
   AlertTriangle,
   Ban,
-  FileQuestion
+  Star,
+  BookmarkCheck,
+  Layers
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 const WhatsAppIcon = ({ className = 'h-5 w-5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -34,7 +37,11 @@ const TEMPLATE_TABS = [
     badge: 'Taslak & İlk Teklif',
     desc: 'Personelin teklif oluştururken müşteriye gönderdiği standart tanıtım ve fiyat şablonu.',
     icon: FileText,
-    color: 'emerald'
+    accentColor: 'from-emerald-600 to-teal-700',
+    lightBg: 'bg-emerald-50/80',
+    borderActive: 'border-emerald-600',
+    ringActive: 'ring-emerald-500/25',
+    textActive: 'text-emerald-950'
   },
   {
     id: 'hq_approved',
@@ -43,7 +50,11 @@ const TEMPLATE_TABS = [
     badge: 'Genel Merkez Onayladı',
     desc: 'Genel Merkez teklifi onayladığında müşteriye gönderilecek resmi tebrik ve özet şablonu.',
     icon: CheckCircle2,
-    color: 'teal'
+    accentColor: 'from-teal-600 to-emerald-800',
+    lightBg: 'bg-teal-50/80',
+    borderActive: 'border-teal-600',
+    ringActive: 'ring-teal-500/25',
+    textActive: 'text-teal-950'
   },
   {
     id: 'hq_rejected',
@@ -52,7 +63,11 @@ const TEMPLATE_TABS = [
     badge: 'Genel Merkez Reddetti',
     desc: 'Genel Merkez teklifi uygun görmediğinde müşteriye giden nezaketli ret ve alternatif arayış şablonu.',
     icon: XCircle,
-    color: 'rose'
+    accentColor: 'from-rose-600 to-pink-700',
+    lightBg: 'bg-rose-50/80',
+    borderActive: 'border-rose-600',
+    ringActive: 'ring-rose-500/25',
+    textActive: 'text-rose-950'
   },
   {
     id: 'rejected',
@@ -61,7 +76,11 @@ const TEMPLATE_TABS = [
     badge: 'Müşteri Vazgeçti',
     desc: 'Müşteri tekliften vazgeçtiğinde arşive kaldırma ve kayıt iptal bilgilendirme şablonu.',
     icon: Ban,
-    color: 'amber'
+    accentColor: 'from-amber-600 to-orange-700',
+    lightBg: 'bg-amber-50/80',
+    borderActive: 'border-amber-600',
+    ringActive: 'ring-amber-500/25',
+    textActive: 'text-amber-950'
   }
 ];
 
@@ -90,6 +109,7 @@ export default function WhatsAppTemplateManager() {
   const [templates, setTemplates] = useState(() => syncService.getAllWhatsAppTemplates());
   const [copied, setCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isDefaultSaved, setIsDefaultSaved] = useState(false);
 
   const currentTemplate = templates[activeTab] || '';
 
@@ -104,56 +124,60 @@ export default function WhatsAppTemplateManager() {
     handleTemplateChange(currentTemplate + (currentTemplate.endsWith(' ') || currentTemplate.endsWith('\n') ? '' : ' ') + tag + ' ');
   };
 
+  // 1. ŞABLONU KAYDET
   const handleSave = () => {
     syncService.saveWhatsAppTemplate(activeTab, currentTemplate, currentUser);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
     showAlert({
       title: '✓ WhatsApp Şablonu Kaydedildi',
-      message: `"${TEMPLATE_TABS.find(t => t.id === activeTab)?.title}" şablonu başarıyla güncellendi ve sisteme işlendi.`,
+      message: `"${TEMPLATE_TABS.find(t => t.id === activeTab)?.title}" şablonu güncellendi ve tüm sistemde aktif edildi.`,
       type: 'success'
     });
   };
 
-  const handleSaveAll = () => {
-    TEMPLATE_TABS.forEach(tab => {
-      syncService.saveWhatsAppTemplate(tab.id, templates[tab.id], currentUser);
-    });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
-    showAlert({
-      title: '✓ Tüm Şablonlar Kaydedildi',
-      message: 'Tüm WhatsApp mesaj şablonları (Teklif, Onay, Ret, İptal) başarıyla kaydedildi.',
-      type: 'success'
-    });
-  };
-
-  const handleResetCurrent = async () => {
+  // 2. VARSAYILAN OLARAK KAYDET
+  const handleSaveAsDefault = async () => {
     const tabObj = TEMPLATE_TABS.find(t => t.id === activeTab);
     const confirmed = await showConfirm({
-      title: 'Şablonu Sıfırla',
-      message: `"${tabObj?.title}" şablonunu fabrika varsayılanına döndürmek istediğinize emin misiniz?`,
+      title: '🌟 Varsayılan Olarak Kaydet',
+      message: `Mevcut "${tabObj?.title}" metnini yeni KURUMSAL VARSAYILAN ŞABLON olarak belirlemek istiyor musunuz?`,
+      details: 'Bu işlem sonrasında sistem fabrika ayarlarına sıfırlansa bile bu şablon temel alınacaktır.',
+      confirmText: 'Evet, Varsayılan Yap',
+      cancelText: 'Vazgeç',
+      confirmVariant: 'emerald'
+    });
+
+    if (confirmed) {
+      syncService.saveAsDefaultWhatsAppTemplate(activeTab, currentTemplate, currentUser);
+      setIsDefaultSaved(true);
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+      setTimeout(() => setIsDefaultSaved(false), 2500);
+      showAlert({
+        title: '🌟 Kurumsal Varsayılan Olarak Kaydedildi',
+        message: `"${tabObj?.title}" metni yeni kalıcı varsayılan olarak kaydedildi.`,
+        type: 'success'
+      });
+    }
+  };
+
+  // 3. VARSAYILANA SIFIRLA
+  const handleResetToFactory = async () => {
+    const tabObj = TEMPLATE_TABS.find(t => t.id === activeTab);
+    const confirmed = await showConfirm({
+      title: '🔄 Fabrika Varsayılanına Sıfırla',
+      message: `"${tabObj?.title}" şablonundaki tüm değişiklikleri silip orijinal fabrika ayarlarına döndürmek istediğinize emin misiniz?`,
       confirmText: 'Evet, Sıfırla',
       cancelText: 'Vazgeç',
       confirmVariant: 'amber'
     });
 
     if (confirmed) {
-      try {
-        const stored = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
-        delete stored[activeTab];
-        localStorage.setItem('INZAR_WHATSAPP_TEMPLATES', JSON.stringify(stored));
-        if (activeTab === 'quote') {
-          localStorage.removeItem('INZAR_WHATSAPP_TEMPLATE');
-        }
-      } catch (e) {}
-
-      const def = syncService.getWhatsAppTemplate(activeTab);
+      const def = syncService.resetWhatsAppTemplateToFactory(activeTab, currentUser);
       setTemplates(prev => ({ ...prev, [activeTab]: def }));
-      syncService.saveWhatsAppTemplate(activeTab, def, currentUser);
       showAlert({
-        title: 'Şablon Sıfırlandı',
-        message: `"${tabObj?.title}" şablonu kurumsal fabrika ayarlarına döndürüldü.`,
+        title: '✓ Şablon Sıfırlandı',
+        message: `"${tabObj?.title}" metni orijinal fabrika ayarlarına döndürüldü.`,
         type: 'info'
       });
     }
@@ -190,13 +214,13 @@ export default function WhatsAppTemplateManager() {
   const relevantVariables = ALL_VARIABLES.filter(v => v.for.includes(activeTab));
 
   return (
-    <div className="space-y-6 pb-20 font-sans max-w-7xl mx-auto animate-fade-in">
+    <div className="space-y-6 pb-28 font-sans max-w-7xl mx-auto animate-fade-in relative">
       
-      {/* 👑 Top Banner (Kurumsal Başlık ve Hızlı Eylem Alanı) */}
+      {/* 👑 Top Banner (Yalın ve Şık Başlık Alanı) */}
       <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-700/60">
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-700/60 shadow-xs">
               <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-400" />
               <span>DİNAMİK WHATSAPP ŞABLON MERKEZİ</span>
             </div>
@@ -208,31 +232,15 @@ export default function WhatsAppTemplateManager() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start lg:self-auto flex-wrap">
-            <button
-              type="button"
-              onClick={handleResetCurrent}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-3 border border-white/20 shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95"
-              title="Aktif sekmeyi varsayılana döndür"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span>Varsayılana Dön</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-emerald-950 text-xs font-black px-6 py-3 shadow-lg shadow-emerald-400/30 transition-all cursor-pointer hover:scale-105 active:scale-95"
-            >
-              <Save className="h-4 w-4" />
-              <span>{isSaved ? '✓ Kaydedildi' : 'Şablonu Kaydet'}</span>
-            </button>
+          <div className="hidden lg:flex items-center gap-2 text-xs font-bold bg-emerald-950/70 border border-emerald-700/50 px-4 py-3 rounded-2xl text-emerald-200">
+            <Sparkles className="h-4 w-4 text-emerald-400" />
+            <span>4 Farklı Senaryo İçin Canlı Şablon Motoru</span>
           </div>
         </div>
       </div>
 
-      {/* 🗂️ ŞABLON SEÇİM SEKMELERİ (4 Ana Durum) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 🗂️ ŞABLON SEÇİM SEKMELERİ (Zengin Hover & Aktif Seçim Animasyonları) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {TEMPLATE_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -241,40 +249,53 @@ export default function WhatsAppTemplateManager() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`p-4 rounded-3xl border text-left transition-all duration-300 cursor-pointer select-none relative overflow-hidden flex flex-col justify-between gap-3 ${
+              className={`group p-4.5 rounded-3xl text-left cursor-pointer select-none relative overflow-hidden transition-all duration-300 ease-out transform ${
                 isActive
-                  ? 'bg-white border-emerald-600 ring-2 ring-emerald-500/20 shadow-lg scale-[1.02]'
-                  : 'bg-white/80 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-600 shadow-xs'
+                  ? `bg-white border-2 ${tab.borderActive} ring-4 ${tab.ringActive} shadow-xl scale-[1.03] -translate-y-1`
+                  : 'bg-white/90 border border-slate-200/90 hover:bg-white hover:border-emerald-400 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.015]'
               }`}
             >
-              <div className="flex items-center justify-between w-full">
-                <div className={`p-2.5 rounded-2xl ${
+              {/* Arka Plan Zarif Glow Efekti */}
+              <div className={`absolute -right-8 -top-8 w-24 h-24 rounded-full transition-all duration-500 pointer-events-none ${
+                isActive 
+                  ? 'bg-gradient-to-br ' + tab.accentColor + ' opacity-15 blur-xl scale-125' 
+                  : 'bg-slate-200 opacity-0 group-hover:opacity-40 blur-lg'
+              }`} />
+
+              <div className="flex items-center justify-between w-full relative z-10">
+                <div className={`p-3 rounded-2xl transition-all duration-300 transform ${
                   isActive 
-                    ? 'bg-emerald-700 text-white shadow-xs' 
-                    : 'bg-slate-100 text-slate-600'
+                    ? `bg-gradient-to-br ${tab.accentColor} text-white shadow-md scale-105 rotate-1` 
+                    : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200 group-hover:scale-110 group-hover:rotate-3'
                 }`}>
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4 stroke-[2.5]" />
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all duration-300 ${
                   isActive
-                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                    ? 'bg-emerald-100/90 text-emerald-900 border-emerald-300 shadow-3xs font-extrabold'
+                    : 'bg-slate-100 text-slate-500 border-slate-200/80 group-hover:border-slate-300'
                 }`}>
                   {tab.badge}
                 </span>
               </div>
 
-              <div>
-                <h4 className={`text-xs font-black ${isActive ? 'text-slate-950 font-display' : 'text-slate-700'}`}>
-                  {tab.title}
+              <div className="mt-3.5 space-y-1 relative z-10">
+                <h4 className={`text-xs font-black transition-colors duration-200 flex items-center justify-between ${
+                  isActive ? 'text-slate-950 font-display' : 'text-slate-700 group-hover:text-slate-900'
+                }`}>
+                  <span>{tab.title}</span>
+                  {isActive && <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" />}
                 </h4>
-                <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium">
                   {tab.desc}
                 </p>
               </div>
 
-              {isActive && (
-                <div className="h-1 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-full w-full" />
+              {/* Aktif İndikatör Çizgisi */}
+              {isActive ? (
+                <div className={`h-1.5 bg-gradient-to-r ${tab.accentColor} rounded-full w-full mt-3.5 shadow-xs`} />
+              ) : (
+                <div className="h-1 bg-transparent group-hover:bg-slate-200 rounded-full w-full mt-3.5 transition-colors duration-200" />
               )}
             </button>
           );
@@ -293,7 +314,9 @@ export default function WhatsAppTemplateManager() {
                 <Sparkles className="h-4 w-4 text-emerald-600" />
                 <span>Bu Şablona Özel Dinamik Etiketler (Tıklayarak Ekleyin)</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-semibold">Otomatik Doldurulur</span>
+              <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+                Otomatik Doldurulur
+              </span>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -328,7 +351,7 @@ export default function WhatsAppTemplateManager() {
             </div>
 
             <textarea
-              rows={14}
+              rows={15}
               value={currentTemplate}
               onChange={(e) => handleTemplateChange(e.target.value)}
               placeholder="WhatsApp mesaj şablonunu buraya yazınız..."
@@ -402,6 +425,65 @@ export default function WhatsAppTemplateManager() {
           </div>
         </div>
 
+      </div>
+
+      {/* 🚀 SAYFANIN ALTINDA SABİT EYLEM ÇUBUĞU (Kullanıcının İstediği Alt Buton Barı) */}
+      <div className="fixed bottom-3 left-4 right-4 sm:left-72 sm:right-6 z-40">
+        <div className="pearl-card rounded-3xl p-3.5 sm:px-6 sm:py-3.5 bg-slate-900/95 text-white border border-slate-700/80 shadow-2xl backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-from-bottom">
+          
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-2xl bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+              <Layers className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs font-black text-white flex items-center gap-2">
+                <span>{activeTabObj.title}</span>
+                <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700/50">
+                  {activeTabObj.badge}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
+                Yapılan değişiklikleri doğrudan sisteme kaydedebilir veya yeni varsayılan olarak sabitleyebilirsiniz.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap justify-end">
+            
+            {/* 1. Varsayılana Sıfırla Butonu */}
+            <button
+              type="button"
+              onClick={handleResetToFactory}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-bold text-xs transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              title="Orijinal fabrika ayarlarına sıfırla"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-amber-400" />
+              <span>Varsayılana Sıfırla</span>
+            </button>
+
+            {/* 2. Varsayılan Olarak Kaydet Butonu */}
+            <button
+              type="button"
+              onClick={handleSaveAsDefault}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 border border-emerald-700/60 font-bold text-xs transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              title="Bu metni yeni fabrika varsayılanı yap"
+            >
+              <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+              <span>{isDefaultSaved ? '✓ Varsayılan Oldu' : 'Varsayılan Olarak Kaydet'}</span>
+            </button>
+
+            {/* 3. Şablonu Kaydet Butonu */}
+            <button
+              type="button"
+              onClick={handleSave}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-lg shadow-emerald-500/30 hover:scale-105 active:scale-95"
+            >
+              <Save className="h-4 w-4 stroke-[2.5]" />
+              <span>{isSaved ? '✓ Kaydedildi' : 'Şablonu Kaydet'}</span>
+            </button>
+
+          </div>
+        </div>
       </div>
 
     </div>
