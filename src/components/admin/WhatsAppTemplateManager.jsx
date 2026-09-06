@@ -429,56 +429,54 @@ export default function WhatsAppTemplateManager() {
 
       </div>
 
-      {/* 🚀 SAYFANIN ALTINDA SABİT EYLEM ÇUBUĞU (Kullanıcının İstediği Alt Buton Barı) */}
+      {/* 🚀 SAYFANIN ALTINDA SABİT EYLEM ÇUBUĞU */}
       <div className="fixed bottom-3 left-4 right-4 sm:left-72 sm:right-6 z-40">
-        <div className="pearl-card rounded-3xl p-3.5 sm:px-6 sm:py-3.5 bg-slate-900/95 text-white border border-slate-700/80 shadow-2xl backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-from-bottom">
+        <div className="pearl-card rounded-2xl p-3 sm:px-5 sm:py-3 bg-slate-900/95 text-white border border-slate-700/90 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-4 animate-slide-from-bottom">
           
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-2xl bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-              <Layers className="h-5 w-5" />
+          {/* Sol: Hangi Taslakta Olduğu */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-8 w-8 rounded-xl bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+              <Layers className="h-4 w-4" />
             </div>
-            <div>
-              <div className="text-xs font-black text-white flex items-center gap-2">
-                <span>{activeTabObj.title}</span>
-                <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700/50">
-                  {activeTabObj.badge}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
-                Yapılan değişiklikleri doğrudan sisteme kaydedebilir veya yeni varsayılan olarak sabitleyebilirsiniz.
-              </p>
+            <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+              <span className="text-xs font-medium text-slate-400 shrink-0">Aktif Taslak:</span>
+              <span className="text-xs font-black text-white truncate">{activeTabObj.title}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700/50 shrink-0">
+                {activeTabObj.badge}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap justify-end">
+          {/* Sağ: Sadece 3 Eylem Butonu (Tek Sırada) */}
+          <div className="flex items-center gap-2 shrink-0">
             
-            {/* 1. Varsayılana Sıfırla Butonu */}
+            {/* 1. Varsayılana Sıfırla */}
             <button
               type="button"
               onClick={handleResetToFactory}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-bold text-xs transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
-              title="Orijinal fabrika ayarlarına sıfırla"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-bold text-xs transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95 whitespace-nowrap"
+              title="Fabrika varsayılanına sıfırla"
             >
               <RotateCcw className="h-3.5 w-3.5 text-amber-400" />
               <span>Varsayılana Sıfırla</span>
             </button>
 
-            {/* 2. Varsayılan Olarak Kaydet Butonu */}
+            {/* 2. Varsayılan Olarak Kaydet */}
             <button
               type="button"
               onClick={handleSaveAsDefault}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 border border-emerald-700/60 font-bold text-xs transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 border border-emerald-700/60 font-bold text-xs transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95 whitespace-nowrap"
               title="Bu metni yeni fabrika varsayılanı yap"
             >
               <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
               <span>{isDefaultSaved ? '✓ Varsayılan Oldu' : 'Varsayılan Olarak Kaydet'}</span>
             </button>
 
-            {/* 3. Şablonu Kaydet Butonu */}
+            {/* 3. Şablonu Kaydet */}
             <button
               type="button"
               onClick={handleSave}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-lg shadow-emerald-500/30 hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-lg shadow-emerald-500/30 hover:scale-105 active:scale-95 whitespace-nowrap"
             >
               <Save className="h-4 w-4 stroke-[2.5]" />
               <span>{isSaved ? '✓ Kaydedildi' : 'Şablonu Kaydet'}</span>
