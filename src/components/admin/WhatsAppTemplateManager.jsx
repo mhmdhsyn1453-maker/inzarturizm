@@ -111,6 +111,15 @@ export default function WhatsAppTemplateManager() {
   const [isSaved, setIsSaved] = useState(false);
   const [isDefaultSaved, setIsDefaultSaved] = useState(false);
 
+  React.useEffect(() => {
+    const unsubscribe = syncService.subscribe((event) => {
+      if (event.type === 'WHATSAPP_TEMPLATES_UPDATED' && event.payload) {
+        setTemplates(event.payload);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const currentTemplate = templates[activeTab] || '';
 
   const handleTemplateChange = (text) => {

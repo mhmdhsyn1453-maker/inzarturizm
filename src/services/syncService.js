@@ -482,14 +482,30 @@ class SyncService {
     try {
       const { data, error } = await supabase.from('app_settings').select('*');
       if (!error && data && data.length > 0) {
+        const storedTemplates = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
+        let hasTemplateUpdate = false;
+
         data.forEach(item => {
           if (item.key === 'whatsapp_template' && item.value) {
+            storedTemplates.quote = item.value;
             localStorage.setItem('INZAR_WHATSAPP_TEMPLATE', item.value);
-            this.broadcast('WHATSAPP_TEMPLATE_UPDATED', item.value);
+            hasTemplateUpdate = true;
+          } else if (item.key.startsWith('whatsapp_template_') && item.value) {
+            const type = item.key.replace('whatsapp_template_', '');
+            storedTemplates[type] = item.value;
+            hasTemplateUpdate = true;
           }
         });
+
+        if (hasTemplateUpdate) {
+          localStorage.setItem('INZAR_WHATSAPP_TEMPLATES', JSON.stringify(storedTemplates));
+          this.broadcast('WHATSAPP_TEMPLATE_UPDATED', storedTemplates);
+          this.notifyListeners({ type: 'WHATSAPP_TEMPLATES_UPDATED', payload: storedTemplates });
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase app_settings fetch error:', e);
+    }
   }
 
   handleRemoteQuoteChange(payload) {
