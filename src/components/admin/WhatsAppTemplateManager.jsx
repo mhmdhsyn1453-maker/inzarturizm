@@ -227,24 +227,17 @@ export default function WhatsAppTemplateManager() {
       
       {/* 👑 Top Banner (Yalın ve Şık Başlık Alanı) */}
       <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-700/60 shadow-xs">
-              <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-400" />
-              <span>DİNAMİK WHATSAPP ŞABLON MERKEZİ</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">
-              WhatsApp Mesaj Şablonları Yönetimi
-            </h2>
-            <p className="text-sm text-emerald-200/90 font-medium max-w-2xl">
-              Teklif gönderme, Genel Merkez onay, ret ve müşteri iptal durumlarında WhatsApp üzerinden gidecek mesaj metinlerini buradan özelleştirebilirsiniz.
-            </p>
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-700/60 shadow-xs">
+            <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-400" />
+            <span>DİNAMİK WHATSAPP ŞABLON MERKEZİ</span>
           </div>
-
-          <div className="hidden lg:flex items-center gap-2 text-xs font-bold bg-emerald-950/70 border border-emerald-700/50 px-4 py-3 rounded-2xl text-emerald-200">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <span>4 Farklı Senaryo İçin Canlı Şablon Motoru</span>
-          </div>
+          <h2 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">
+            WhatsApp Mesaj Şablonları Yönetimi
+          </h2>
+          <p className="text-sm text-emerald-200/90 font-medium max-w-2xl">
+            Teklif gönderme, Genel Merkez onay, ret ve müşteri iptal durumlarında WhatsApp üzerinden gidecek mesaj metinlerini buradan özelleştirebilirsiniz.
+          </p>
         </div>
       </div>
 
