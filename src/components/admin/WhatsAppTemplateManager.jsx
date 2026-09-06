@@ -12,7 +12,12 @@ import {
   Smartphone,
   Info,
   Send,
-  FileText
+  FileText,
+  Check,
+  XCircle,
+  AlertTriangle,
+  Ban,
+  FileQuestion
 } from 'lucide-react';
 
 const WhatsAppIcon = ({ className = 'h-5 w-5' }) => (
@@ -21,63 +26,159 @@ const WhatsAppIcon = ({ className = 'h-5 w-5' }) => (
   </svg>
 );
 
-const VARIABLES = [
-  { tag: '{MUSTERI_ADI}', label: 'Misafir Adı', example: 'Musa Kazım' },
-  { tag: '{PAKET_ADI}', label: 'Paket Adı', example: 'Ekonomik Paket' },
-  { tag: '{MEKKE_OTELI}', label: 'Mekke Oteli', example: 'Merkezi Otel' },
-  { tag: '{MEDINE_OTELI}', label: 'Medine Oteli', example: 'Merkezi Otel' },
-  { tag: '{MEKKE_GECE}', label: 'Mekke Gece', example: '10' },
-  { tag: '{MEDINE_GECE}', label: 'Medine Gece', example: '4' },
-  { tag: '{TOPLAM_GUN}', label: 'Toplam Gün', example: '14' },
-  { tag: '{ODA_TIPI}', label: 'Oda Tipi', example: '2 Kişilik Oda' },
-  { tag: '{FIYAT_USD}', label: 'Fiyat (USD)', example: '650' },
-  { tag: '{FIYAT_TL}', label: 'Fiyat (TL)', example: '24.500' },
-  { tag: '{TEMSILCI}', label: 'Satış Temsilcisi', example: 'Şeyhmus Çoban' }
+const TEMPLATE_TABS = [
+  {
+    id: 'quote',
+    title: 'Standart Teklif Şablonu',
+    shortTitle: 'Teklif Gönderimi',
+    badge: 'Taslak & İlk Teklif',
+    desc: 'Personelin teklif oluştururken müşteriye gönderdiği standart tanıtım ve fiyat şablonu.',
+    icon: FileText,
+    color: 'emerald'
+  },
+  {
+    id: 'hq_approved',
+    title: 'Merkez Onay Bildirimi',
+    shortTitle: 'Onay Bildirimi',
+    badge: 'Genel Merkez Onayladı',
+    desc: 'Genel Merkez teklifi onayladığında müşteriye gönderilecek resmi tebrik ve özet şablonu.',
+    icon: CheckCircle2,
+    color: 'teal'
+  },
+  {
+    id: 'hq_rejected',
+    title: 'Merkez Ret / Bilgilendirme',
+    shortTitle: 'Merkez Ret Mesajı',
+    badge: 'Genel Merkez Reddetti',
+    desc: 'Genel Merkez teklifi uygun görmediğinde müşteriye giden nezaketli ret ve alternatif arayış şablonu.',
+    icon: XCircle,
+    color: 'rose'
+  },
+  {
+    id: 'rejected',
+    title: 'Müşteri İptal / Vazgeçiş',
+    shortTitle: 'Müşteri İptali',
+    badge: 'Müşteri Vazgeçti',
+    desc: 'Müşteri tekliften vazgeçtiğinde arşive kaldırma ve kayıt iptal bilgilendirme şablonu.',
+    icon: Ban,
+    color: 'amber'
+  }
+];
+
+const ALL_VARIABLES = [
+  { tag: '{MUSTERI_ADI}', label: 'Misafir Adı', example: 'Musa Kazım', for: ['quote', 'hq_approved', 'hq_rejected', 'rejected'] },
+  { tag: '{PAKET_ADI}', label: 'Paket Adı', example: 'Ekonomik Umre Paketi', for: ['quote', 'hq_approved', 'hq_rejected', 'rejected'] },
+  { tag: '{TEMSILCI}', label: 'Temsilci Adı', example: 'Şeyhmus Çoban', for: ['quote', 'hq_approved', 'hq_rejected', 'rejected'] },
+  { tag: '{TEKLIF_NO}', label: 'Teklif / Talep No', example: 'INZ-2026-894', for: ['hq_approved', 'hq_rejected', 'rejected'] },
+  { tag: '{MERKEZ_NOTU}', label: 'Merkez Ret Gerekçesi', example: 'Otel kontenjanı doluluğu sebebiyle alternatif tarihler önerilmektedir.', for: ['hq_rejected'] },
+  { tag: '{FIYAT_USD}', label: 'Fiyat (USD)', example: '650', for: ['quote', 'hq_approved'] },
+  { tag: '{FIYAT_TL}', label: 'Fiyat (TL)', example: '24.500', for: ['quote', 'hq_approved'] },
+  { tag: '{KISI_SAYISI}', label: 'Kişi Sayısı', example: '2', for: ['quote', 'hq_approved'] },
+  { tag: '{MEKKE_OTELI}', label: 'Mekke Oteli', example: 'Merkezi Otel (Harem 250m)', for: ['quote', 'hq_approved'] },
+  { tag: '{MEDINE_OTELI}', label: 'Medine Oteli', example: 'Merkezi Otel (Mescid 150m)', for: ['quote', 'hq_approved'] },
+  { tag: '{MEKKE_GECE}', label: 'Mekke Gece', example: '10', for: ['quote', 'hq_approved'] },
+  { tag: '{MEDINE_GECE}', label: 'Medine Gece', example: '4', for: ['quote', 'hq_approved'] },
+  { tag: '{TOPLAM_GUN}', label: 'Toplam Gün', example: '14', for: ['quote', 'hq_approved'] },
+  { tag: '{ODA_TIPI}', label: 'Oda Tipi', example: '2 Kişilik Oda', for: ['quote', 'hq_approved'] }
 ];
 
 export default function WhatsAppTemplateManager() {
   const { currentUser } = useAuth();
   const { showAlert, showConfirm } = useModal();
-  const [template, setTemplate] = useState(() => syncService.getWhatsAppTemplate());
+  
+  const [activeTab, setActiveTab] = useState('quote');
+  const [templates, setTemplates] = useState(() => syncService.getAllWhatsAppTemplates());
   const [copied, setCopied] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
+  const currentTemplate = templates[activeTab] || '';
+
+  const handleTemplateChange = (text) => {
+    setTemplates(prev => ({
+      ...prev,
+      [activeTab]: text
+    }));
+  };
+
   const handleInsertTag = (tag) => {
-    setTemplate(prev => prev + (prev.endsWith(' ') || prev.endsWith('\n') ? '' : ' ') + tag + ' ');
+    handleTemplateChange(currentTemplate + (currentTemplate.endsWith(' ') || currentTemplate.endsWith('\n') ? '' : ' ') + tag + ' ');
   };
 
   const handleSave = () => {
-    syncService.saveWhatsAppTemplate(template, currentUser);
+    syncService.saveWhatsAppTemplate(activeTab, currentTemplate, currentUser);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
     showAlert({
-      title: '✓ WhatsApp Şablonu Güncellendi',
-      message: 'Personellerin WhatsApp üzerinden müşteriye göndereceği mesaj şablonu başarıyla kaydedildi.',
+      title: '✓ WhatsApp Şablonu Kaydedildi',
+      message: `"${TEMPLATE_TABS.find(t => t.id === activeTab)?.title}" şablonu başarıyla güncellendi ve sisteme işlendi.`,
       type: 'success'
     });
   };
 
-  const handleReset = async () => {
+  const handleSaveAll = () => {
+    TEMPLATE_TABS.forEach(tab => {
+      syncService.saveWhatsAppTemplate(tab.id, templates[tab.id], currentUser);
+    });
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2500);
+    showAlert({
+      title: '✓ Tüm Şablonlar Kaydedildi',
+      message: 'Tüm WhatsApp mesaj şablonları (Teklif, Onay, Ret, İptal) başarıyla kaydedildi.',
+      type: 'success'
+    });
+  };
+
+  const handleResetCurrent = async () => {
+    const tabObj = TEMPLATE_TABS.find(t => t.id === activeTab);
     const confirmed = await showConfirm({
-      title: 'Varsayılan Şablona Sıfırla',
-      message: 'WhatsApp mesaj şablonunu fabrika ayarlarına döndürmek istediğinize emin misiniz?',
+      title: 'Şablonu Sıfırla',
+      message: `"${tabObj?.title}" şablonunu fabrika varsayılanına döndürmek istediğinize emin misiniz?`,
       confirmText: 'Evet, Sıfırla',
       cancelText: 'Vazgeç',
       confirmVariant: 'amber'
     });
 
     if (confirmed) {
-      localStorage.removeItem('INZAR_WHATSAPP_TEMPLATE');
-      const def = syncService.getWhatsAppTemplate();
-      setTemplate(def);
-      syncService.saveWhatsAppTemplate(def, currentUser);
+      try {
+        const stored = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
+        delete stored[activeTab];
+        localStorage.setItem('INZAR_WHATSAPP_TEMPLATES', JSON.stringify(stored));
+        if (activeTab === 'quote') {
+          localStorage.removeItem('INZAR_WHATSAPP_TEMPLATE');
+        }
+      } catch (e) {}
+
+      const def = syncService.getWhatsAppTemplate(activeTab);
+      setTemplates(prev => ({ ...prev, [activeTab]: def }));
+      syncService.saveWhatsAppTemplate(activeTab, def, currentUser);
       showAlert({
         title: 'Şablon Sıfırlandı',
-        message: 'WhatsApp mesaj şablonu kurumsal varsayılana döndürüldü.',
+        message: `"${tabObj?.title}" şablonu kurumsal fabrika ayarlarına döndürüldü.`,
         type: 'info'
       });
     }
   };
+
+  // Live preview interpolation
+  const getPreviewMessage = () => {
+    return currentTemplate
+      .replace(/{MUSTERI_ADI}/g, 'Musa Kazım')
+      .replace(/{PAKET_ADI}/g, 'Ekonomik Umre Paketi')
+      .replace(/{MEKKE_OTELI}/g, 'Merkezi Otel (Harem 250m)')
+      .replace(/{MEDINE_OTELI}/g, 'Merkezi Otel (Mescid 150m)')
+      .replace(/{MEKKE_GECE}/g, '10')
+      .replace(/{MEDINE_GECE}/g, '4')
+      .replace(/{TOPLAM_GUN}/g, '14')
+      .replace(/{ODA_TIPI}/g, '2 Kişilik Oda')
+      .replace(/{FIYAT_USD}/g, '650')
+      .replace(/{FIYAT_TL}/g, '24.500')
+      .replace(/{TEMSILCI}/g, currentUser?.name || 'Şeyhmus Çoban')
+      .replace(/{TEKLIF_NO}/g, 'INZ-2026-894')
+      .replace(/{KISI_SAYISI}/g, '2')
+      .replace(/{MERKEZ_NOTU}/g, '\n\n*Merkez Açıklaması / Gerekçe:* Seçilen tarih aralığında otel kontenjanı tükendiğinden bir sonraki haftaya planlanması önerilmektedir.');
+  };
+
+  const previewMessage = getPreviewMessage();
 
   const handleCopyPreview = () => {
     navigator.clipboard.writeText(previewMessage);
@@ -85,44 +186,34 @@ export default function WhatsAppTemplateManager() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Live preview interpolation
-  const previewMessage = template
-    .replace(/{MUSTERI_ADI}/g, 'Musa Kazım')
-    .replace(/{PAKET_ADI}/g, 'Ekonomik Umre Paketi')
-    .replace(/{MEKKE_OTELI}/g, 'Merkezi Otel (Harem 250m)')
-    .replace(/{MEDINE_OTELI}/g, 'Merkezi Otel (Mescid 150m)')
-    .replace(/{MEKKE_GECE}/g, '10')
-    .replace(/{MEDINE_GECE}/g, '4')
-    .replace(/{TOPLAM_GUN}/g, '14')
-    .replace(/{ODA_TIPI}/g, '2 Kişilik Oda')
-    .replace(/{FIYAT_USD}/g, '650')
-    .replace(/{FIYAT_TL}/g, '24.500')
-    .replace(/{TEMSILCI}/g, currentUser?.name || 'Şeyhmus Çoban');
+  const activeTabObj = TEMPLATE_TABS.find(t => t.id === activeTab) || TEMPLATE_TABS[0];
+  const relevantVariables = ALL_VARIABLES.filter(v => v.for.includes(activeTab));
 
   return (
     <div className="space-y-6 pb-20 font-sans max-w-7xl mx-auto animate-fade-in">
       
-      {/* 👑 Top Banner (Kullanıcının İstediği Resmi Kurumsal Banner) */}
+      {/* 👑 Top Banner (Kurumsal Başlık ve Hızlı Eylem Alanı) */}
       <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-200 border border-emerald-700/60">
               <WhatsAppIcon className="h-3.5 w-3.5 text-emerald-400" />
-              <span>OTONOM MESAJ & BİLGİLENDİRME</span>
+              <span>DİNAMİK WHATSAPP ŞABLON MERKEZİ</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">
-              WhatsApp Otonom Mesaj Yönetimi
+              WhatsApp Mesaj Şablonları Yönetimi
             </h2>
             <p className="text-sm text-emerald-200/90 font-medium max-w-2xl">
-              Genel Merkez tarafından onaylanan resmi teklif bildirim ve eşlik metni şablonunu buradan yönetebilirsiniz.
+              Teklif gönderme, Genel Merkez onay, ret ve müşteri iptal durumlarında WhatsApp üzerinden gidecek mesaj metinlerini buradan özelleştirebilirsiniz.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start lg:self-auto">
+          <div className="flex items-center gap-3 self-start lg:self-auto flex-wrap">
             <button
               type="button"
-              onClick={handleReset}
+              onClick={handleResetCurrent}
               className="flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-3 border border-white/20 shadow-md transition-all cursor-pointer hover:scale-105 active:scale-95"
+              title="Aktif sekmeyi varsayılana döndür"
             >
               <RotateCcw className="h-4 w-4" />
               <span>Varsayılana Dön</span>
@@ -140,6 +231,56 @@ export default function WhatsAppTemplateManager() {
         </div>
       </div>
 
+      {/* 🗂️ ŞABLON SEÇİM SEKMELERİ (4 Ana Durum) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {TEMPLATE_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`p-4 rounded-3xl border text-left transition-all duration-300 cursor-pointer select-none relative overflow-hidden flex flex-col justify-between gap-3 ${
+                isActive
+                  ? 'bg-white border-emerald-600 ring-2 ring-emerald-500/20 shadow-lg scale-[1.02]'
+                  : 'bg-white/80 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-600 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className={`p-2.5 rounded-2xl ${
+                  isActive 
+                    ? 'bg-emerald-700 text-white shadow-xs' 
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  isActive
+                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}>
+                  {tab.badge}
+                </span>
+              </div>
+
+              <div>
+                <h4 className={`text-xs font-black ${isActive ? 'text-slate-950 font-display' : 'text-slate-700'}`}>
+                  {tab.title}
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                  {tab.desc}
+                </p>
+              </div>
+
+              {isActive && (
+                <div className="h-1 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-full w-full" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Sol Kolon: Metin Editörü ve Dinamik Değişkenler */}
@@ -147,13 +288,16 @@ export default function WhatsAppTemplateManager() {
           
           {/* Dinamik Değişken Etiketleri */}
           <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200/90 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 font-display">
-              <Sparkles className="h-4 w-4 text-emerald-600" />
-              <span>Dinamik Bilgi Etiketleri (Tıklayarak Metne Ekleyin)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 font-display">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                <span>Bu Şablona Özel Dinamik Etiketler (Tıklayarak Ekleyin)</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-semibold">Otomatik Doldurulur</span>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {VARIABLES.map((v, idx) => (
+              {relevantVariables.map((v, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -169,26 +313,31 @@ export default function WhatsAppTemplateManager() {
 
           {/* Şablon Editör Kutusu */}
           <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200/90 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-slate-800">
-                Resmi WhatsApp Mesaj Metni Şablonu
-              </label>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {template.length} karakter
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div>
+                <label className="text-xs font-black text-slate-800 block">
+                  {activeTabObj.title} Metni
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  {activeTabObj.desc}
+                </p>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                {currentTemplate.length} karakter
               </span>
             </div>
 
             <textarea
-              rows={13}
-              value={template}
-              onChange={(e) => setTemplate(e.target.value)}
+              rows={14}
+              value={currentTemplate}
+              onChange={(e) => handleTemplateChange(e.target.value)}
               placeholder="WhatsApp mesaj şablonunu buraya yazınız..."
               className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-mono font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none shadow-3xs leading-relaxed"
             />
 
             <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
               <Info className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Metinde *yıldız* içine alınan kısımlar WhatsApp'ta kalın görünür. Personel WhatsApp butonuna bastığında PDF dosyasının yanı sıra bu şablon doldurularak açılır.</span>
+              <span>Metinde <strong>*yıldız*</strong> içine aldığınız kelimeler WhatsApp mesajında kalın (bold) olarak görünür.</span>
             </div>
           </div>
 
@@ -200,7 +349,7 @@ export default function WhatsAppTemplateManager() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-800 font-display">
                 <Smartphone className="h-4 w-4 text-emerald-600" />
-                <span>Canlı WhatsApp Önizlemesi</span>
+                <span>Canlı WhatsApp Görünümü</span>
               </div>
 
               <button
@@ -216,19 +365,37 @@ export default function WhatsAppTemplateManager() {
             {/* WhatsApp Chat UI */}
             <div className="rounded-2xl border border-slate-200 bg-[#efeae2] p-4 space-y-3 shadow-inner relative">
               
+              {/* WhatsApp Başlık Çubuğu */}
+              <div className="flex items-center justify-between bg-emerald-900 text-white p-2.5 rounded-xl shadow-xs text-xs font-bold">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-emerald-700 flex items-center justify-center text-[10px] font-black">
+                    İZ
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-black leading-tight">İnzar Turizm Genel Merkez</div>
+                    <div className="text-[9px] text-emerald-300 font-normal">Çevrimiçi</div>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-emerald-800/80 px-2 py-0.5 rounded-full border border-emerald-700/60">
+                  {activeTabObj.badge}
+                </span>
+              </div>
+
               {/* WhatsApp Balonu */}
-              <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-slate-200/70 max-w-[96%] space-y-2 text-slate-900 text-xs leading-relaxed whitespace-pre-wrap font-sans">
+              <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-slate-200/70 max-w-[98%] space-y-2 text-slate-900 text-xs leading-relaxed whitespace-pre-wrap font-sans">
                 {previewMessage}
                 <div className="text-[9px] text-slate-400 text-right pt-1 font-mono">
                   14:30 ✓✓
                 </div>
               </div>
 
-              {/* Ek Dosya Bildirimi */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 font-semibold">
-                <FileText className="h-4 w-4 text-emerald-700 shrink-0" />
-                <span>Resmi PDF Teklif Mektubu otomatik olarak eşlik eder</span>
-              </div>
+              {/* Ek Dosya Bildirimi (Sadece Teklif ve Onay için) */}
+              {(activeTab === 'quote' || activeTab === 'hq_approved') && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 font-semibold">
+                  <FileText className="h-4 w-4 text-emerald-700 shrink-0" />
+                  <span>Resmi Teklif Mektubu PDF belgesi otomatik olarak eşlik eder</span>
+                </div>
+              )}
 
             </div>
 

@@ -1272,13 +1272,21 @@ class SyncService {
     return updated;
   }
 
-  getWhatsAppTemplate() {
+  getWhatsAppTemplate(type = 'quote') {
     try {
-      const custom = localStorage.getItem('INZAR_WHATSAPP_TEMPLATE');
-      if (custom) return custom;
+      const allTemplates = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
+      if (allTemplates && allTemplates[type]) {
+        return allTemplates[type];
+      }
+      // Backward compatibility for legacy single template
+      if (type === 'quote') {
+        const legacy = localStorage.getItem('INZAR_WHATSAPP_TEMPLATE');
+        if (legacy) return legacy;
+      }
     } catch (e) {}
 
-    return `*İNZAR TURİZM - UMRE FİYAT TEKLİFİ*
+    const defaults = {
+      quote: `*İNZAR TURİZM - UMRE FİYAT TEKLİFİ* 🕋
 
 Sayın *{MUSTERI_ADI}*, danışmış olduğunuz Umre programı detayları ve özel fiyat teklifiniz hazırlanmıştır.
 
@@ -1292,23 +1300,93 @@ Resmi teklif mektubunuz ve detaylı fiyat dökümünüz ekteki PDF belgesinde ye
 
 *Temsilci:* {TEMSILCI}
 
-Hayırlı ve bereketli ibadetler dileriz.`;
+Hayırlı ve bereketli ibadetler dileriz.`,
+
+      hq_approved: `*İNZAR TURİZM GENEL MERKEZ ONAY BİLDİRİMİ* 🕋✨
+
+Sayın *{MUSTERI_ADI}*,
+
+Temsilciniz *{TEMSILCI}* tarafından hazırlanan *{PAKET_ADI}* Umre teklifiniz ({TEKLIF_NO}) Genel Merkezimiz tarafından *RESMİ OLARAK ONAYLANMIŞTIR*.
+
+📋 *Onaylanan Program Özeti:*
+• *Paket:* {PAKET_ADI}
+• *Kişi Sayısı:* {KISI_SAYISI} Kişi
+• *Toplam Süre:* {TOPLAM_GUN} Gün ({MEKKE_GECE} Gece Mekke, {MEDINE_GECE} Gece Medine)
+• *Mekke Oteli:* {MEKKE_OTELI}
+• *Medine Oteli:* {MEDINE_OTELI}
+• *Toplam Bedel:* *{FIYAT_USD} USD* (~{FIYAT_TL} ₺)
+
+Resmi teklif mektubunuz ve detaylı fiyat dökümünüz ekteki PDF belgesinde yer almaktadır.
+
+Umre kaydınız ve vize/otel işlemleriniz resmen başlatılmıştır. Hayırlı ve bereketli ibadetler dileriz.
+
+📍 *İnzar Turizm Genel Merkez*
+🌐 inzar.com.tr`,
+
+      hq_rejected: `*İNZAR TURİZM BİLGİLENDİRME* 🕋
+
+Sayın *{MUSTERI_ADI}*,
+
+*{PAKET_ADI}* Umre programı talebiniz ({TEKLIF_NO}) Genel Merkezimiz tarafından incelenmiş olup mevcut kontenjan ve operasyonel şartlar doğrultusunda bu haliyle onaylanamamıştır.{MERKEZ_NOTU}
+
+Temsilciniz *{TEMSILCI}*, size en uygun alternatif tarih ve paket seçenekleriyle en kısa sürede irtibata geçecektir.
+
+Anlayışınız için teşekkür eder, hayırlı günler dileriz.
+
+📍 *İnzar Turizm Genel Merkez*
+🌐 inzar.com.tr`,
+
+      rejected: `*İNZAR TURİZM - BİLGİLENDİRME* 🕋
+
+Sayın *{MUSTERI_ADI}*,
+
+*{PAKET_ADI}* Umre teklifiniz ({TEKLIF_NO}) talebiniz doğrultusunda iptal edilmiş olarak kaydedilmiştir.
+
+Farklı bir tarih veya program planlamak isterseniz temsilciniz *{TEMSILCI}* ile dilediğiniz zaman iletişime geçebilirsiniz.
+
+Hayırlı günler dileriz.
+
+📍 *İnzar Turizm*\n🌐 inzar.com.tr`
+    };
+
+    return defaults[type] || defaults.quote;
   }
 
-  saveWhatsAppTemplate(template, user = null) {
-    localStorage.setItem('INZAR_WHATSAPP_TEMPLATE', template);
+  getAllWhatsAppTemplates() {
+    return {
+      quote: this.getWhatsAppTemplate('quote'),
+      hq_approved: this.getWhatsAppTemplate('hq_approved'),
+      hq_rejected: this.getWhatsAppTemplate('hq_rejected'),
+      rejected: this.getWhatsAppTemplate('rejected')
+    };
+  }
+
+  saveWhatsAppTemplate(type, template, user = null) {
+    try {
+      const allTemplates = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
+      if (typeof type === 'object') {
+        Object.assign(allTemplates, type);
+      } else {
+        allTemplates[type] = template;
+      }
+      localStorage.setItem('INZAR_WHATSAPP_TEMPLATES', JSON.stringify(allTemplates));
+      if (typeof type === 'string' && type === 'quote') {
+        localStorage.setItem('INZAR_WHATSAPP_TEMPLATE', template);
+      }
+    } catch (e) {}
+
     this.addAuditLog({
       action: 'WHATSAPP_TEMPLATE_UPDATED',
       user: user?.name || 'Genel Merkez',
-      details: 'Merkezi WhatsApp otonom mesaj şablonu güncellendi.',
+      details: `WhatsApp ${type} mesaj şablonu güncellendi.`,
       timestamp: new Date().toISOString()
     });
-    this.broadcast('WHATSAPP_TEMPLATE_UPDATED', template);
+    this.broadcast('WHATSAPP_TEMPLATE_UPDATED', { type, template });
 
     if (this.isSupabaseReady) {
       supabase.from('app_settings').upsert({
-        key: 'whatsapp_template',
-        value: template,
+        key: `whatsapp_template_${type}`,
+        value: typeof template === 'string' ? template : JSON.stringify(template),
         updated_at: new Date().toISOString()
       }).then(({ error }) => {
         if (error) console.error('Supabase whatsapp template upsert error:', error);
