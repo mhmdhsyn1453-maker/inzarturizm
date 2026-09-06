@@ -286,13 +286,13 @@ export default function SavedQuotesList({ onEditQuote }) {
     }
   };
 
-  // 2. AŞAMA: Genel Merkez / Genel Merkez Yardımcısı Onaylar (Resmi Kesinleşme + Otomatik PDF İndirme)
+  // 2. AŞAMA: Genel Merkez / Genel Merkez Yardımcısı Onaylar (Resmi Kesinleşme)
   const handleHqApprove = async (quote, e) => {
     e?.stopPropagation();
     const confirmed = await showConfirm({
       title: '✓ Genel Merkez Teklif Onayı',
       message: `"${quote.customerName || 'Misafir'}" adına hazırlanan ${quote.packageName} (${quote.finalPriceUSD} USD) teklifini RESMİ OLARAK ONAYLIYOR MUSUNUZ?`,
-      details: 'Onay verildiğinde teklif kesinleşecek ve onaylı resmi PDF belgesi otomatik olarak indirilecektir.',
+      details: 'Onay verildiğinde teklif durumu "Genel Merkez Onayladı" olarak kesinleşecektir.',
       confirmText: '✓ Teklifi Resmi Onayla',
       cancelText: 'Vazgeç',
       confirmVariant: 'emerald'
@@ -305,14 +305,9 @@ export default function SavedQuotesList({ onEditQuote }) {
         spread: 70,
         origin: { y: 0.6 }
       });
-      try {
-        await downloadDirectQuotationPdf(quote);
-      } catch (err) {
-        console.error('PDF indirme hatası:', err);
-      }
       showAlert({
         title: '✓ Teklif Genel Merkez Tarafından Onaylandı',
-        message: 'Teklif resmi olarak onaylandı ve onaylı teklif PDF belgesi indirildi.',
+        message: 'Teklif resmi olarak onaylandı. Dilerseniz WhatsApp veya PDF butonlarından müşterinizle paylaşabilirsiniz.',
         type: 'success'
       });
     }
