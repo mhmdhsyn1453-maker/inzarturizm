@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 
 export default function QuotationPdfModal({ quotation, onClose }) {
   const { showPdfSaveLocationModal } = useModal();
@@ -284,7 +285,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                   <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <img src="/mekke.png" alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                        <img src={mekkeIcon} alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
                         <span>MEKKE-İ MÜKERREME</span>
                       </div>
                     </td>
@@ -304,7 +305,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                   <tr>
                     <td style={{ padding: '6px 10px', fontWeight: '800', color: '#92400e' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <img src="/medine.png" alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                        <img src={medineIcon} alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
                         <span>MEDİNE-İ MÜNEVVERE</span>
                       </div>
                     </td>

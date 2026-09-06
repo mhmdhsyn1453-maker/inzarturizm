@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import inzarLogo from '../assets/inzarturizmlogo.png';
+import { mekkeIcon, medineIcon } from '../assets/icons';
 import { syncService } from './syncService';
 
 function escapeHtml(str) {
@@ -323,7 +324,7 @@ export function openQuotationInNewPage(quote) {
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 6px 10px; font-weight: 800; color: #065f46;">
                 <div style="display: flex; align-items: center; gap: 5px;">
-                  <img src="/mekke.png" alt="Mekke" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                  <img src="${mekkeIcon}" alt="Mekke" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
                   <span>MEKKE-İ MÜKERREME</span>
                 </div>
               </td>
@@ -335,7 +336,7 @@ export function openQuotationInNewPage(quote) {
             <tr>
               <td style="padding: 6px 10px; font-weight: 800; color: #92400e;">
                 <div style="display: flex; align-items: center; gap: 5px;">
-                  <img src="/medine.png" alt="Medine" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                  <img src="${medineIcon}" alt="Medine" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
                   <span>MEDİNE-İ MÜNEVVERE</span>
                 </div>
               </td>
@@ -980,7 +981,7 @@ export async function generateDirectPdfBlob(quote) {
           <tr style="border-bottom: 1px solid #f1f5f9;">
             <td style="padding: 6px 10px; font-weight: 800; color: #065f46;">
               <div style="display: flex; align-items: center; gap: 5px;">
-                <img src="/mekke.png" alt="Mekke" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                <img src="${mekkeIcon}" alt="Mekke" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
                 <span>MEKKE-İ MÜKERREME</span>
               </div>
             </td>
@@ -992,7 +993,7 @@ export async function generateDirectPdfBlob(quote) {
           <tr>
             <td style="padding: 6px 10px; font-weight: 800; color: #92400e;">
               <div style="display: flex; align-items: center; gap: 5px;">
-                <img src="/medine.png" alt="Medine" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
+                <img src="${medineIcon}" alt="Medine" style="width: 12px; height: 12px; object-fit: contain; opacity: 0.85;" />
                 <span>MEDİNE-İ MÜNEVVERE</span>
               </div>
             </td>

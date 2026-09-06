@@ -22,6 +22,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 
 export default function AdminPanel() {
   const { packages, currencies, updatePackage, addPackage, deletePackage, updateCurrencies, resetAllData } = useData();
@@ -285,7 +286,7 @@ export default function AdminPanel() {
             <div className="bg-slate-900/80 rounded-2xl p-4 border border-slate-800/80 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                  <img src="/mekke.png" alt="Mekke" className="h-4 w-4 object-contain brightness-0 invert opacity-80" />
+                  <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain brightness-0 invert opacity-80" />
                   <span>MEKKE KONAKLAMA</span>
                 </h4>
               </div>
@@ -347,7 +348,7 @@ export default function AdminPanel() {
             <div className="bg-slate-900/80 rounded-2xl p-4 border border-slate-800/80 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-amber-400 flex items-center gap-2">
-                  <img src="/medine.png" alt="Medine" className="h-4 w-4 object-contain brightness-0 invert opacity-80" />
+                  <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain brightness-0 invert opacity-80" />
                   <span>MEDİNE KONAKLAMA</span>
                 </h4>
               </div>

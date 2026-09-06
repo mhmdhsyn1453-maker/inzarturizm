@@ -3,6 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useModal } from '../../context/ModalContext';
 import CustomSelect from '../common/CustomSelect';
 import CustomDateRangePicker, { formatDateTR, calculateNights } from '../common/CustomDateRangePicker';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 import { 
   Calendar, 
   Bed, 
@@ -793,7 +794,7 @@ export default function MonthlyMatrixManager() {
             }`}
           >
             <img 
-              src="/mekke.png" 
+              src={mekkeIcon} 
               alt="Mekke" 
               className={`h-4 w-4 object-contain transition-all ${
                 activeSection === 'makkah_hotels' ? 'brightness-0 invert' : 'opacity-70'
@@ -818,7 +819,7 @@ export default function MonthlyMatrixManager() {
             }`}
           >
             <img 
-              src="/medine.png" 
+              src={medineIcon} 
               alt="Medine" 
               className={`h-4 w-4 object-contain transition-all ${
                 activeSection === 'madinah_hotels' ? 'brightness-0 invert' : 'opacity-70'
@@ -879,7 +880,7 @@ export default function MonthlyMatrixManager() {
             <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <img src="/mekke.png" alt="Mekke" className="h-5 w-5 object-contain opacity-80" />
+                  <img src={mekkeIcon} alt="Mekke" className="h-5 w-5 object-contain opacity-80" />
                   <div>
                     <h3 className="text-sm font-extrabold text-slate-900">
                       {localPkg.name} - Mekke Otelleri Listesi
@@ -1098,7 +1099,7 @@ export default function MonthlyMatrixManager() {
               >
                 <div className="p-4 bg-slate-50/90 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <img src="/mekke.png" alt="Mekke" className="h-4 w-4 object-contain opacity-70" />
+                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain opacity-70" />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-black text-slate-900">
@@ -1329,7 +1330,7 @@ export default function MonthlyMatrixManager() {
             <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <img src="/medine.png" alt="Medine" className="h-5 w-5 object-contain opacity-80" />
+                  <img src={medineIcon} alt="Medine" className="h-5 w-5 object-contain opacity-80" />
                   <div>
                     <h3 className="text-sm font-extrabold text-slate-900">
                       {localPkg.name} - Medine Otelleri Listesi
@@ -1548,7 +1549,7 @@ export default function MonthlyMatrixManager() {
               >
                 <div className="p-4 bg-slate-50/90 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <img src="/medine.png" alt="Medine" className="h-4 w-4 object-contain opacity-70" />
+                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain opacity-70" />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-black text-slate-900">

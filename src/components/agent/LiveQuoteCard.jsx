@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Utensils
 } from 'lucide-react';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 
 export default function LiveQuoteCard({
   quotation,
@@ -225,7 +226,7 @@ export default function LiveQuoteCard({
           {/* Mekke Pil Kutusu */}
           <div className="bg-slate-50/80 px-3 py-1.5 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 shadow-3xs">
             <div className="flex items-center gap-2 min-w-0">
-              <img src="/mekke.png" alt="Mekke" className="h-3.5 w-3.5 object-contain opacity-80 shrink-0" />
+              <img src={mekkeIcon} alt="Mekke" className="h-3.5 w-3.5 object-contain opacity-80 shrink-0" />
               <span className="text-slate-500 font-medium shrink-0">Mekke ({quotation.makkahDays}G):</span>
               <span className="font-semibold text-slate-900 truncate">
                 {quotation.selectedMakkahHotel?.name || activePackage?.hotelMakkah || 'Mekke Oteli'}
@@ -239,7 +240,7 @@ export default function LiveQuoteCard({
           {/* Medine Pil Kutusu */}
           <div className="bg-slate-50/80 px-3 py-1.5 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 shadow-3xs">
             <div className="flex items-center gap-2 min-w-0">
-              <img src="/medine.png" alt="Medine" className="h-3.5 w-3.5 object-contain opacity-80 shrink-0" />
+              <img src={medineIcon} alt="Medine" className="h-3.5 w-3.5 object-contain opacity-80 shrink-0" />
               <span className="text-slate-500 font-medium shrink-0">Medine ({quotation.madinahDays}G):</span>
               <span className="font-semibold text-slate-900 truncate">
                 {quotation.selectedMadinahHotel?.name || activePackage?.hotelMadinah || 'Medine Oteli'}

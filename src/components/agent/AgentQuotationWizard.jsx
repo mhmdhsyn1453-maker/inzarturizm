@@ -11,6 +11,7 @@ import RoomComparisonTable from './RoomComparisonTable';
 import QuotationPdfModal from '../pdf/QuotationPdfModal';
 import CustomSelect from '../common/CustomSelect';
 import CustomDateRangePicker, { formatDateTR, calculateNights } from '../common/CustomDateRangePicker';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 import { 
   Calculator, 
   Calendar, 
@@ -1426,7 +1427,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 >
                   <div className="flex items-center justify-between w-full gap-1.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <img src="/mekke.png" alt="Mekke" className="h-4 w-4 object-contain shrink-0" />
+                      <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain shrink-0" />
                       <span className="text-xs font-bold truncate">Önce Mekke</span>
                     </div>
                     {routeOrder === 'makkah_first' ? (
@@ -1461,7 +1462,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 >
                   <div className="flex items-center justify-between w-full gap-1.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <img src="/medine.png" alt="Medine" className="h-4 w-4 object-contain shrink-0" />
+                      <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain shrink-0" />
                       <span className="text-xs font-bold truncate">Önce Medine</span>
                     </div>
                     {routeOrder === 'madinah_first' ? (
@@ -1506,7 +1507,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               }`}>
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <img src="/mekke.png" alt="Mekke" className="h-4 w-4 object-contain opacity-80 shrink-0" />
+                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain opacity-80 shrink-0" />
                     <h4 className="text-xs sm:text-sm font-black text-emerald-950 font-display flex items-center gap-1.5">
                       <span>Mekke Kalış Süresi</span>
                       <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -1551,7 +1552,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               }`}>
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <img src="/medine.png" alt="Medine" className="h-4 w-4 object-contain opacity-80 shrink-0" />
+                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain opacity-80 shrink-0" />
                     <h4 className="text-xs sm:text-sm font-black text-amber-950 font-display flex items-center gap-1.5">
                       <span>Medine Kalış Süresi</span>
                       <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-200">
@@ -1603,7 +1604,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 {/* 1. Durak Rozeti */}
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-slate-200 shadow-3xs font-bold text-slate-800 text-[11px]">
                   <img 
-                    src={routeSchedule.firstCity === 'Mekke' ? '/mekke.png' : '/medine.png'} 
+                    src={routeSchedule.firstCity === 'Mekke' ? mekkeIcon : medineIcon} 
                     alt={routeSchedule.firstCity} 
                     className="h-3.5 w-3.5 object-contain shrink-0" 
                   />
@@ -1615,7 +1616,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 {/* 2. Durak Rozeti */}
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-slate-200 shadow-3xs font-bold text-slate-800 text-[11px]">
                   <img 
-                    src={routeSchedule.secondCity === 'Mekke' ? '/mekke.png' : '/medine.png'} 
+                    src={routeSchedule.secondCity === 'Mekke' ? mekkeIcon : medineIcon} 
                     alt={routeSchedule.secondCity} 
                     className="h-3.5 w-3.5 object-contain shrink-0" 
                   />
@@ -1698,7 +1699,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-teal-50/20 to-white border border-emerald-200/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
-                    <img src="/mekke.png" alt="Mekke" className="h-4 w-4 object-contain" />
+                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain" />
                     <span>Mekke Otel Seçimi</span>
                   </span>
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -1798,7 +1799,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/50 via-yellow-50/20 to-white border border-amber-200/80 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-amber-950 flex items-center gap-1.5">
-                    <img src="/medine.png" alt="Medine" className="h-4 w-4 object-contain" />
+                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain" />
                     <span>Medine Otel Seçimi</span>
                   </span>
                   <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">

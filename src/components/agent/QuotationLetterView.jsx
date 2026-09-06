@@ -11,6 +11,7 @@ import {
 import { generateQuotationPdf, generateWhatsAppMessage, downloadDirectQuotationPdf, shareQuoteOnWhatsApp } from '../../services/pdfService';
 import { useModal } from '../../context/ModalContext';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 
 export default function QuotationLetterView({ 
   quotation, 
@@ -287,7 +288,7 @@ export default function QuotationLetterView({
                     <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img src="/medine.png" alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <img src={medineIcon} alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
                           <span>1. MEDİNE-İ MÜNEVVERE</span>
                         </div>
                       </td>
@@ -305,7 +306,7 @@ export default function QuotationLetterView({
                     <tr>
                       <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img src="/mekke.png" alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <img src={mekkeIcon} alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
                           <span>2. MEKKE-İ MÜKERREME</span>
                         </div>
                       </td>
@@ -326,7 +327,7 @@ export default function QuotationLetterView({
                     <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img src="/mekke.png" alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <img src={mekkeIcon} alt="Mekke" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
                           <span>1. MEKKE-İ MÜKERREME</span>
                         </div>
                       </td>
@@ -344,7 +345,7 @@ export default function QuotationLetterView({
                     <tr>
                       <td style={{ padding: '6px 10px', fontWeight: '800', color: '#065f46' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img src="/medine.png" alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
+                          <img src={medineIcon} alt="Medine" style={{ width: '12px', height: '12px', objectFit: 'contain', opacity: 0.8 }} />
                           <span>2. MEDİNE-İ MÜNEVVERE</span>
                         </div>
                       </td>

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useModal } from '../../context/ModalContext';
 import { downloadDirectQuotationPdf, shareQuoteOnWhatsApp } from '../../services/pdfService';
 import QuotationLetterView from './QuotationLetterView';
+import { mekkeIcon, medineIcon } from '../../assets/icons';
 import { 
   FileText, 
   Search, 
@@ -759,7 +760,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                       {/* Mekke Oteli */}
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <img src="/mekke.png" alt="Mekke" className="h-3 w-3 object-contain opacity-80" />
+                          <img src={mekkeIcon} alt="Mekke" className="h-3 w-3 object-contain opacity-80" />
                           <span>Mekke-i Mükerreme ({quote.makkahDays} Gece)</span>
                         </div>
                         <div className="font-extrabold text-slate-900 text-xs truncate">
@@ -773,7 +774,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                       {/* Medine Oteli */}
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <img src="/medine.png" alt="Medine" className="h-3 w-3 object-contain opacity-80" />
+                          <img src={medineIcon} alt="Medine" className="h-3 w-3 object-contain opacity-80" />
                           <span>Medine-i Münevvere ({quote.madinahDays} Gece)</span>
                         </div>
                         <div className="font-extrabold text-slate-900 text-xs truncate">
