@@ -761,6 +761,73 @@ export async function generateQuotationPdf(elementId, quotationData) {
 
 // Generate formatted WhatsApp message text with Headquarters Template Engine
 export function generateWhatsAppMessage(quote) {
+  // 1. GENEL MERKEZ RET DURUMU
+  if (quote.status === 'hq_rejected') {
+    const clientName = quote.customerName || 'Değerli Misafirimiz';
+    const pkgName = quote.packageName || 'Umre Programı';
+    const repName = quote.agentName || quote.createdByName || 'İnzar Turizm Danışmanı';
+    const note = quote.hqNote ? `\n\n*Merkez Açıklaması / Gerekçe:* ${quote.hqNote}` : '';
+
+    const rejectMsg = `*İNZAR TURİZM BİLGİLENDİRME* 🕋\n\n` +
+      `Sayın *${clientName}*,\n\n` +
+      `*${pkgName}* Umre talebiniz (${quote.id}) ile ilgili Genel Merkezimiz tarafından değerlendirme yapılmıştır.${note}\n\n` +
+      `Talebiniz bu tarihler veya şartlar için onaylanamamış olup, temsilciniz *${repName}* en kısa sürede alternatif tarihler ve uygun kontenjanlar için sizinle irtibata geçecektir.\n\n` +
+      `Anlayışınız için teşekkür eder, hayırlı günler dileriz.\n\n` +
+      `📍 *İnzar Turizm Genel Merkez*\n` +
+      `🌐 inzar.com.tr`;
+
+    return encodeURIComponent(rejectMsg);
+  }
+
+  // 2. MÜŞTERİ İPTAL / VAZGEÇME DURUMU
+  if (quote.status === 'rejected') {
+    const clientName = quote.customerName || 'Değerli Misafirimiz';
+    const pkgName = quote.packageName || 'Umre Programı';
+    const repName = quote.agentName || quote.createdByName || 'İnzar Turizm Danışmanı';
+
+    const cancelMsg = `*İNZAR TURİZM - BİLGİLENDİRME* 🕋\n\n` +
+      `Sayın *${clientName}*,\n\n` +
+      `*${pkgName}* Umre programı teklifiniz (${quote.id}) talebiniz doğrultusunda iptal edilmiş olarak kaydedilmiştir.\n\n` +
+      `Farklı bir tarih veya program planlamak isterseniz temsilciniz *${repName}* ile dilediğiniz zaman iletişime geçebilirsiniz.\n\n` +
+      `Hayırlı günler dileriz.\n\n` +
+      `📍 *İnzar Turizm*\n` +
+      `🌐 inzar.com.tr`;
+
+    return encodeURIComponent(cancelMsg);
+  }
+
+  // 3. GENEL MERKEZ ONAY DURUMU
+  if (quote.status === 'hq_approved' || quote.status === 'approved') {
+    const clientName = quote.customerName || 'Değerli Misafirimiz';
+    const pkgName = quote.packageName || 'Umre Programı';
+    const repName = quote.agentName || quote.createdByName || 'İnzar Turizm Danışmanı';
+    const mkHotel = quote.makkahHotelName || quote.selectedMakkahHotelName || quote.selectedMakkahHotel?.name || quote.pkgDetails?.hotelMakkah || 'Mekke Oteli';
+    const mdHotel = quote.madinahHotelName || quote.selectedMadinahHotelName || quote.selectedMadinahHotel?.name || quote.pkgDetails?.hotelMadinah || 'Medine Oteli';
+    const mkDays = quote.makkahDays || 0;
+    const mdDays = quote.madinahDays || 0;
+    const totalDays = (Number(mkDays) || 0) + (Number(mdDays) || 0);
+    const priceUSD = quote.finalPriceUSD?.toLocaleString('tr-TR') || '0';
+    const priceTRY = quote.finalPriceTRY?.toLocaleString('tr-TR') || '0';
+
+    const approveMsg = `*İNZAR TURİZM GENEL MERKEZ ONAY BİLDİRİMİ* 🕋✨\n\n` +
+      `Sayın *${clientName}*,\n\n` +
+      `Temsilciniz *${repName}* tarafından hazırlanan *${pkgName}* Umre programı teklifiniz (${quote.id}) Genel Merkezimiz tarafından *RESMİ OLARAK ONAYLANMIŞTIR*.\n\n` +
+      `📋 *Onaylanan Teklif Özeti:*\n` +
+      `• *Paket:* ${pkgName}\n` +
+      `• *Kişi Sayısı:* ${quote.paxCount || 1} Kişi\n` +
+      `• *Toplam Süre:* ${totalDays} Gün (${mkDays} Gece Mekke, ${mdDays} Gece Medine)\n` +
+      `• *Mekke Oteli:* ${mkHotel}\n` +
+      `• *Medine Oteli:* ${mdHotel}\n` +
+      `• *Toplam Tutar:* *${priceUSD} USD* (~${priceTRY} ₺)\n\n` +
+      `Resmi teklif mektubunuz ve detaylı fiyat dökümünüz ekteki PDF belgesinde yer almaktadır.\n\n` +
+      `Umre kaydınız ve vize/otel işlemleriniz resmen başlatılmıştır. Hayırlı ve bereketli ibadetler dileriz.\n\n` +
+      `📍 *İnzar Turizm Genel Merkez*\n` +
+      `🌐 inzar.com.tr`;
+
+    return encodeURIComponent(approveMsg);
+  }
+
+  // 4. STANDART / TASLAK TEKLİF ŞABLONU
   let template = '';
   try {
     template = syncService.getWhatsAppTemplate();
@@ -786,8 +853,8 @@ Hayırlı ve bereketli ibadetler dileriz.`;
 
   const clientName = quote.customerName || 'Değerli Misafirimiz';
   const pkgName = quote.packageName || 'Umre Programı';
-  const mkHotel = quote.makkahHotelName || quote.selectedMakkahHotelName || 'Merkezi Otel';
-  const mdHotel = quote.madinahHotelName || quote.selectedMadinahHotelName || 'Merkezi Otel';
+  const mkHotel = quote.makkahHotelName || quote.selectedMakkahHotelName || quote.selectedMakkahHotel?.name || quote.pkgDetails?.hotelMakkah || 'Merkezi Otel';
+  const mdHotel = quote.madinahHotelName || quote.selectedMadinahHotelName || quote.selectedMadinahHotel?.name || quote.pkgDetails?.hotelMadinah || 'Medine Oteli';
   const mkDays = quote.makkahDays || 0;
   const mdDays = quote.madinahDays || 0;
   const totalDays = (Number(mkDays) || 0) + (Number(mdDays) || 0);
@@ -1406,17 +1473,21 @@ export async function downloadDirectQuotationPdf(quote, preferredMode = null) {
 
 export async function shareQuoteOnWhatsApp(quote) {
   const phone = quote.customerPhone ? quote.customerPhone.replace(/[^0-9]/g, '') : '';
-  
-  // 1. PDF'i mutlaka indir
-  try {
-    await downloadDirectQuotationPdf(quote);
-  } catch (err) {
-    console.error('WhatsApp öncesi PDF indirme hatası:', err);
+  const isRejected = quote.status === 'hq_rejected' || quote.status === 'rejected';
+
+  // 1. PDF'i sadece onaylı veya aktif tekliflerde indir (Reddedilen tekliflerde PDF indirmeye gerek yok)
+  if (!isRejected) {
+    try {
+      await downloadDirectQuotationPdf(quote);
+    } catch (err) {
+      console.error('WhatsApp öncesi PDF indirme hatası:', err);
+    }
   }
 
   // 2. WhatsApp penceresini aç
   const encoded = generateWhatsAppMessage(quote);
-  const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
+  const targetPhone = phone.startsWith('90') ? phone : (phone.startsWith('0') ? '9' + phone : (phone ? '90' + phone : ''));
+  const url = targetPhone ? `https://wa.me/${targetPhone}?text=${encoded}` : `https://api.whatsapp.com/send?text=${encoded}`;
   window.open(url, '_blank');
   return { sharedViaUrl: true };
 }
