@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, Notification } = require('electron');
 const path = require('path');
 
 let autoUpdater = null;
@@ -33,6 +33,45 @@ function sendToWindow(channel, data) {
     mainWindow.webContents.send(channel, data);
   }
 }
+
+// 🔔 Native Windows Notification & Focus Handlers
+ipcMain.handle('app:show-notification', (_event, { title, body, icon }) => {
+  try {
+    if (Notification && Notification.isSupported()) {
+      const iconPath = icon || path.join(__dirname, '../icon.ico');
+      const notif = new Notification({
+        title: title || 'İnzar Turizm',
+        body: body || '',
+        icon: iconPath,
+        silent: false
+      });
+
+      notif.on('click', () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      });
+
+      notif.show();
+      return { success: true };
+    }
+  } catch (err) {
+    console.warn('[Native Notification Show Error]:', err?.message);
+  }
+  return { success: false };
+});
+
+ipcMain.handle('app:focus-window', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+    return true;
+  }
+  return false;
+});
 
 function setupAutoUpdater() {
   if (!autoUpdater) return;
@@ -69,7 +108,7 @@ function setupAutoUpdater() {
     autoUpdater.on('update-downloaded', (info) => {
       sendToWindow('updater:status', { 
         status: 'downloaded', 
-        version: info.version,
+        version: info.version, 
         releaseNotes: info.releaseNotes 
       });
     });
@@ -148,6 +187,10 @@ function createWindow() {
         autoUpdater.checkForUpdates().catch(() => {});
       }, 2 * 60 * 60 * 1000);
     }
+  });
+
+  mainWindow.on('focus', () => {
+    sendToWindow('window:focus', { timestamp: Date.now() });
   });
 
   mainWindow.on('closed', () => {

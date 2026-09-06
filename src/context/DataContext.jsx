@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { syncService } from '../services/syncService';
 import { fetchLiveExchangeRates } from '../services/currencyService';
+import { notificationService } from '../services/notificationService';
 import { useAuth } from './AuthContext';
 
 const DataContext = createContext();
@@ -60,7 +61,11 @@ export function DataProvider({ children }) {
 
       // Only show popup alert if explicitly requested by clicking manual refresh
       if (showToast) {
-        triggerHotReloadAlert(`Canlı piyasa kurları güncellendi! (USD: ${result.rates.USD_TRY} ₺, EUR: ${result.rates.EUR_TRY} ₺)`);
+        triggerHotReloadAlert({
+          title: '💱 Kurlar Güncellendi',
+          message: `Canlı piyasa kurları güncellendi (USD: ${result.rates.USD_TRY} ₺, EUR: ${result.rates.EUR_TRY} ₺)`,
+          type: 'info'
+        });
       }
     }
   }, [currentUser]);
@@ -106,7 +111,6 @@ export function DataProvider({ children }) {
         const freshAnnouncements = event.payload || syncService.getAnnouncements();
         setAnnouncements(freshAnnouncements);
         setAuditLogs(syncService.getAuditLogs());
-        triggerHotReloadAlert('Genel Merkez yeni bir duyuru yayınladı!');
       } else if (event.type === 'QUOTES_UPDATED') {
         const freshQuotes = event.payload || syncService.getSavedQuotes();
         setSavedQuotes(freshQuotes);
@@ -119,22 +123,48 @@ export function DataProvider({ children }) {
         setMonths(syncService.getMonths());
         setAnnouncements(syncService.getAnnouncements());
         setAuditLogs(syncService.getAuditLogs());
-        triggerHotReloadAlert('Sistem verileri fabrika ayarlarına sıfırlandı.');
+        triggerHotReloadAlert({
+          title: 'Sistem Sıfırlandı',
+          message: 'Sistem verileri fabrika ayarlarına sıfırlandı.',
+          type: 'warning'
+        });
       }
     });
 
-    return () => unsubscribe();
+    // 🔔 Notification Service Dinleyicisi
+    const unsubscribeNotifs = notificationService.subscribe((notif) => {
+      setHotReloadAlert(notif);
+      setTimeout(() => {
+        setHotReloadAlert(prev => (prev && prev.id === notif.id ? null : prev));
+      }, 6000);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeNotifs();
+    };
   }, []);
 
-  const triggerHotReloadAlert = (message) => {
-    setHotReloadAlert({
+  const triggerHotReloadAlert = (alertObj) => {
+    const formatted = typeof alertObj === 'string' ? {
       id: Date.now(),
-      message,
-      timestamp: new Date().toLocaleTimeString()
-    });
+      title: 'Canlı Güncelleme',
+      message: alertObj,
+      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      type: 'info'
+    } : {
+      id: Date.now(),
+      title: alertObj.title || 'Canlı Güncelleme',
+      message: alertObj.message || '',
+      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      type: alertObj.type || 'info',
+      ...alertObj
+    };
+
+    setHotReloadAlert(formatted);
     setTimeout(() => {
-      setHotReloadAlert(prev => (prev && Date.now() - prev.id >= 4900 ? null : prev));
-    }, 5000);
+      setHotReloadAlert(prev => (prev && prev.id === formatted.id ? null : prev));
+    }, 6000);
   };
 
   const updatePackage = useCallback((pkgId, updatedFields, note = '') => {
@@ -311,7 +341,8 @@ export function DataProvider({ children }) {
       updateCurrencies,
       updateMonths,
       setSpecialPeriod,
-      resetAllData
+      resetAllData,
+      refreshAllData: () => syncService.pullLatestFromSupabase()
     }}>
       {children}
     </DataContext.Provider>

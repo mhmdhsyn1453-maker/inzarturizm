@@ -1,6 +1,7 @@
 // İnzar Turizm - Supabase Realtime & Hot-Reload Senkronizasyon Motoru
 import { DEFAULT_PACKAGES, DEFAULT_CURRENCIES, DEFAULT_USERS, DEFAULT_MONTHS, DEFAULT_ANNOUNCEMENTS } from '../data/defaultTariffData';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { notificationService } from './notificationService';
 
 const STORAGE_KEYS = {
   PACKAGES: 'inzar_packages_v3',
@@ -18,10 +19,22 @@ class SyncService {
     this.broadcastChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('inzar_sync_hub_v3') : null;
     this.listeners = new Set();
     this.isSupabaseReady = isSupabaseConfigured;
+    this.realtimeChannel = null;
+    this.reconnectTimeout = null;
+    this.heartbeatTimer = null;
+    this.lastProcessedEventTime = 0;
+    this.clientId = 'client_' + Math.random().toString(36).substring(2, 9);
+    this.recentLocalSavedQuoteIds = new Set();
+    this.lastPackageNotifyTime = 0;
 
     if (this.broadcastChannel) {
       this.broadcastChannel.onmessage = (event) => {
-        this.notifyListeners(event.data);
+        if (event.data?.senderId !== this.clientId) {
+          if (event.data?.notification) {
+            notificationService.notify(event.data.notification);
+          }
+          this.notifyListeners(event.data);
+        }
       };
     }
 
@@ -31,33 +44,74 @@ class SyncService {
           this.notifyListeners({ type: 'STORAGE_CHANGE', key: e.key });
         }
       });
+
+      this.setupFocusListeners();
     }
 
-    // Initialize Supabase Realtime Subscriptions
+    // Initialize Supabase Realtime Subscriptions & Smart Heartbeat Poller
     if (this.isSupabaseReady && supabase) {
       this.initSupabaseRealtime();
       this.pullLatestFromSupabase();
+      this.startHeartbeatPoller();
     }
   }
 
+  // 🔄 Pencereye veya Sekmeye Geri Dönüldüğünde Zorunlu Anlık Çekme
+  setupFocusListeners() {
+    if (typeof window === 'undefined') return;
+
+    const handleFocus = () => {
+      this.pullLatestFromSupabase();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        handleFocus();
+      }
+    });
+
+    if (window.electronAPI?.onWindowFocus) {
+      window.electronAPI.onWindowFocus(() => {
+        handleFocus();
+      });
+    }
+  }
+
+  // 💓 6 Saniyelik Arka Plan Akıllı Kalp Atışı (Smart Polling Fallback)
+  startHeartbeatPoller() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = setInterval(() => {
+      this.pullLatestFromSupabase();
+    }, 6000);
+  }
+
   initSupabaseRealtime() {
+    if (!this.isSupabaseReady || !supabase) return;
+
+    if (this.realtimeChannel) {
+      try {
+        supabase.removeChannel(this.realtimeChannel);
+      } catch (e) {}
+    }
+
     try {
       const channel = supabase
-        .channel('inzar_live_sync')
+        .channel('inzar_live_sync_v5')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, (payload) => {
           this.handleRemoteQuoteChange(payload);
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, () => {
-          this.fetchPackagesFromSupabase();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, (payload) => {
+          this.handleRemotePackageChange(payload);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'months_config' }, () => {
           this.fetchMonthsFromSupabase();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, () => {
-          this.fetchCurrenciesFromSupabase();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'currencies' }, (payload) => {
+          this.handleRemoteCurrencyChange(payload);
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-          this.fetchAnnouncementsFromSupabase();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, (payload) => {
+          this.handleRemoteAnnouncementChange(payload);
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, (payload) => {
           if (payload.new) {
@@ -67,14 +121,24 @@ class SyncService {
             this.notifyListeners({ type: 'AUDIT_LOGS_UPDATED', payload: updated });
           }
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          this.fetchProfilesFromSupabase();
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+          this.handleRemoteProfileChange(payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, () => {
+          this.fetchCustomersFromSupabase();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, () => {
           this.fetchAppSettingsFromSupabase();
         })
         .subscribe((status) => {
           console.log('[Supabase Realtime Status]:', status);
+          if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('[Realtime Connection Dropped, Auto-reconnecting in 3s...]');
+            if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = setTimeout(() => {
+              this.initSupabaseRealtime();
+            }, 3000);
+          }
         });
 
       this.realtimeChannel = channel;
@@ -430,6 +494,91 @@ class SyncService {
 
   handleRemoteQuoteChange(payload) {
     this.fetchQuotesFromSupabase();
+
+    if (!payload || !payload.new) return;
+    const q = payload.new;
+
+    // Kendi oluşturduğumuz anlık işlemse bildirim tekrarı yapma
+    if (this.recentLocalSavedQuoteIds?.has(q.id)) return;
+
+    if (payload.eventType === 'INSERT') {
+      notificationService.notify({
+        title: '📋 Yeni Umre Teklifi',
+        message: `${q.customer_name || 'Misafir'} adına ${q.package_name || ''} teklifi oluşturuldu (${q.final_price_usd} USD • ${q.created_by_name || 'Personel'})`,
+        type: 'quote',
+        sound: 'default',
+        data: q
+      });
+    } else if (payload.eventType === 'UPDATE') {
+      if (q.status === 'hq_approved' || q.status === 'approved') {
+        notificationService.notify({
+          title: '✓ Teklif Onaylandı',
+          message: `${q.customer_name || 'Misafir'} teklifi Genel Merkez tarafından ONAYLANDI.`,
+          type: 'quote',
+          sound: 'success',
+          data: q
+        });
+      } else if (q.status === 'hq_rejected') {
+        notificationService.notify({
+          title: '✕ Teklif Reddedildi',
+          message: `${q.customer_name || 'Misafir'} teklifi Genel Merkez tarafından reddedildi.`,
+          type: 'warning',
+          sound: 'urgent',
+          data: q
+        });
+      } else if (q.status === 'customer_approved') {
+        notificationService.notify({
+          title: '🤝 Müşteri Teklifi Kabul Etti',
+          message: `${q.customer_name || 'Misafir'} teklifi kabul etti, Merkez onayı bekleniyor.`,
+          type: 'quote',
+          sound: 'success',
+          data: q
+        });
+      } else if (q.status === 'revised' || q.status === 'approved_revised') {
+        notificationService.notify({
+          title: '✏️ Teklif Revize Edildi',
+          message: `${q.customer_name || 'Misafir'} teklifinde değişiklik yapıldı (${q.final_price_usd} USD • ${q.created_by_name || 'Personel'}).`,
+          type: 'quote',
+          sound: 'default',
+          data: q
+        });
+      }
+    }
+  }
+
+  handleRemoteAnnouncementChange(payload) {
+    this.fetchAnnouncementsFromSupabase();
+    if (payload?.eventType === 'INSERT' && payload?.new) {
+      notificationService.notify({
+        title: '📢 Genel Merkez Duyurusu',
+        message: payload.new.title,
+        type: 'announcement',
+        sound: 'urgent',
+        data: payload.new
+      });
+    }
+  }
+
+  handleRemotePackageChange(payload) {
+    this.fetchPackagesFromSupabase();
+    if (Date.now() - (this.lastPackageNotifyTime || 0) > 6000) {
+      this.lastPackageNotifyTime = Date.now();
+      notificationService.notify({
+        title: '🏨 Otel & Fiyat Tarifesi Güncellendi',
+        message: 'Genel Merkez otel ve fiyat tarifesinde canlı güncelleme yaptı.',
+        type: 'tariff',
+        sound: 'default'
+      });
+    }
+  }
+
+  handleRemoteProfileChange(payload) {
+    this.fetchProfilesFromSupabase();
+    this.notifyListeners({ type: 'PROFILES_UPDATED' });
+  }
+
+  handleRemoteCurrencyChange(payload) {
+    this.fetchCurrenciesFromSupabase();
   }
 
   // --- Public Sync Methods (Used by UI) ---
@@ -445,12 +594,13 @@ class SyncService {
     });
   }
 
-  broadcast(type, payload) {
+  broadcast(type, payload, notification = null) {
     const message = {
       type,
       payload,
+      notification,
       timestamp: new Date().toISOString(),
-      senderId: 'client_' + Math.random().toString(36).substring(2, 9)
+      senderId: this.clientId
     };
     if (this.broadcastChannel) {
       this.broadcastChannel.postMessage(message);
@@ -475,7 +625,12 @@ class SyncService {
       details: changeNote || 'Paket tarifeleri güncellendi.',
       timestamp: new Date().toISOString()
     });
-    this.broadcast('PACKAGES_UPDATED', packages);
+    this.broadcast('PACKAGES_UPDATED', packages, {
+      title: '🏨 Otel & Fiyat Tarifesi Güncellendi',
+      message: changeNote || 'Genel Merkez otel ve fiyat tarifesinde güncelleme yaptı.',
+      type: 'tariff',
+      sound: 'default'
+    });
 
     // Sync to Supabase
     if (this.isSupabaseReady) {
@@ -670,7 +825,13 @@ class SyncService {
       details: `"${newAnn.title}" duyurusu yayınlandı.`,
       timestamp: new Date().toISOString()
     });
-    this.broadcast('ANNOUNCEMENTS_UPDATED', updated);
+    this.broadcast('ANNOUNCEMENTS_UPDATED', updated, {
+      title: '📢 Genel Merkez Duyurusu',
+      message: newAnn.title,
+      type: 'announcement',
+      sound: 'urgent',
+      data: newAnn
+    });
 
     if (this.isSupabaseReady) {
       supabase.from('announcements').upsert({
@@ -761,8 +922,20 @@ class SyncService {
       });
     }
 
+    if (!this.recentLocalSavedQuoteIds) this.recentLocalSavedQuoteIds = new Set();
+    this.recentLocalSavedQuoteIds.add(quoteToSave.id);
+    setTimeout(() => {
+      this.recentLocalSavedQuoteIds.delete(quoteToSave.id);
+    }, 15000);
+
     localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updated));
-    this.broadcast('QUOTES_UPDATED', updated);
+    this.broadcast('QUOTES_UPDATED', updated, {
+      title: existingIndex >= 0 ? '✏️ Teklif Revize Edildi' : '📋 Yeni Umre Teklifi',
+      message: `${quoteToSave.customerName || 'Misafir'} adına ${quoteToSave.packageName || ''} teklifi ${existingIndex >= 0 ? 'revize edildi' : 'oluşturuldu'} (${quoteToSave.finalPriceUSD} USD • ${quoteToSave.createdByName || 'Personel'})`,
+      type: 'quote',
+      sound: 'default',
+      data: quoteToSave
+    });
 
     // Save to Supabase Realtime Table
     if (this.isSupabaseReady) {
@@ -951,7 +1124,18 @@ class SyncService {
       details: `${target?.customerName || 'Misafir'} adına teklif durumu: ${getStatusLabel(newStatus).toUpperCase()} olarak güncellendi.${note ? ` (Merkez Notu: ${note})` : ''}`,
       timestamp: nowISO
     });
-    this.broadcast('QUOTES_UPDATED', updated);
+
+    const isApprove = newStatus === 'hq_approved' || newStatus === 'approved';
+    const isReject = newStatus === 'hq_rejected';
+    const isCustApprove = newStatus === 'customer_approved';
+
+    this.broadcast('QUOTES_UPDATED', updated, {
+      title: isApprove ? '✓ Teklif Onaylandı' : isReject ? '✕ Teklif Reddedildi' : isCustApprove ? '🤝 Müşteri Teklifi Kabul Etti' : '📋 Teklif Durumu Güncellendi',
+      message: `${target?.customerName || 'Misafir'} teklifinin durumu "${getStatusLabel(newStatus)}" olarak güncellendi.`,
+      type: isApprove || isCustApprove ? 'quote' : isReject ? 'warning' : 'info',
+      sound: isApprove || isCustApprove ? 'success' : isReject ? 'urgent' : 'default',
+      data: target
+    });
 
     if (this.isSupabaseReady) {
       const updatePayload = {
