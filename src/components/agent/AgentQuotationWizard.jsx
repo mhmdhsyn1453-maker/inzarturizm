@@ -183,24 +183,34 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Real-time suggested existing customers from Supabase/Local pool
+  // Kural: Sadece isim girildiğinde öneri çıkmaz; TC uyuştuğunda ve (isim girilmişse) isim de uyuştuğunda öneri listelenir.
   const matchedCustomerSuggestions = useMemo(() => {
-    const termName = `${customerFirstName} ${customerLastName}`.trim().toLowerCase();
-    const termPhone = customerPhone.replace(/\D/g, '');
     const termTc = customerTcNo.replace(/\D/g, '');
+    const termFirstName = customerFirstName.trim().toLocaleLowerCase('tr-TR');
+    const termLastName = customerLastName.trim().toLocaleLowerCase('tr-TR');
 
-    if (!termName && termPhone.length < 3 && termTc.length < 3) return [];
+    // TC numarası en az 3 hane girilmediyse sadece isimden öneri çıkarma
+    if (termTc.length < 3) return [];
 
     return (customers || []).filter(c => {
-      const cName = (c.fullName || `${c.firstName} ${c.lastName}`).toLowerCase();
-      const cPhone = (c.phone || '').replace(/\D/g, '');
       const cTc = (c.tcNo || '').replace(/\D/g, '');
+      const cName = (c.fullName || `${c.firstName || ''} ${c.lastName || ''}`).toLocaleLowerCase('tr-TR');
 
-      if (termTc && cTc && cTc.includes(termTc)) return true;
-      if (termPhone && cPhone && cPhone.includes(termPhone)) return true;
-      if (termName.length >= 2 && cName.includes(termName)) return true;
-      return false;
+      // 1. TC Kimlik eşleşmeli
+      const tcMatches = cTc && cTc.includes(termTc);
+      if (!tcMatches) return false;
+
+      // 2. İsim de girildiyse, isim de uyuşmalı
+      if (termFirstName.length >= 2 && !cName.includes(termFirstName)) {
+        return false;
+      }
+      if (termLastName.length >= 2 && !cName.includes(termLastName)) {
+        return false;
+      }
+
+      return true;
     }).slice(0, 3);
-  }, [customers, customerFirstName, customerLastName, customerPhone, customerTcNo]);
+  }, [customers, customerFirstName, customerLastName, customerTcNo]);
 
   // Handle Verify Customer / Query Past Quotes & Supabase Customer Dossier
   const handleVerifyCustomer = async (e) => {
@@ -227,19 +237,29 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       const fullCustomerName = `${customerFirstName.trim()} ${customerLastName.trim().toUpperCase()}`;
       const rawPhone = customerPhone.replace(/\D/g, '');
       const cleanTc = customerTcNo.replace(/\D/g, '');
+      const searchFirstName = customerFirstName.trim().toLocaleLowerCase('tr-TR');
+      const searchLastName = customerLastName.trim().toLocaleLowerCase('tr-TR');
 
       // Tüm kayıtlı teklifleri yerel ve senkronize havuzdan al
       const allSavedQuotes = Array.isArray(savedQuotes) && savedQuotes.length > 0 ? savedQuotes : syncService.getSavedQuotes();
       
-      // Eşleşen geçmiş teklifleri tara (TC, Telefon veya Ad Soyad bazında)
+      // Eşleşen geçmiş teklifleri tara (TC ve isim uyuşması)
       const matchedQuotes = allSavedQuotes.filter(q => {
-        const qFullName = (q.customerName || '').toLowerCase();
+        const qFullName = (q.customerName || '').toLocaleLowerCase('tr-TR');
         const qPhone = (q.customerPhone || '').replace(/\D/g, '');
         const qTc = (q.customerTcNo || q.tcNo || '').replace(/\D/g, '');
 
-        if (cleanTc && qTc && cleanTc === qTc) return true;
-        if (rawPhone && qPhone && (rawPhone.endsWith(qPhone) || qPhone.endsWith(rawPhone))) return true;
-        if (qFullName.includes(customerFirstName.trim().toLowerCase()) && qFullName.includes(customerLastName.trim().toLowerCase())) return true;
+        if (cleanTc && qTc && cleanTc === qTc) {
+          if (searchFirstName && !qFullName.includes(searchFirstName)) return false;
+          return true;
+        }
+        if (rawPhone && qPhone && (rawPhone.endsWith(qPhone) || qPhone.endsWith(rawPhone))) {
+          if (searchFirstName && !qFullName.includes(searchFirstName)) return false;
+          return true;
+        }
+        if (!cleanTc && !rawPhone && searchFirstName && searchLastName) {
+          if (qFullName.includes(searchFirstName) && qFullName.includes(searchLastName)) return true;
+        }
         return false;
       });
 
@@ -247,8 +267,16 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       const matchedCust = (customers || []).find(c => {
         const cPhone = (c.phone || '').replace(/\D/g, '');
         const cTc = (c.tcNo || '').replace(/\D/g, '');
-        if (cleanTc && cTc && cleanTc === cTc) return true;
-        if (rawPhone && cPhone && (rawPhone.endsWith(cPhone) || cPhone.endsWith(rawPhone))) return true;
+        const cFullName = (c.fullName || `${c.firstName || ''} ${c.lastName || ''}`).toLocaleLowerCase('tr-TR');
+
+        if (cleanTc && cTc && cleanTc === cTc) {
+          if (searchFirstName && !cFullName.includes(searchFirstName)) return false;
+          return true;
+        }
+        if (rawPhone && cPhone && (rawPhone.endsWith(cPhone) || cPhone.endsWith(rawPhone))) {
+          if (searchFirstName && !cFullName.includes(searchFirstName)) return false;
+          return true;
+        }
         return false;
       });
 
