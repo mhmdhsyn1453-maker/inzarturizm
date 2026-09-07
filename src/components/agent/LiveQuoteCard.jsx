@@ -102,6 +102,7 @@ export default function LiveQuoteCard({
         </div>
 
         {/* 2. Oda Tiplerine Göre Kişi Başı Fiyatlar (Net & Derli Toplu) */}
+        {/* 2. Oda Tiplerine Göre Kişi Başı Fiyatlar (Net & Derli Toplu) */}
         <div className="py-1 shrink-0">
           {quotation.isUnpriced || quotation.hasValidTariff === false ? (
             <div className="py-2.5 px-3 bg-gradient-to-br from-amber-50 via-orange-50/40 to-white border-2 border-amber-300 rounded-2xl space-y-1 text-center shadow-3xs">
@@ -111,6 +112,46 @@ export default function LiveQuoteCard({
               <p className="text-[10px] text-amber-800 font-semibold leading-relaxed">
                 {quotation.tariffWarning || 'Seçilen tarihler için Genel Merkez tarafından otel fiyat tarifesi girilmemiştir.'}
               </p>
+            </div>
+          ) : quotation.hasPartialFixedExpenses && quotation.partialExpensesSummary ? (
+            /* ⚡ KISMI SABİT GİDER SEÇİMİ (Tam Paket vs Kara Paketi Ayrımı) */
+            <div className="bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/70 p-3 rounded-2xl border-2 border-emerald-400/90 shadow-3xs space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-emerald-950 font-display border-b border-emerald-200/70 pb-1">
+                <span>Kişi Başı Paket Seçenekleri</span>
+                <span className="font-mono text-[10px] bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold">
+                  Kısmi Hizmet
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 font-mono">
+                {/* 1. Tam Paket (Dahili Hizmet Alanlar) */}
+                <div className="bg-white p-2.5 rounded-xl border border-emerald-300 shadow-3xs space-y-0.5">
+                  <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-tight truncate">
+                    ✨ Tam Paket
+                  </div>
+                  <div className="text-sm sm:text-base font-black text-emerald-950">
+                    {activeCurrency === 'USD' && `$${(quotation.partialExpensesSummary.fullPackagePriceUSD || 0).toLocaleString('tr-TR')}`}
+                    {activeCurrency === 'TRY' && `${(quotation.partialExpensesSummary.fullPackagePriceTRY || 0).toLocaleString('tr-TR')} ₺`}
+                    {activeCurrency === 'EUR' && `€${(quotation.partialExpensesSummary.fullPackagePriceEUR || 0).toLocaleString('tr-TR')}`}
+                    {activeCurrency === 'SAR' && `${(quotation.partialExpensesSummary.fullPackagePriceSAR || 0).toLocaleString('tr-TR')} SAR`}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-semibold">Hizmet Dahil / Kişi</div>
+                </div>
+
+                {/* 2. Kara Paketi (Dahili Hizmet Almayanlar) */}
+                <div className="bg-white p-2.5 rounded-xl border border-slate-300 shadow-3xs space-y-0.5">
+                  <div className="text-[10px] font-bold text-slate-700 uppercase tracking-tight truncate">
+                    🏨 Kara Paketi
+                  </div>
+                  <div className="text-sm sm:text-base font-black text-slate-900">
+                    {activeCurrency === 'USD' && `$${(quotation.partialExpensesSummary.groundPackagePriceUSD || 0).toLocaleString('tr-TR')}`}
+                    {activeCurrency === 'TRY' && `${(quotation.partialExpensesSummary.groundPackagePriceTRY || 0).toLocaleString('tr-TR')} ₺`}
+                    {activeCurrency === 'EUR' && `€${(quotation.partialExpensesSummary.groundPackagePriceEUR || 0).toLocaleString('tr-TR')} €`}
+                    {activeCurrency === 'SAR' && `${(quotation.partialExpensesSummary.groundPackagePriceSAR || 0).toLocaleString('tr-TR')} SAR`}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-semibold">Hizmetsiz / Kişi</div>
+                </div>
+              </div>
             </div>
           ) : isMixed ? (
             <div className="bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/70 p-3 rounded-2xl border border-emerald-300 shadow-3xs space-y-2">
@@ -314,11 +355,21 @@ export default function LiveQuoteCard({
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
             <span className="text-slate-500 font-medium shrink-0">Dahil Hizmetler:</span>
             {includedFixedList.length > 0 ? (
-              includedFixedList.map((item, idx) => (
-                <span key={idx} className="bg-emerald-50 text-emerald-900 border border-emerald-200 px-1.5 py-0.5 rounded text-[10px] font-semibold">
-                  ✓ {item.label}
-                </span>
-              ))
+              includedFixedList.map((item, idx) => {
+                const isPartial = item.paxCount && effectivePax > 1 && item.paxCount < effectivePax;
+                return (
+                  <span 
+                    key={idx} 
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
+                      isPartial 
+                        ? 'bg-amber-50 text-amber-900 border-amber-300' 
+                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                    }`}
+                  >
+                    ✓ {item.label} {isPartial ? `(${item.paxCount} Kişi)` : ''}
+                  </span>
+                );
+              })
             ) : (
               <span className="text-[10px] text-slate-400 font-medium">Yok</span>
             )}

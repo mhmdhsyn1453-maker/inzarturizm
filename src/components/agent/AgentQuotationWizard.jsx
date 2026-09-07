@@ -158,6 +158,9 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     branchExpenseSAR: true,
   });
 
+  // Fixed Expenses Pax Count map (e.g. { visaTaxSAR: 3, flightTicketSAR: 3 })
+  const [fixedExpensesPax, setFixedExpensesPax] = useState(draft?.fixedExpensesPax || {});
+
   const { showConfirm, showAlert, showPdfSaveLocationModal } = useModal();
 
   // Customer Info & Gatekeeper Verification States
@@ -362,6 +365,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       medAir: { vehicleType: 'none', passengerCount: 0 },
     });
     setFixedExpensesIncluded({});
+    setFixedExpensesPax({});
     setCustomerFirstName('');
     setCustomerLastName('');
     setCustomerTcNo('');
@@ -473,6 +477,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         applyProfitMargin,
         transfersSelection,
         fixedExpensesIncluded,
+        fixedExpensesPax,
         customerFirstName,
         customerLastName,
         customerTcNo,
@@ -510,6 +515,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     applyProfitMargin,
     transfersSelection,
     fixedExpensesIncluded,
+    fixedExpensesPax,
     customerFirstName,
     customerLastName,
     customerTcNo,
@@ -591,6 +597,9 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       }
       if (editingQuote.fixedExpensesIncluded) {
         setFixedExpensesIncluded(editingQuote.fixedExpensesIncluded);
+      }
+      if (editingQuote.fixedExpensesPax) {
+        setFixedExpensesPax(editingQuote.fixedExpensesPax);
       }
       setSavedQuoteId(editingQuote.id || null);
       setIsSaved(true);
@@ -728,6 +737,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       mixedRooms,
       transfersSelection,
       fixedExpensesIncluded,
+      fixedExpensesPax,
       currencies,
       customDiscountUSD: discountUSD,
       applyProfitMargin,
@@ -759,6 +769,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     mixedRooms,
     transfersSelection, 
     fixedExpensesIncluded, 
+    fixedExpensesPax,
     currencies, 
     discountUSD, 
     applyProfitMargin,
@@ -833,6 +844,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       includeMadinahMeals,
       roomMatrix,
       fixedExpensesIncluded,
+      fixedExpensesPax,
       transfersSelection,
       customerFirstName,
       customerLastName,
@@ -855,6 +867,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     activePackage, 
     roomMatrix, 
     fixedExpensesIncluded, 
+    fixedExpensesPax,
     transfersSelection, 
     customerFirstName,
     customerLastName,
@@ -870,11 +883,46 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     activeMonth
   ]);
 
+  // Total Pax Calculation for Group
+  const totalMixedPaxCalc = (mixedRooms?.single || 0) * 1 + (mixedRooms?.double || 0) * 2 + (mixedRooms?.triple || 0) * 3 + (mixedRooms?.quad || 0) * 4;
+  const effectiveWizardPax = isMixedRoomMode 
+    ? (totalMixedPaxCalc > 0 ? totalMixedPaxCalc : paxCount || 1)
+    : (makkahOccupancy || paxCount || 2);
+
   const toggleFixedExpense = (key) => {
-    setFixedExpensesIncluded(prev => ({
+    setFixedExpensesIncluded(prev => {
+      const isNowIncluded = !prev[key];
+      if (isNowIncluded) {
+        setFixedExpensesPax(paxPrev => ({
+          ...paxPrev,
+          [key]: paxPrev[key] || effectiveWizardPax
+        }));
+      }
+      return {
+        ...prev,
+        [key]: isNowIncluded
+      };
+    });
+  };
+
+  const handleFixedExpensePaxChange = (key, count) => {
+    const safeCount = Math.max(1, Math.min(effectiveWizardPax, Number(count) || 1));
+    setFixedExpensesPax(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: safeCount
     }));
+  };
+
+  const handleSetAllFixedExpensesToTotalPax = () => {
+    setFixedExpensesPax(prev => {
+      const next = { ...prev };
+      Object.keys(fixedExpensesIncluded).forEach(k => {
+        if (fixedExpensesIncluded[k]) {
+          next[k] = effectiveWizardPax;
+        }
+      });
+      return next;
+    });
   };
 
   const handleTransferChange = (routeId, field, value) => {
@@ -2654,7 +2702,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
           );
         })()}
 
-        {/* Step 5: Sabit & Ek Giderler Checklist (İSTEĞE BAĞLI / OPSİYONEL) */}
+        {/* Step 5: Sabit & Ek Giderler Checklist (İSTEĞE BAĞLI / OPSİYONEL & KİŞİ SAYISI SEÇİLEBİLİR) */}
         <div id="step-5" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 bg-white scroll-mt-6">
           <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-3 gap-2">
             <div className="flex items-center gap-2.5">
@@ -2663,12 +2711,21 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 <span>Sabit & Operasyonel Giderler Havuzu</span>
               </h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {effectiveWizardPax > 1 && (
+                <button
+                  type="button"
+                  onClick={handleSetAllFixedExpensesToTotalPax}
+                  className="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all cursor-pointer spring-pill"
+                >
+                  Tümünü Gruba Eşitle ({effectiveWizardPax} Kişi)
+                </button>
+              )}
               <span className="text-xs text-slate-400 font-medium">Opsiyonel Hizmet Kalemleri</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {((Array.isArray(activePackage?.fixedExpensesList) && activePackage.fixedExpensesList.length > 0)
               ? activePackage.fixedExpensesList.filter(item => item.isVisible !== false)
               : FIXED_EXPENSES_INFO.map(f => ({
@@ -2681,29 +2738,69 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
             ).map((item) => {
               const expKey = item.id || item.key;
               const isIncluded = !!fixedExpensesIncluded[expKey];
+              const itemPax = fixedExpensesPax[expKey] || effectiveWizardPax;
 
               return (
                 <div
                   key={expKey}
                   onClick={() => toggleFixedExpense(expKey)}
-                  className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between select-none ${
+                  className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none space-y-2.5 ${
                     isIncluded
-                      ? 'bg-emerald-50/90 border-emerald-500/80 shadow-3xs'
+                      ? 'bg-gradient-to-br from-emerald-50/90 via-teal-50/30 to-white border-emerald-500/80 shadow-3xs'
                       : 'bg-white border-slate-200/80 opacity-60 hover:opacity-100 hover:border-slate-300'
                   }`}
                 >
-                  <div className="space-y-0.5 pr-2">
-                    <span className="text-xs font-bold text-slate-900 block">{item.name || item.label}</span>
-                    <span className="text-[10px] text-slate-400 line-clamp-1">{item.desc}</span>
-                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5 pr-1 min-w-0">
+                      <span className="text-xs font-bold text-slate-900 block truncate">{item.name || item.label}</span>
+                      <span className="text-[10px] text-slate-400 line-clamp-1">{item.desc}</span>
+                    </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                    <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors shrink-0 ${
                       isIncluded ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs' : 'border-slate-300 bg-white'
                     }`}>
                       {isIncluded && <Check className="h-3.5 w-3.5 stroke-[3]" />}
                     </div>
                   </div>
+
+                  {/* Kişi Başı Sayacı (Grupta birden fazla kişi varsa ve hizmet dahilse) */}
+                  {isIncluded && effectiveWizardPax > 1 && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="pt-2 border-t border-emerald-200/60 flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full border border-emerald-300 shadow-3xs">
+                        <span className="text-[10px] font-bold text-emerald-800">Kişi:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleFixedExpensePaxChange(expKey, Math.max(1, itemPax - 1))}
+                          className="h-5 w-5 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-85 text-slate-700 flex items-center justify-center font-bold border border-slate-200 transition-all cursor-pointer"
+                          title="1 Kişi Azalt"
+                        >
+                          <Minus className="h-2.5 w-2.5" />
+                        </button>
+                        <span className="font-mono font-black text-xs text-emerald-950 min-w-[18px] text-center select-none">
+                          {itemPax}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleFixedExpensePaxChange(expKey, Math.min(effectiveWizardPax, itemPax + 1))}
+                          className="h-5 w-5 rounded-full bg-emerald-700 hover:bg-emerald-600 active:scale-85 text-white flex items-center justify-center font-bold transition-all cursor-pointer shadow-3xs"
+                          title="1 Kişi Artır"
+                        >
+                          <Plus className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        itemPax === effectiveWizardPax
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          : 'bg-amber-100 text-amber-900 border-amber-300'
+                      }`}>
+                        {itemPax === effectiveWizardPax ? `✓ Tümü (${itemPax} Kişi)` : `⚡ ${itemPax}/${effectiveWizardPax} Kişi`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
