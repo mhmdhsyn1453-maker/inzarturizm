@@ -155,12 +155,11 @@ export function calculateQuotation({
     bagSAR: true,
     scarfSAR: true,
     guideSAR: true,
-    commissionSAR: true,
-    bonusSAR: true,
+    commissionSAR: false,
+    bonusSAR: false,
     zamzamSAR: true,
     branchExpenseSAR: false,
   },
-  fixedExpensesPax = {},
   currencies = {
     SAR_USD: 3.75,
     USD_TRY: 36.50,
@@ -285,13 +284,9 @@ export function calculateQuotation({
     });
   });
 
-  // Sabit Giderler & Dahili Hizmetler (Kişi Sayısı / Parçalı Seçim Destekli)
-  let groupFixedExpensesTotalSAR = 0;
-  let fullPackageFixedPerPaxSAR = 0;
-  let groundPackageFixedPerPaxSAR = 0;
-  let hasPartialFixedExpenses = false;
+  // 3. Sabit Giderler (Kişi Başı)
+  let fixedExpensesTotalSAR = 0;
   const fixedExpensesBreakdown = [];
-  const partialFixedExpensesList = [];
 
   const rawFixedList = Array.isArray(pkg.fixedExpensesList) && pkg.fixedExpensesList.length > 0
     ? pkg.fixedExpensesList
@@ -310,63 +305,30 @@ export function calculateQuotation({
 
   rawFixedList.forEach(item => {
     const itemKey = item.id || item.key;
-    const itemLabel = item.name || item.label;
-    const isInc = !!fixedExpensesIncluded[itemKey];
-    const unitCost = item.priceSAR !== undefined ? Number(item.priceSAR) : (pkg.fixedExpenses?.[itemKey] || 0);
-    
-    // Kaç kişi için seçildi? (Grupta kişi başı özelleştirme)
-    const itemPax = isInc 
-      ? ((fixedExpensesPax && fixedExpensesPax[itemKey] !== undefined) ? Math.min(effectivePax, Math.max(1, Number(fixedExpensesPax[itemKey]))) : effectivePax)
-      : 0;
-
-    const isPartial = isInc && effectivePax > 1 && itemPax < effectivePax;
-    if (isPartial) {
-      hasPartialFixedExpenses = true;
-      partialFixedExpensesList.push({
-        key: itemKey,
-        label: itemLabel,
-        paxCount: itemPax,
-        totalPax: effectivePax,
-        unitCostSAR: unitCost,
-        unitCostUSD: Math.round(unitCost / sarUsdRate)
-      });
-    }
-
-    const itemTotalGroupCost = isInc ? (unitCost * itemPax) : 0;
-    groupFixedExpensesTotalSAR += itemTotalGroupCost;
+    const isVisible = item.isVisible !== false;
+    const isInc = isVisible && !!fixedExpensesIncluded[itemKey];
+    const costSAR = item.priceSAR !== undefined ? Number(item.priceSAR) : (pkg.fixedExpenses?.[itemKey] || 0);
 
     if (isInc) {
-      fullPackageFixedPerPaxSAR += unitCost;
-      if (!isPartial) {
-        groundPackageFixedPerPaxSAR += unitCost;
-      }
+      fixedExpensesTotalSAR += costSAR;
     }
+
+    const isInternalCost = ['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(itemKey);
+    const showInLetter = item.showInLetter !== undefined ? item.showInLetter : !isInternalCost;
 
     fixedExpensesBreakdown.push({
       key: itemKey,
-      label: itemLabel,
+      label: item.name || item.label,
+      desc: item.desc || '',
       included: isInc,
-      unitCostSAR: unitCost,
-      paxCount: isInc ? itemPax : 0,
-      totalPax: effectivePax,
-      isPartial,
-      totalGroupCostSAR: itemTotalGroupCost,
-      costSAR: isInc ? (itemTotalGroupCost / effectivePax) : 0 // Ortalama pay
+      isVisible,
+      showInLetter,
+      costSAR: isInc ? costSAR : 0
     });
   });
 
-  const avgFixedExpensesPerPaxSAR = effectivePax > 0 ? (groupFixedExpensesTotalSAR / effectivePax) : 0;
-  const fixedExpensesTotalSAR = avgFixedExpensesPerPaxSAR;
-
-  // Ortak Kişi Başı Ek Masraflar (Transfer + Ortalama Sabitler)
+  // Ortak Kişi Başı Ek Masraflar (Transfer + Sabitler)
   const sharedExpensesPerPersonSAR = transfersTotalSAR + fixedExpensesTotalSAR;
-
-  // Tam Paket & Kara Paketi Kişi Başı Fiyat Farkı
-  const fullPkgFixedDiffSAR = fullPackageFixedPerPaxSAR - avgFixedExpensesPerPaxSAR;
-  const groundPkgFixedDiffSAR = groundPackageFixedPerPaxSAR - avgFixedExpensesPerPaxSAR;
-  
-  const fullPkgFixedDiffUSD = (fullPkgFixedDiffSAR / sarUsdRate) * (1 + profitMarginPercent / 100);
-  const groundPkgFixedDiffUSD = (groundPkgFixedDiffSAR / sarUsdRate) * (1 + profitMarginPercent / 100);
 
   // Her oda kapasitesi için net paket fiyatı hesaplayan yardımcı fonksiyon
   const calcRoomTypeFinalUSD = (occupancy) => {
@@ -521,53 +483,6 @@ export function calculateQuotation({
     }
   }
 
-  // Temel Konaklama & Ulaşım Taban Fiyatı (Sabit Giderler Hariç)
-  const calcRoomTypeBaseUSD = (occupancy) => {
-    const mkDailyRoom = occupancy > 0 ? (makkahRoomSAR / occupancy) : 0;
-    const mdDailyRoom = occupancy > 0 ? (madinahRoomSAR / occupancy) : 0;
-    const mkTotal = (mkDailyRoom + makkahFoodSAR) * makkahDays;
-    const mdTotal = (mdDailyRoom + madinahFoodSAR) * madinahDays;
-    const totalSAR = mkTotal + mdTotal + transfersTotalSAR;
-    const baseUSD = totalSAR / sarUsdRate;
-    const profitUSD = baseUSD * (profitMarginPercent / 100);
-    const beforeDiscount = baseUSD + profitUSD;
-    return Math.round(Math.max(0, beforeDiscount - (customDiscountUSD || 0)));
-  };
-
-  const basePriceUSD = calcRoomTypeBaseUSD(makkahRoomOccupancy || 2);
-  const basePriceTRY = Math.round(basePriceUSD * usdTryRate);
-  const basePriceEUR = Math.round(basePriceUSD / eurUsdRate);
-  const basePriceSAR = Math.round(basePriceUSD * sarUsdRate);
-
-  const includedServicesList = fixedExpensesBreakdown
-    .filter(item => item.included)
-    .map(item => {
-      const unitCostSAR = item.unitCostSAR;
-      const unitUSD = Math.round((unitCostSAR / sarUsdRate) * (1 + profitMarginPercent / 100));
-      const unitTRY = Math.round(unitUSD * usdTryRate);
-      const unitEUR = Math.round(unitUSD / eurUsdRate);
-      const unitSAR = Math.round(unitCostSAR * (1 + profitMarginPercent / 100));
-      const subtotalUSD = unitUSD * (item.paxCount || 1);
-      const subtotalTRY = unitTRY * (item.paxCount || 1);
-      const subtotalEUR = unitEUR * (item.paxCount || 1);
-      const subtotalSAR = unitSAR * (item.paxCount || 1);
-      return {
-        key: item.key,
-        label: item.label,
-        paxCount: item.paxCount,
-        totalPax: effectivePax,
-        isPartial: item.isPartial,
-        unitUSD,
-        unitTRY,
-        unitEUR,
-        unitSAR,
-        subtotalUSD,
-        subtotalTRY,
-        subtotalEUR,
-        subtotalSAR
-      };
-    });
-
   return {
     packageId: pkg.id,
     packageName: pkg.name,
@@ -611,23 +526,6 @@ export function calculateQuotation({
     finalPriceTRY: Math.round(finalPriceTRY),
     finalPriceEUR: Math.round(finalPriceEUR),
     finalPriceSAR: Math.round(finalPriceSAR),
-    basePriceUSD,
-    basePriceTRY,
-    basePriceEUR,
-    basePriceSAR,
-    includedServicesList,
-    hasPartialFixedExpenses,
-    partialExpensesSummary: hasPartialFixedExpenses ? {
-      hasPartial: true,
-      totalPax: effectivePax,
-      basePriceUSD,
-      basePriceTRY,
-      basePriceEUR,
-      basePriceSAR,
-      includedServices: includedServicesList,
-      partialServices: partialFixedExpensesList
-    } : null,
-    fixedExpensesPax,
     isMixedRoomMode,
     mixedRooms,
     mixedRoomsSummary,

@@ -12,9 +12,7 @@ import {
   Calendar,
   PackageCheck,
   ShieldCheck,
-  Utensils,
-  AlertTriangle,
-  Sparkles
+  Utensils
 } from 'lucide-react';
 import { mekkeIcon, medineIcon } from '../../assets/icons';
 
@@ -60,8 +58,10 @@ export default function LiveQuoteCard({
     return 'Dahil';
   };
 
-  // Dahil edilen sabit giderler
-  const includedFixedList = (quotation.fixedExpensesBreakdown || []).filter(item => item.included);
+  // Dahil edilen müşteri odaklı sabit giderler (Havuzda aktif ve mektuba uygun olanlar)
+  const includedFixedList = (quotation.fixedExpensesBreakdown || []).filter(
+    item => item.included && item.isVisible !== false && item.showInLetter !== false
+  );
 
   return (
     <div className="h-full w-full flex flex-col font-sans select-none">
@@ -104,68 +104,16 @@ export default function LiveQuoteCard({
         </div>
 
         {/* 2. Oda Tiplerine Göre Kişi Başı Fiyatlar (Net & Derli Toplu) */}
+        {/* 2. Oda Tiplerine Göre Kişi Başı Fiyatlar (Net & Derli Toplu) */}
         <div className="py-1 shrink-0">
           {quotation.isUnpriced || quotation.hasValidTariff === false ? (
             <div className="py-2.5 px-3 bg-gradient-to-br from-amber-50 via-orange-50/40 to-white border-2 border-amber-300 rounded-2xl space-y-1 text-center shadow-3xs">
               <div className="text-xs sm:text-sm font-black text-amber-950 flex items-center justify-center gap-1.5 font-display">
-                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                <span>Merkez Fiyat Belirlememiştir</span>
+                <span>⚠️ Merkez Fiyat Belirlememiştir</span>
               </div>
               <p className="text-[10px] text-amber-800 font-semibold leading-relaxed">
                 {quotation.tariffWarning || 'Seçilen tarihler için Genel Merkez tarafından otel fiyat tarifesi girilmemiştir.'}
               </p>
-            </div>
-          ) : quotation.hasPartialFixedExpenses && quotation.partialExpensesSummary ? (
-            /* 1. SEÇENEK: TEMEL KONAKLAMA TABANI + TALEP EDİLEN DAHİLİ HİZMETLER DAĞILIMI */
-            <div className="bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/70 p-3 rounded-2xl border-2 border-emerald-400/90 shadow-3xs space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-emerald-950 font-display border-b border-emerald-200/70 pb-1">
-                <span>Temel Konaklama & Transfer Bedeli</span>
-                <span className="font-mono text-[10px] bg-amber-700 text-white px-2 py-0.5 rounded-full font-bold">
-                  Kısmi Dahil
-                </span>
-              </div>
-
-              <div className="bg-white p-2 rounded-xl border border-emerald-300 shadow-3xs flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-bold text-emerald-900 uppercase tracking-tight">
-                    Temel Taban Fiyat
-                  </div>
-                  <div className="text-[9px] text-slate-500 font-medium">Otel + Transfer (Kişi Başı)</div>
-                </div>
-                <div className="text-right font-mono">
-                  <div className="text-base sm:text-lg font-black text-emerald-950">
-                    {activeCurrency === 'USD' && `$${(quotation.partialExpensesSummary.basePriceUSD || quotation.basePriceUSD || 0).toLocaleString('tr-TR')}`}
-                    {activeCurrency === 'TRY' && `${(quotation.partialExpensesSummary.basePriceTRY || quotation.basePriceTRY || 0).toLocaleString('tr-TR')} ₺`}
-                    {activeCurrency === 'EUR' && `€${(quotation.partialExpensesSummary.basePriceEUR || quotation.basePriceEUR || 0).toLocaleString('tr-TR')}`}
-                    {activeCurrency === 'SAR' && `${(quotation.partialExpensesSummary.basePriceSAR || quotation.basePriceSAR || 0).toLocaleString('tr-TR')} SAR`}
-                  </div>
-                  <div className="text-[9px] text-emerald-700 font-bold">/ Kişi Başı Taban</div>
-                </div>
-              </div>
-
-              {/* Talep Edilen Dahili Hizmetler & Birim Fiyatlar */}
-              {quotation.partialExpensesSummary.includedServicesList && quotation.partialExpensesSummary.includedServicesList.length > 0 && (
-                <div className="space-y-1 pt-1 border-t border-emerald-100">
-                  <div className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">
-                    Talep Edilen Dahili Hizmetler:
-                  </div>
-                  <div className="space-y-1">
-                    {quotation.partialExpensesSummary.includedServicesList.map((srv, idx) => (
-                      <div key={idx} className="bg-emerald-50/70 px-2 py-1 rounded-lg border border-emerald-200/80 flex items-center justify-between text-[10px] font-mono">
-                        <span className="font-semibold text-emerald-950 truncate mr-1">
-                          {srv.label}
-                        </span>
-                        <div className="shrink-0 text-slate-700 font-bold">
-                          {activeCurrency === 'USD' && `$${srv.unitUSD} × ${srv.paxCount} Kişi = $${srv.subtotalUSD}`}
-                          {activeCurrency === 'TRY' && `${srv.unitTRY} ₺ × ${srv.paxCount} Kişi = ${srv.subtotalTRY} ₺`}
-                          {activeCurrency === 'EUR' && `€${srv.unitEUR} × ${srv.paxCount} Kişi = €${srv.subtotalEUR}`}
-                          {activeCurrency === 'SAR' && `${srv.unitSAR} SAR × ${srv.paxCount} Kişi = ${srv.subtotalSAR} SAR`}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           ) : isMixed ? (
             <div className="bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/70 p-3 rounded-2xl border border-emerald-300 shadow-3xs space-y-2">
@@ -498,9 +446,8 @@ export default function LiveQuoteCard({
 
             <div className="font-mono font-black text-emerald-950 text-base sm:text-lg tracking-tight text-right">
               {quotation.isUnpriced || quotation.hasValidTariff === false ? (
-                <span className="text-xs sm:text-sm text-amber-900 font-sans font-bold flex items-center justify-end gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 inline" />
-                  <span>Belirlenmemiş</span>
+                <span className="text-xs sm:text-sm text-amber-900 font-sans font-bold">
+                  Belirlenmemiş ⚠️
                 </span>
               ) : (
                 <>

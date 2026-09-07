@@ -152,14 +152,11 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     bagSAR: true,
     scarfSAR: true,
     guideSAR: true,
-    commissionSAR: true,
-    bonusSAR: true,
+    commissionSAR: false,
+    bonusSAR: false,
     zamzamSAR: true,
-    branchExpenseSAR: true,
+    branchExpenseSAR: false,
   });
-
-  // Fixed Expenses Pax Count map (e.g. { visaTaxSAR: 3, flightTicketSAR: 3 })
-  const [fixedExpensesPax, setFixedExpensesPax] = useState(draft?.fixedExpensesPax || {});
 
   const { showConfirm, showAlert, showPdfSaveLocationModal } = useModal();
 
@@ -365,7 +362,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       medAir: { vehicleType: 'none', passengerCount: 0 },
     });
     setFixedExpensesIncluded({});
-    setFixedExpensesPax({});
     setCustomerFirstName('');
     setCustomerLastName('');
     setCustomerTcNo('');
@@ -477,7 +473,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         applyProfitMargin,
         transfersSelection,
         fixedExpensesIncluded,
-        fixedExpensesPax,
         customerFirstName,
         customerLastName,
         customerTcNo,
@@ -515,7 +510,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     applyProfitMargin,
     transfersSelection,
     fixedExpensesIncluded,
-    fixedExpensesPax,
     customerFirstName,
     customerLastName,
     customerTcNo,
@@ -597,9 +591,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       }
       if (editingQuote.fixedExpensesIncluded) {
         setFixedExpensesIncluded(editingQuote.fixedExpensesIncluded);
-      }
-      if (editingQuote.fixedExpensesPax) {
-        setFixedExpensesPax(editingQuote.fixedExpensesPax);
       }
       setSavedQuoteId(editingQuote.id || null);
       setIsSaved(true);
@@ -737,7 +728,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       mixedRooms,
       transfersSelection,
       fixedExpensesIncluded,
-      fixedExpensesPax,
       currencies,
       customDiscountUSD: discountUSD,
       applyProfitMargin,
@@ -769,7 +759,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     mixedRooms,
     transfersSelection, 
     fixedExpensesIncluded, 
-    fixedExpensesPax,
     currencies, 
     discountUSD, 
     applyProfitMargin,
@@ -844,7 +833,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       includeMadinahMeals,
       roomMatrix,
       fixedExpensesIncluded,
-      fixedExpensesPax,
       transfersSelection,
       customerFirstName,
       customerLastName,
@@ -867,7 +855,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     activePackage, 
     roomMatrix, 
     fixedExpensesIncluded, 
-    fixedExpensesPax,
     transfersSelection, 
     customerFirstName,
     customerLastName,
@@ -890,39 +877,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     : (makkahOccupancy || paxCount || 2);
 
   const toggleFixedExpense = (key) => {
-    setFixedExpensesIncluded(prev => {
-      const isNowIncluded = !prev[key];
-      if (isNowIncluded) {
-        setFixedExpensesPax(paxPrev => ({
-          ...paxPrev,
-          [key]: paxPrev[key] || effectiveWizardPax
-        }));
-      }
-      return {
-        ...prev,
-        [key]: isNowIncluded
-      };
-    });
-  };
-
-  const handleFixedExpensePaxChange = (key, count) => {
-    const safeCount = Math.max(1, Math.min(effectiveWizardPax, Number(count) || 1));
-    setFixedExpensesPax(prev => ({
+    setFixedExpensesIncluded(prev => ({
       ...prev,
-      [key]: safeCount
+      [key]: !prev[key]
     }));
-  };
-
-  const handleSetAllFixedExpensesToTotalPax = () => {
-    setFixedExpensesPax(prev => {
-      const next = { ...prev };
-      Object.keys(fixedExpensesIncluded).forEach(k => {
-        if (fixedExpensesIncluded[k]) {
-          next[k] = effectiveWizardPax;
-        }
-      });
-      return next;
-    });
   };
 
   const handleTransferChange = (routeId, field, value) => {
@@ -2711,16 +2669,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 <span>Sabit & Operasyonel Giderler Havuzu</span>
               </h3>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {effectiveWizardPax > 1 && (
-                <button
-                  type="button"
-                  onClick={handleSetAllFixedExpensesToTotalPax}
-                  className="px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all cursor-pointer spring-pill"
-                >
-                  Tümünü Gruba Eşitle ({effectiveWizardPax} Kişi)
-                </button>
-              )}
+            <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-medium">Opsiyonel Hizmet Kalemleri</span>
             </div>
           </div>
@@ -2738,13 +2687,12 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
             ).map((item) => {
               const expKey = item.id || item.key;
               const isIncluded = !!fixedExpensesIncluded[expKey];
-              const itemPax = fixedExpensesPax[expKey] || effectiveWizardPax;
 
               return (
                 <div
                   key={expKey}
                   onClick={() => toggleFixedExpense(expKey)}
-                  className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none space-y-2.5 ${
+                  className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none space-y-1 ${
                     isIncluded
                       ? 'bg-gradient-to-br from-emerald-50/90 via-teal-50/30 to-white border-emerald-500/80 shadow-3xs'
                       : 'bg-white border-slate-200/80 opacity-60 hover:opacity-100 hover:border-slate-300'
@@ -2762,45 +2710,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       {isIncluded && <Check className="h-3.5 w-3.5 stroke-[3]" />}
                     </div>
                   </div>
-
-                  {/* Kişi Başı Sayacı (Grupta birden fazla kişi varsa ve hizmet dahilse) */}
-                  {isIncluded && effectiveWizardPax > 1 && (
-                    <div 
-                      onClick={(e) => e.stopPropagation()} 
-                      className="pt-2 border-t border-emerald-200/60 flex items-center justify-between gap-2"
-                    >
-                      <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full border border-emerald-300 shadow-3xs">
-                        <span className="text-[10px] font-bold text-emerald-800">Kişi:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleFixedExpensePaxChange(expKey, Math.max(1, itemPax - 1))}
-                          className="h-5 w-5 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-85 text-slate-700 flex items-center justify-center font-bold border border-slate-200 transition-all cursor-pointer"
-                          title="1 Kişi Azalt"
-                        >
-                          <Minus className="h-2.5 w-2.5" />
-                        </button>
-                        <span className="font-mono font-black text-xs text-emerald-950 min-w-[18px] text-center select-none">
-                          {itemPax}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleFixedExpensePaxChange(expKey, Math.min(effectiveWizardPax, itemPax + 1))}
-                          className="h-5 w-5 rounded-full bg-emerald-700 hover:bg-emerald-600 active:scale-85 text-white flex items-center justify-center font-bold transition-all cursor-pointer shadow-3xs"
-                          title="1 Kişi Artır"
-                        >
-                          <Plus className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        itemPax === effectiveWizardPax
-                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                          : 'bg-amber-100 text-amber-900 border-amber-300'
-                      }`}>
-                        {itemPax === effectiveWizardPax ? `✓ Tümü (${itemPax} Kişi)` : `⚡ ${itemPax}/${effectiveWizardPax} Kişi`}
-                      </span>
-                    </div>
-                  )}
                 </div>
               );
             })}

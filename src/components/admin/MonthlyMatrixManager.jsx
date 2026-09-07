@@ -24,21 +24,22 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
-  Moon
+  Moon,
+  FileText
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const DEFAULT_FIXED_EXPENSES = [
-  { id: 'flightTicketSAR', name: 'Uçak Bileti', desc: 'Gidiş-Dönüş Tarifeli/Charter Uçuş Bedeli', priceSAR: 1500, isVisible: true },
-  { id: 'visaTaxSAR', name: 'Vize + Vergi', desc: 'Suudi Arabistan Elektronik Umre Vizesi ve Harçlar', priceSAR: 500, isVisible: true },
-  { id: 'insuranceSAR', name: 'Sigorta', desc: 'Kapsamlı Yurt Dışı Seyahat ve Sağlık Sigortası', priceSAR: 125, isVisible: true },
-  { id: 'bagSAR', name: 'Çanta', desc: 'Kurumsal Hac & Umre Valiz / Çanta Seti', priceSAR: 25, isVisible: true },
-  { id: 'scarfSAR', name: 'Fular / Eşarp', desc: 'Grup Tanıtım ve Rehberlik Fuları/Eşarbı', priceSAR: 15, isVisible: true },
-  { id: 'guideSAR', name: 'Fri / Görevli', desc: 'Diyanet / Rehber Hoca ve Görevli Operasyon Payı', priceSAR: 45, isVisible: true },
-  { id: 'commissionSAR', name: 'Komisyon', desc: 'Acente & Temsilci Satış Komisyon Havuzu', priceSAR: 50, isVisible: true },
-  { id: 'bonusSAR', name: 'Prim', desc: 'Operasyon ve Satış Ekibi Başarı Primi', priceSAR: 25, isVisible: true },
-  { id: 'zamzamSAR', name: 'Zemzem', desc: '5 Litre Orijinal Ambalajlı Diyanet/Kudret Zemzemi', priceSAR: 125, isVisible: true },
-  { id: 'branchExpenseSAR', name: 'Şube Giderleri', desc: 'Şube ve İdari Genel Gider Payı', priceSAR: 0, isVisible: false },
+  { id: 'flightTicketSAR', name: 'Uçak Bileti', desc: 'Gidiş-Dönüş Tarifeli/Charter Uçuş Bedeli', priceSAR: 1500, isVisible: true, showInLetter: true },
+  { id: 'visaTaxSAR', name: 'Vize + Vergi', desc: 'Suudi Arabistan Elektronik Umre Vizesi ve Harçlar', priceSAR: 500, isVisible: true, showInLetter: true },
+  { id: 'insuranceSAR', name: 'Sigorta', desc: 'Kapsamlı Yurt Dışı Seyahat ve Sağlık Sigortası', priceSAR: 125, isVisible: true, showInLetter: true },
+  { id: 'bagSAR', name: 'Çanta', desc: 'Kurumsal Hac & Umre Valiz / Çanta Seti', priceSAR: 25, isVisible: true, showInLetter: true },
+  { id: 'scarfSAR', name: 'Fular / Eşarp', desc: 'Grup Tanıtım ve Rehberlik Fuları/Eşarbı', priceSAR: 15, isVisible: true, showInLetter: true },
+  { id: 'guideSAR', name: 'Fri / Görevli', desc: 'Diyanet / Rehber Hoca ve Görevli Operasyon Payı', priceSAR: 45, isVisible: true, showInLetter: true },
+  { id: 'commissionSAR', name: 'Komisyon', desc: 'Acente & Temsilci Satış Komisyon Havuzu', priceSAR: 50, isVisible: true, showInLetter: false },
+  { id: 'bonusSAR', name: 'Prim', desc: 'Operasyon ve Satış Ekibi Başarı Primi', priceSAR: 25, isVisible: true, showInLetter: false },
+  { id: 'zamzamSAR', name: 'Zemzem', desc: '5 Litre Orijinal Ambalajlı Diyanet/Kudret Zemzemi', priceSAR: 125, isVisible: true, showInLetter: true },
+  { id: 'branchExpenseSAR', name: 'Şube Giderleri', desc: 'Şube ve İdari Genel Gider Payı', priceSAR: 0, isVisible: false, showInLetter: false },
 ];
 
 const MEAL_OPTIONS = [
@@ -111,9 +112,15 @@ function normalizePackageHotels(pkg) {
       const existingPrice = normalized.fixedExpenses?.[def.id];
       return {
         ...def,
-        priceSAR: existingPrice !== undefined ? Number(existingPrice) : def.priceSAR
+        priceSAR: existingPrice !== undefined ? Number(existingPrice) : def.priceSAR,
+        showInLetter: def.showInLetter !== undefined ? def.showInLetter : !['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(def.id)
       };
     });
+  } else {
+    normalized.fixedExpensesList = normalized.fixedExpensesList.map(item => ({
+      ...item,
+      showInLetter: item.showInLetter !== undefined ? item.showInLetter : !['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(item.id)
+    }));
   }
 
   return normalized;
@@ -217,7 +224,8 @@ export default function MonthlyMatrixManager() {
     name: '',
     desc: '',
     priceSAR: '',
-    isVisible: true
+    isVisible: true,
+    showInLetter: true
   });
 
   const inlineFormRef = useRef(null);
@@ -579,13 +587,15 @@ export default function MonthlyMatrixManager() {
     const newExpenseId = `exp_${Date.now()}`;
     const basePrice = parseFloat(newExpenseDraft.priceSAR) || 0;
     const isVis = newExpenseDraft.isVisible !== false;
+    const isShowInLetter = newExpenseDraft.showInLetter !== false;
 
     const newExpenseObj = {
       id: newExpenseId,
       name: newExpenseDraft.name.trim(),
       desc: newExpenseDraft.desc.trim() || 'Dahili Operasyonel Hizmet',
       priceSAR: basePrice,
-      isVisible: isVis
+      isVisible: isVis,
+      showInLetter: isShowInLetter
     };
 
     const next = {};
@@ -600,7 +610,7 @@ export default function MonthlyMatrixManager() {
     setAllPkgsDraft(next);
     updateAllPackages(Object.values(next), `Yeni dahili hizmet eklendi: ${newExpenseObj.name}`);
 
-    setNewExpenseDraft({ name: '', desc: '', priceSAR: '', isVisible: true });
+    setNewExpenseDraft({ name: '', desc: '', priceSAR: '', isVisible: true, showInLetter: true });
     setExpenseFormOpen(false);
 
     confetti({
@@ -647,6 +657,27 @@ export default function MonthlyMatrixManager() {
 
     setAllPkgsDraft(next);
     updateAllPackages(Object.values(next), `Dahili hizmet görünürlüğü değiştirildi.`);
+  };
+
+  // 3b. Mektup & PDF Görünürlük Switch'i (MÜŞTERİYE GÖSTER / GİZLE)
+  const handleToggleExpenseShowInLetter = (expId) => {
+    const currentItem = (localPkg.fixedExpensesList || []).find(item => item.id === expId);
+    const newShowInLetter = currentItem ? currentItem.showInLetter === false : false;
+
+    const next = {};
+    Object.keys(allPkgsDraft).forEach(pkgId => {
+      const p = allPkgsDraft[pkgId];
+      next[pkgId] = {
+        ...p,
+        fixedExpensesList: (p.fixedExpensesList || []).map(item => {
+          if (item.id !== expId) return item;
+          return { ...item, showInLetter: newShowInLetter };
+        })
+      };
+    });
+
+    setAllPkgsDraft(next);
+    updateAllPackages(Object.values(next), `Dahili hizmet mektup/PDF görünürlüğü güncellendi.`);
   };
 
   // 4. Hizmeti Sil (TÜM PAKETLERDEN KALDIRILIR)
@@ -2145,20 +2176,36 @@ export default function MonthlyMatrixManager() {
                     </div>
                   </div>
 
-                  {/* Görünürlük Switch & Kaydet Butonu */}
-                  <div className="flex items-end gap-2">
+                  {/* Görünürlük Switchleri & Kaydet Butonu */}
+                  <div className="flex items-end gap-2 flex-wrap sm:flex-nowrap">
+                    {/* Switch 1: Teklif Formunda Açık */}
                     <button
                       type="button"
                       onClick={() => setNewExpenseDraft({ ...newExpenseDraft, isVisible: !newExpenseDraft.isVisible })}
-                      className={`flex-1 py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
+                      className={`flex-1 py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
                         newExpenseDraft.isVisible
                           ? 'bg-emerald-100 border-emerald-400 text-emerald-800'
                           : 'bg-slate-100 border-slate-300 text-slate-500'
                       }`}
-                      title="Teklif formunda gösterilsin mi?"
+                      title="Teklif hesaplama formunda checklist olarak gösterilsin mi?"
                     >
-                      <span className={`h-2 w-2 rounded-full ${newExpenseDraft.isVisible ? 'bg-emerald-600 animate-pulse' : 'bg-slate-400'}`} />
-                      <span>{newExpenseDraft.isVisible ? 'Teklifte Göster' : 'Gizli'}</span>
+                      <span className={`h-2 w-2 rounded-full ${newExpenseDraft.isVisible ? 'bg-emerald-600' : 'bg-slate-400'}`} />
+                      <span>{newExpenseDraft.isVisible ? 'Formda Açık' : 'Formda Gizli'}</span>
+                    </button>
+
+                    {/* Switch 2: Mektupta / PDF'te Göster */}
+                    <button
+                      type="button"
+                      onClick={() => setNewExpenseDraft({ ...newExpenseDraft, showInLetter: newExpenseDraft.showInLetter === false ? true : false })}
+                      className={`flex-1 py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
+                        newExpenseDraft.showInLetter !== false
+                          ? 'bg-teal-100 border-teal-400 text-teal-800'
+                          : 'bg-slate-100 border-slate-300 text-slate-500'
+                      }`}
+                      title="Teklif mektubu ve PDF'te 'Fiyata Dahil Olanlar' listesinde gösterilsin mi?"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span>{newExpenseDraft.showInLetter !== false ? 'Mektupta Göster' : 'Mektupta Gizle'}</span>
                     </button>
 
                     <button
@@ -2176,6 +2223,7 @@ export default function MonthlyMatrixManager() {
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {(localPkg.fixedExpensesList || []).map((exp) => {
                 const isVis = exp.isVisible !== false;
+                const isLetterVis = exp.showInLetter !== false;
 
                 return (
                   <div
@@ -2189,16 +2237,24 @@ export default function MonthlyMatrixManager() {
                     {/* Üst Kısım: Başlık, Açıklama ve Sil Butonu */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1 pr-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-extrabold text-xs text-slate-900 block leading-tight">
                             {exp.name}
                           </span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
                             isVis
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               : 'bg-slate-200 text-slate-600 border border-slate-300'
                           }`}>
-                            {isVis ? 'Teklifte Açık' : 'Gizli'}
+                            {isVis ? 'Formda Açık' : 'Formda Gizli'}
+                          </span>
+                          <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5 ${
+                            isLetterVis
+                              ? 'bg-teal-50 text-teal-800 border border-teal-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            <FileText className="h-2.5 w-2.5 inline" />
+                            <span>{isLetterVis ? 'Mektupta' : 'Mektupta Gizli'}</span>
                           </span>
                         </div>
                         <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
@@ -2217,47 +2273,57 @@ export default function MonthlyMatrixManager() {
                       </button>
                     </div>
 
-                    {/* Alt Kısım: Fiyat Girişi + Görünürlük Switch'i */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
-                      
-                      {/* Switch: Teklifte Göster / Gizle */}
-                      <div className="flex items-center gap-2 select-none">
+                    {/* Alt Kısım: Fiyat Girişi + Görünürlük Switch'leri */}
+                    <div className="pt-2.5 border-t border-slate-100 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold text-slate-500">Kişi Başı Maliyet:</span>
+                        {/* Fiyat Giriş Kutusu */}
+                        <div className="relative w-28 shrink-0">
+                          <input
+                            type="number"
+                            min="0"
+                            step="5"
+                            value={exp.priceSAR !== undefined ? exp.priceSAR : 0}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleUpdateExpensePrice(exp.id, e.target.value)}
+                            className="w-full bg-slate-50 font-mono font-black text-xs text-slate-900 rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-8 shadow-3xs"
+                          />
+                          <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                        </div>
+                      </div>
+
+                      {/* Switchler */}
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                        {/* Switch 1: Teklif Formunda Göster */}
                         <button
                           type="button"
                           onClick={() => handleToggleExpenseVisibility(exp.id)}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            isVis ? 'bg-emerald-600' : 'bg-slate-300'
+                          className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            isVis 
+                              ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
+                              : 'bg-slate-100 text-slate-500 border-slate-200'
                           }`}
-                          role="switch"
-                          aria-checked={isVis}
-                          title={isVis ? 'Teklif formunda aktif (Gizlemek için tıklayın)' : 'Teklif formunda gizli (Göstermek için tıklayın)'}
+                          title={isVis ? 'Teklif formunda aktif' : 'Teklif formunda gizli'}
                         >
-                          <span
-                            aria-hidden="true"
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                              isVis ? 'translate-x-4' : 'translate-x-0'
-                            }`}
-                          />
+                          <span className={`h-1.5 w-1.5 rounded-full ${isVis ? 'bg-emerald-600' : 'bg-slate-400'}`} />
+                          <span>{isVis ? 'Formda Açık' : 'Formda Gizli'}</span>
                         </button>
-                        <span className="text-[10px] font-bold text-slate-500">
-                          {isVis ? 'Teklifte Göster' : 'Teklifte Gizle'}
-                        </span>
-                      </div>
 
-                      {/* Fiyat Giriş Kutusu */}
-                      <div className="relative w-28 shrink-0">
-                        <input
-                          type="number"
-                          min="0"
-                          step="5"
-                          value={exp.priceSAR !== undefined ? exp.priceSAR : 0}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => handleUpdateExpensePrice(exp.id, e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs text-slate-900 rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-8 shadow-3xs"
-                        />
-                        <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                        {/* Switch 2: Teklif Mektubunda & PDF'te Göster */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleExpenseShowInLetter(exp.id)}
+                          className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            isLetterVis 
+                              ? 'bg-teal-50 text-teal-900 border-teal-200' 
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}
+                          title={isLetterVis ? 'Müşteri teklif mektubunda ve PDF dahil hizmetler listesinde görünür' : 'Müşteri teklif mektubu ve PDF dahil hizmetler listesinde GİZLİ (fiyatı toplama yansır ama ismi çıkmaz)'}
+                        >
+                          <FileText className="h-3 w-3" />
+                          <span>{isLetterVis ? 'Mektupta Var' : 'Mektupta Gizli'}</span>
+                        </button>
                       </div>
-
                     </div>
 
                   </div>

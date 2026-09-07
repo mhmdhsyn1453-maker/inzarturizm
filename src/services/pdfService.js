@@ -54,18 +54,8 @@ export function openQuotationInNewPage(quote) {
   const validUntilStr = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
   
   const fixed = quote.fixedExpensesIncluded || {};
-  const fixedPax = quote.fixedExpensesPax || {};
   const transfers = quote.transfersSelection || {};
   const roomMatrix = quote.roomMatrix || [];
-
-  const getPaxTag = (key) => {
-    const c = fixedPax[key];
-    const totalPax = Number(quote.paxCount) || (quote.mixedRoomsSummary?.totalPax) || 1;
-    if (c && totalPax > 1 && c < totalPax) {
-      return ` (${c} Kişi Dahil)`;
-    }
-    return ' (Dahil)';
-  };
 
   const getRoomCost = (occ) => {
     if (quote.roomMatrix && quote.roomMatrix.length > 0) {
@@ -483,30 +473,32 @@ export function openQuotationInNewPage(quote) {
           <span>FİYATA DAHİL OLAN HİZMETLER VE AYRICALIKLAR</span>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 3.5px; font-size: 9px;">
-          <div style="color: ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? `✓ Gidiş-Dönüş Uçak Bileti${getPaxTag('flightTicketSAR')}` : '— Uçak Bileti (Dahil Değil)'}
-          </div>
-          <div style="color: ${(fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${(fixed.visaTaxSAR || fixed.visaSAR) ? `✓ Suudi Arabistan Umre Vizesi${getPaxTag('visaTaxSAR')}` : '— Umre Vizesi (Dahil Değil)'}
-          </div>
-          <div style="color: ${fixed.insuranceSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${fixed.insuranceSAR ? `✓ Kapsamlı Sağlık & Seyahat Sigortası${getPaxTag('insuranceSAR')}` : '— Seyahat Sigortası (Dahil Değil)'}
-          </div>
-          <div style="color: ${(fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${(fixed.guideSAR || fixed.guidanceSAR) ? `✓ Kutsal Mekan Ziyaretleri & Rehberlik${getPaxTag('guideSAR')}` : '— Rehberlik Hizmeti (Dahil Değil)'}
-          </div>
-          <div style="color: ${(fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${(fixed.bagSAR || fixed.scarfSAR) ? `✓ Seyahat Çanta Seti & Hediyeler${getPaxTag('bagSAR')}` : '— Çanta Seti (Dahil Değil)'}
-          </div>
-          <div style="color: fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${fixed.zamzamSAR ? `✓ 5 Litre Orijinal Zemzem Suyu İkramı${getPaxTag('zamzamSAR')}` : '— Zemzem İkramı (Dahil Değil)'}
-          </div>
-          <div style="color: ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-            ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '✓ Otellerde Program Süresince Konaklama (Dahil)' : '— Otel Konaklaması (Dahil Değil)'}
-          </div>
-          <div style="color: #065f46; font-weight: 700;">
-            ✓ 7/24 Havalimanı Karşılama, Transfer & Saha Koordinasyon Desteği
-          </div>
+          ${(() => {
+            const dynamicItems = (quote.fixedExpensesBreakdown && quote.fixedExpensesBreakdown.length > 0)
+              ? quote.fixedExpensesBreakdown.filter(f => f.showInLetter !== false && f.isVisible !== false)
+              : (Array.isArray(quote.pkgDetails?.fixedExpensesList) && quote.pkgDetails.fixedExpensesList.length > 0)
+                ? quote.pkgDetails.fixedExpensesList
+                    .filter(f => f.isVisible !== false && f.showInLetter !== false && !['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(f.id || f.key))
+                    .map(f => ({
+                      key: f.id || f.key,
+                      label: f.name || f.label,
+                      included: !!(quote.fixedExpensesIncluded?.[f.id || f.key])
+                    }))
+                : [
+                    { key: 'flightTicketSAR', label: 'Gidiş-Dönüş Uçak Bileti', included: !!(fixed.flightTicketSAR || fixed.flightTicketUSD) },
+                    { key: 'visaTaxSAR', label: 'Suudi Arabistan Umre Vizesi', included: !!(fixed.visaTaxSAR || fixed.visaSAR) },
+                    { key: 'insuranceSAR', label: 'Kapsamlı Sağlık & Seyahat Sigortası', included: !!fixed.insuranceSAR },
+                    { key: 'guideSAR', label: 'Kutsal Mekan Ziyaretleri & Rehberlik', included: !!(fixed.guideSAR || fixed.guidanceSAR) },
+                    { key: 'bagSAR', label: 'Seyahat Çanta Seti & Hediyeler', included: !!(fixed.bagSAR || fixed.scarfSAR) },
+                    { key: 'zamzamSAR', label: '5 Litre Orijinal Zemzem Suyu İkramı', included: !!fixed.zamzamSAR }
+                  ];
+
+            return dynamicItems.map(item => `
+              <div style="color: ${item.included ? '#065f46' : '#94a3b8'}; font-weight: 700;">
+                ${item.included ? `✓ ${item.label} (Dahil)` : `— ${item.label} (Dahil Değil)`}
+              </div>
+            `).join('');
+          })()}
         </div>
       </div>
 
@@ -530,57 +522,10 @@ export function openQuotationInNewPage(quote) {
           gap: 6px;
         ">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-2-2"/></svg>
-          <span>${quote.hasPartialFixedExpenses ? 'TEMEL KONAKLAMA & TRANSFER BEDELİ VE TALEP EDİLEN HİZMETLER' : quote.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
+          <span>${quote.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
         </div>
 
-        ${quote.hasPartialFixedExpenses ? `
-          <div style="background-color: #ffffff; border-radius: 8px; border: 1.5px solid #10b981; padding: 8px 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px;">
-              <div>
-                <div style="font-size: 9px; font-weight: 900; color: #064e3b; text-transform: uppercase;">
-                  TEMEL KONAKLAMA &amp; TRANSFER BEDELİ (KİŞİ BAŞI)
-                </div>
-                <div style="font-size: 8px; color: #64748b; margin-top: 1px;">
-                  Otel Konaklaması, Şehirlerarası ve Havalimanı Transferleri Dahildir
-                </div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 14px; font-weight: 900; color: #064e3b;">
-                  $${(quote.partialExpensesSummary?.basePriceUSD || quote.basePriceUSD || 0).toLocaleString('tr-TR')} USD
-                </div>
-                <div style="font-size: 8px; color: #047857; font-weight: 700;">
-                  ~${(quote.partialExpensesSummary?.basePriceTRY || quote.basePriceTRY || 0).toLocaleString('tr-TR')} ₺ / Kişi
-                </div>
-              </div>
-            </div>
-
-            <div style="margin-top: 6px;">
-              <div style="font-size: 8.5px; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 4px;">
-                TALEP EDİLEN DAHİLİ HİZMETLER VE BİRİM FİYATLARI
-              </div>
-              <table style="width: 100%; font-size: 8.5px; border-collapse: collapse; text-align: left;">
-                <thead>
-                  <tr style="background-color: #f8fafc; color: #475569; font-weight: bold; border-bottom: 1px solid #e2e8f0;">
-                    <th style="padding: 4px 6px;">Hizmet Adı</th>
-                    <th style="padding: 4px 6px; text-align: center;">Birim Fiyat</th>
-                    <th style="padding: 4px 6px; text-align: center;">Talep Eden Kişi</th>
-                    <th style="padding: 4px 6px; text-align: right;">Hizmet Toplamı</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${(quote.partialExpensesSummary?.includedServicesList || quote.includedServicesList || []).map(srv => `
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
-                      <td style="padding: 4px 6px; font-weight: 700; color: #0f172a;">${escapeHtml(srv.label)}</td>
-                      <td style="padding: 4px 6px; text-align: center; color: #475569;">$${srv.unitUSD} USD (~${srv.unitTRY} ₺)</td>
-                      <td style="padding: 4px 6px; text-align: center; font-weight: 800; color: #065f46;">${srv.paxCount} Kişi</td>
-                      <td style="padding: 4px 6px; text-align: right; font-weight: 900; color: #0f172a;">$${srv.subtotalUSD} USD (~${srv.subtotalTRY} ₺)</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ` : quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? (() => {
+        ${quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? (() => {
           const activeTypes = [
             { key: 'single', label: '1 KİŞİLİK ODA', count: quote.mixedRooms?.single || 0, data: quote.mixedRoomsBreakdown.single },
             { key: 'double', label: '2 KİŞİLİK ODA', count: quote.mixedRooms?.double || 0, data: quote.mixedRoomsBreakdown.double },
@@ -869,18 +814,8 @@ export async function generateDirectPdfBlob(quote) {
   const validUntilStr = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
   
   const fixed = quote.fixedExpensesIncluded || {};
-  const fixedPax = quote.fixedExpensesPax || {};
   const transfers = quote.transfersSelection || {};
   const roomMatrix = quote.roomMatrix || [];
-
-  const getPaxTag = (key) => {
-    const c = fixedPax[key];
-    const totalPax = Number(quote.paxCount) || (quote.mixedRoomsSummary?.totalPax) || 1;
-    if (c && totalPax > 1 && c < totalPax) {
-      return ` (${c} Kişi Dahil)`;
-    }
-    return ' (Dahil)';
-  };
 
   const getRoomCost = (occ) => {
     if (quote.roomMatrix && quote.roomMatrix.length > 0) {
@@ -1175,30 +1110,32 @@ export async function generateDirectPdfBlob(quote) {
         <span>FİYATA DAHİL OLAN HİZMETLER VE AYRICALIKLAR</span>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 3.5px; font-size: 9px;">
-        <div style="color: ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? `✓ Gidiş-Dönüş Uçak Bileti${getPaxTag('flightTicketSAR')}` : '— Uçak Bileti (Dahil Değil)'}
-        </div>
-        <div style="color: ${(fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.visaTaxSAR || fixed.visaSAR) ? `✓ Suudi Arabistan Umre Vizesi${getPaxTag('visaTaxSAR')}` : '— Umre Vizesi (Dahil Değil)'}
-        </div>
-        <div style="color: ${fixed.insuranceSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${fixed.insuranceSAR ? `✓ Kapsamlı Sağlık & Seyahat Sigortası${getPaxTag('insuranceSAR')}` : '— Seyahat Sigortası (Dahil Değil)'}
-        </div>
-        <div style="color: ${(fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.guideSAR || fixed.guidanceSAR) ? `✓ Kutsal Mekan Ziyaretleri & Rehberlik${getPaxTag('guideSAR')}` : '— Rehberlik Hizmeti (Dahil Değil)'}
-        </div>
-        <div style="color: ${(fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.bagSAR || fixed.scarfSAR) ? `✓ Seyahat Çanta Seti & Hediyeler${getPaxTag('bagSAR')}` : '— Çanta Seti (Dahil Değil)'}
-        </div>
-        <div style="color: fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${fixed.zamzamSAR ? `✓ 5 Litre Orijinal Zemzem Suyu İkramı${getPaxTag('zamzamSAR')}` : '— Zemzem İkramı (Dahil Değil)'}
-        </div>
-        <div style="color: ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '✓ Otellerde Program Süresince Konaklama (Dahil)' : '— Otel Konaklaması (Dahil Değil)'}
-        </div>
-        <div style="color: #065f46; font-weight: 700;">
-          ✓ 7/24 Havalimanı Karşılama, Transfer & Saha Koordinasyon Desteği
-        </div>
+        ${(() => {
+          const dynamicItems = (quote.fixedExpensesBreakdown && quote.fixedExpensesBreakdown.length > 0)
+            ? quote.fixedExpensesBreakdown.filter(f => f.showInLetter !== false && f.isVisible !== false)
+            : (Array.isArray(quote.pkgDetails?.fixedExpensesList) && quote.pkgDetails.fixedExpensesList.length > 0)
+              ? quote.pkgDetails.fixedExpensesList
+                  .filter(f => f.isVisible !== false && f.showInLetter !== false && !['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(f.id || f.key))
+                  .map(f => ({
+                    key: f.id || f.key,
+                    label: f.name || f.label,
+                    included: !!(quote.fixedExpensesIncluded?.[f.id || f.key])
+                  }))
+              : [
+                  { key: 'flightTicketSAR', label: 'Gidiş-Dönüş Uçak Bileti', included: !!(fixed.flightTicketSAR || fixed.flightTicketUSD) },
+                  { key: 'visaTaxSAR', label: 'Suudi Arabistan Umre Vizesi', included: !!(fixed.visaTaxSAR || fixed.visaSAR) },
+                  { key: 'insuranceSAR', label: 'Kapsamlı Sağlık & Seyahat Sigortası', included: !!fixed.insuranceSAR },
+                  { key: 'guideSAR', label: 'Kutsal Mekan Ziyaretleri & Rehberlik', included: !!(fixed.guideSAR || fixed.guidanceSAR) },
+                  { key: 'bagSAR', label: 'Seyahat Çanta Seti & Hediyeler', included: !!(fixed.bagSAR || fixed.scarfSAR) },
+                  { key: 'zamzamSAR', label: '5 Litre Orijinal Zemzem Suyu İkramı', included: !!fixed.zamzamSAR }
+                ];
+
+          return dynamicItems.map(item => `
+            <div style="color: ${item.included ? '#065f46' : '#94a3b8'}; font-weight: 700;">
+              ${item.included ? `✓ ${item.label} (Dahil)` : `— ${item.label} (Dahil Değil)`}
+            </div>
+          `).join('');
+        })()}
       </div>
     </div>
 
@@ -1222,57 +1159,10 @@ export async function generateDirectPdfBlob(quote) {
         gap: 6px;
       ">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-2-2"/></svg>
-        <span>${quote.hasPartialFixedExpenses ? 'TEMEL KONAKLAMA & TRANSFER BEDELİ VE TALEP EDİLEN HİZMETLER' : quote.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
+        <span>${quote.isMixedRoomMode ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
       </div>
 
-      ${quote.hasPartialFixedExpenses ? `
-        <div style="background-color: #ffffff; border-radius: 8px; border: 1.5px solid #10b981; padding: 8px 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 6px;">
-            <div>
-              <div style="font-size: 9px; font-weight: 900; color: #064e3b; text-transform: uppercase;">
-                TEMEL KONAKLAMA &amp; TRANSFER BEDELİ (KİŞİ BAŞI)
-              </div>
-              <div style="font-size: 8px; color: #64748b; margin-top: 1px;">
-                Otel Konaklaması, Şehirlerarası ve Havalimanı Transferleri Dahildir
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-size: 14px; font-weight: 900; color: #064e3b;">
-                $${(quote.partialExpensesSummary?.basePriceUSD || quote.basePriceUSD || 0).toLocaleString('tr-TR')} USD
-              </div>
-              <div style="font-size: 8px; color: #047857; font-weight: 700;">
-                ~${(quote.partialExpensesSummary?.basePriceTRY || quote.basePriceTRY || 0).toLocaleString('tr-TR')} ₺ / Kişi
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top: 6px;">
-            <div style="font-size: 8.5px; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 4px;">
-              TALEP EDİLEN DAHİLİ HİZMETLER VE BİRİM FİYATLARI
-            </div>
-            <table style="width: 100%; font-size: 8.5px; border-collapse: collapse; text-align: left;">
-              <thead>
-                <tr style="background-color: #f8fafc; color: #475569; font-weight: bold; border-bottom: 1px solid #e2e8f0;">
-                  <th style="padding: 4px 6px;">Hizmet Adı</th>
-                  <th style="padding: 4px 6px; text-align: center;">Birim Fiyat</th>
-                  <th style="padding: 4px 6px; text-align: center;">Talep Eden Kişi</th>
-                  <th style="padding: 4px 6px; text-align: right;">Hizmet Toplamı</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${(quote.partialExpensesSummary?.includedServicesList || quote.includedServicesList || []).map(srv => `
-                  <tr style="border-bottom: 1px solid #f1f5f9;">
-                    <td style="padding: 4px 6px; font-weight: 700; color: #0f172a;">${escapeHtml(srv.label)}</td>
-                    <td style="padding: 4px 6px; text-align: center; color: #475569;">$${srv.unitUSD} USD (~${srv.unitTRY} ₺)</td>
-                    <td style="padding: 4px 6px; text-align: center; font-weight: 800; color: #065f46;">${srv.paxCount} Kişi</td>
-                    <td style="padding: 4px 6px; text-align: right; font-weight: 900; color: #0f172a;">$${srv.subtotalUSD} USD (~${srv.subtotalTRY} ₺)</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ` : quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? (() => {
+      ${quote.isMixedRoomMode && quote.mixedRoomsBreakdown ? (() => {
         const activeTypes = [
           { key: 'single', label: '1 KİŞİLİK ODA', count: quote.mixedRooms?.single || 0, data: quote.mixedRoomsBreakdown.single },
           { key: 'double', label: '2 KİŞİLİK ODA', count: quote.mixedRooms?.double || 0, data: quote.mixedRoomsBreakdown.double },
@@ -1320,7 +1210,7 @@ export async function generateDirectPdfBlob(quote) {
       `}
     </div>
 
-    <!-- VURGULU TOPLAM BEDEL / MALİYET KUTUSU (STANDALONE) -->
+    <!-- 🌟 VURGULU TOPLAM BEDEL / MALİYET KUTUSU (STANDALONE) -->
     <div style="
       margin-bottom: 10px;
       padding: 10px 16px; 
@@ -1351,34 +1241,37 @@ export async function generateDirectPdfBlob(quote) {
 
     <!-- Inclusions & Exclusions (Rounded 12px Card) -->
     <div style="margin-bottom: 10px; border-radius: 12px; border: 1.5px solid #e2e8f0; padding: 8px 12px; background-color: #ffffff;">
-      <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: #064e3b; margin-bottom: 4px; letter-spacing: 0.4px;">
-        FİYATA DAHİL OLAN HİZMETLER VE AYRICALIKLAR
+      <div style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: #064e3b; margin-bottom: 4px; letter-spacing: 0.4px; display: flex; align-items: center; gap: 4px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#064e3b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>FİYATA DAHİL OLAN HİZMETLER VE AYRICALIKLAR</span>
       </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 3.5px; font-size: 9px;">
-        <div style="color: ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '✓ Gidiş-Dönüş Uçak Bileti (Dahil)' : '— Uçak Bileti (Dahil Değil)'}
-        </div>
-        <div style="color: ${(fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.visaTaxSAR || fixed.visaSAR) ? '✓ Suudi Arabistan Umre Vizesi (Dahil)' : '— Umre Vizesi (Dahil Değil)'}
-        </div>
-        <div style="color: ${fixed.insuranceSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${fixed.insuranceSAR ? '✓ Kapsamlı Sağlık & Seyahat Sigortası (Dahil)' : '— Seyahat Sigortası (Dahil Değil)'}
-        </div>
-        <div style="color: ${(fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.guideSAR || fixed.guidanceSAR) ? '✓ Kutsal Mekan Ziyaretleri & Rehberlik (Dahil)' : '— Rehberlik Hizmeti (Dahil Değil)'}
-        </div>
-        <div style="color: ${(fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(fixed.bagSAR || fixed.scarfSAR) ? '✓ Seyahat Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
-        </div>
-        <div style="color: ${fixed.zamzamSAR ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${fixed.zamzamSAR ? '✓ 5 Litre Orijinal Zemzem Suyu İkramı (Dahil)' : '— Zemzem İkramı (Dahil Değil)'}
-        </div>
-        <div style="color: ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '#065f46' : '#94a3b8'}; font-weight: 700;">
-          ${(quote.makkahDays > 0 || quote.madinahDays > 0) ? '✓ Otellerde Program Süresince Konaklama (Dahil)' : '— Otel Konaklaması (Dahil Değil)'}
-        </div>
-        <div style="color: #065f46; font-weight: 700;">
-          ✓ 7/24 Havalimanı Karşılama, Transfer & Saha Koordinasyon Desteği
-        </div>
+        ${(() => {
+          const dynamicItems = (quote.fixedExpensesBreakdown && quote.fixedExpensesBreakdown.length > 0)
+            ? quote.fixedExpensesBreakdown.filter(f => f.showInLetter !== false && f.isVisible !== false)
+            : (Array.isArray(quote.pkgDetails?.fixedExpensesList) && quote.pkgDetails.fixedExpensesList.length > 0)
+              ? quote.pkgDetails.fixedExpensesList
+                  .filter(f => f.isVisible !== false && f.showInLetter !== false && !['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(f.id || f.key))
+                  .map(f => ({
+                    key: f.id || f.key,
+                    label: f.name || f.label,
+                    included: !!(quote.fixedExpensesIncluded?.[f.id || f.key])
+                  }))
+              : [
+                  { key: 'flightTicketSAR', label: 'Gidiş-Dönüş Uçak Bileti', included: !!(fixed.flightTicketSAR || fixed.flightTicketUSD) },
+                  { key: 'visaTaxSAR', label: 'Suudi Arabistan Umre Vizesi', included: !!(fixed.visaTaxSAR || fixed.visaSAR) },
+                  { key: 'insuranceSAR', label: 'Kapsamlı Sağlık & Seyahat Sigortası', included: !!fixed.insuranceSAR },
+                  { key: 'guideSAR', label: 'Kutsal Mekan Ziyaretleri & Rehberlik', included: !!(fixed.guideSAR || fixed.guidanceSAR) },
+                  { key: 'bagSAR', label: 'Seyahat Çanta Seti & Hediyeler', included: !!(fixed.bagSAR || fixed.scarfSAR) },
+                  { key: 'zamzamSAR', label: '5 Litre Orijinal Zemzem Suyu İkramı', included: !!fixed.zamzamSAR }
+                ];
+
+          return dynamicItems.map(item => `
+            <div style="color: ${item.included ? '#065f46' : '#94a3b8'}; font-weight: 700;">
+              ${item.included ? `✓ ${item.label} (Dahil)` : `— ${item.label} (Dahil Değil)`}
+            </div>
+          `).join('');
+        })()}
       </div>
     </div>
 

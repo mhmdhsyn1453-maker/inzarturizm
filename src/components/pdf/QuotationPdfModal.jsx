@@ -433,39 +433,38 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                 <span>FİYATA DAHİL OLAN HİZMETLER VE AYRICALIKLAR</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '3.5px', fontSize: '9px' }}>
-                
-                <div style={{ color: (fixed.flightTicketSAR || fixed.flightTicketUSD) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {(fixed.flightTicketSAR || fixed.flightTicketUSD) ? '✓ Gidiş-Dönüş Uçak Bileti (Dahil)' : '— Uçak Bileti (Dahil Değil)'}
-                </div>
+                {(() => {
+                  const dynamicItems = (quotation.fixedExpensesBreakdown && quotation.fixedExpensesBreakdown.length > 0)
+                    ? quotation.fixedExpensesBreakdown.filter(f => f.showInLetter !== false && f.isVisible !== false)
+                    : (Array.isArray(quotation.pkgDetails?.fixedExpensesList) && quotation.pkgDetails.fixedExpensesList.length > 0)
+                      ? quotation.pkgDetails.fixedExpensesList
+                          .filter(f => f.isVisible !== false && f.showInLetter !== false && !['commissionSAR', 'bonusSAR', 'branchExpenseSAR'].includes(f.id || f.key))
+                          .map(f => ({
+                            key: f.id || f.key,
+                            label: f.name || f.label,
+                            included: !!(quotation.fixedExpensesIncluded?.[f.id || f.key])
+                          }))
+                      : [
+                          { key: 'flightTicketSAR', label: 'Gidiş-Dönüş Uçak Bileti', included: !!(fixed.flightTicketSAR || fixed.flightTicketUSD) },
+                          { key: 'visaTaxSAR', label: 'Suudi Arabistan Umre Vizesi', included: !!(fixed.visaTaxSAR || fixed.visaSAR) },
+                          { key: 'insuranceSAR', label: 'Kapsamlı Sağlık & Seyahat Sigortası', included: !!fixed.insuranceSAR },
+                          { key: 'guideSAR', label: 'Kutsal Mekan Ziyaretleri & Rehberlik', included: !!(fixed.guideSAR || fixed.guidanceSAR) },
+                          { key: 'bagSAR', label: 'Seyahat Çanta Seti & Hediyeler', included: !!(fixed.bagSAR || fixed.scarfSAR) },
+                          { key: 'zamzamSAR', label: '5 Litre Orijinal Zemzem Suyu İkramı', included: !!fixed.zamzamSAR }
+                        ];
 
-                <div style={{ color: (fixed.visaTaxSAR || fixed.visaSAR) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {(fixed.visaTaxSAR || fixed.visaSAR) ? '✓ Suudi Arabistan Umre Vizesi (Dahil)' : '— Umre Vizesi (Dahil Değil)'}
-                </div>
-
-                <div style={{ color: fixed.insuranceSAR ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {fixed.insuranceSAR ? '✓ Kapsamlı Sağlık & Seyahat Sigortası (Dahil)' : '— Seyahat Sigortası (Dahil Değil)'}
-                </div>
-
-                <div style={{ color: (fixed.guideSAR || fixed.guidanceSAR) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {(fixed.guideSAR || fixed.guidanceSAR) ? '✓ Kutsal Mekan Ziyaretleri & Rehberlik (Dahil)' : '— Rehberlik Hizmeti (Dahil Değil)'}
-                </div>
-
-                <div style={{ color: (fixed.bagSAR || fixed.scarfSAR) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {(fixed.bagSAR || fixed.scarfSAR) ? '✓ Seyahat Çanta Seti & Hediyeler (Dahil)' : '— Çanta Seti (Dahil Değil)'}
-                </div>
-
-                <div style={{ color: fixed.zamzamSAR ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {fixed.zamzamSAR ? '✓ 5 Litre Orijinal Zemzem Suyu İkramı (Dahil)' : '— Zemzem İkramı (Dahil Değil)'}
-                </div>
-
-                <div style={{ color: (quotation.makkahDays > 0 || quotation.madinahDays > 0) ? '#065f46' : '#94a3b8', fontWeight: '700' }}>
-                  {(quotation.makkahDays > 0 || quotation.madinahDays > 0) ? '✓ Otellerde Program Süresince Konaklama (Dahil)' : '— Otel Konaklaması (Dahil Değil)'}
-                </div>
-
-                <div style={{ color: '#065f46', fontWeight: '700' }}>
-                  ✓ 7/24 Havalimanı Karşılama, Transfer & Saha Koordinasyon Desteği
-                </div>
-
+                  return dynamicItems.map((item, idx) => (
+                    <div 
+                      key={item.key || idx} 
+                      style={{ 
+                        color: item.included ? '#065f46' : '#94a3b8', 
+                        fontWeight: '700' 
+                      }}
+                    >
+                      {item.included ? `✓ ${item.label} (Dahil)` : `— ${item.label} (Dahil Değil)`}
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
