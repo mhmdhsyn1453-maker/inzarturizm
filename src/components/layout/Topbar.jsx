@@ -12,8 +12,11 @@ import {
   CheckCheck,
   Trash2,
   ExternalLink,
-  Radio
+  Radio,
+  Volume2
 } from 'lucide-react';
+import { notificationService } from '../../services/notificationService';
+import { soundService } from '../../services/soundService';
 
 export default function Topbar({ setActiveTab }) {
   const { 
@@ -122,11 +125,30 @@ export default function Topbar({ setActiveTab }) {
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundService.initContext();
+                      notificationService.requestPermission();
+                      notificationService.notify({
+                        title: '🔔 Canlı Bildirim & Ses Testi',
+                        message: 'Tebrikler! Uygulama içi Toast, Windows masaüstü bildirimi ve ses motoru kusursuz çalışıyor!',
+                        type: 'info',
+                        sound: 'urgent'
+                      });
+                    }}
+                    className="px-2 py-1 rounded-md text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/60 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                    title="Ses ve Bildirimleri Test Et"
+                  >
+                    <Volume2 className="h-3 w-3" />
+                    <span>Test</span>
+                  </button>
+
                   {notifications.length > 0 && (
                     <button
                       type="button"
                       onClick={() => clearNotifs && clearNotifs()}
-                      className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-white/5 text-[11px] flex items-center gap-1 transition-colors"
+                      className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-white/5 text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
                       title="Tümünü Temizle"
                     >
                       <Trash2 className="h-3 w-3" />

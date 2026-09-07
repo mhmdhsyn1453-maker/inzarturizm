@@ -15,9 +15,17 @@ process.on('uncaughtException', (error) => {
   console.error('[Uncaught Exception]:', error);
 });
 
-// Set App User Model ID for Windows Notifications
+// Set App User Model ID for Windows Notifications (Ensures Toast Notifications work in dev, portable & installed modes)
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.inzarturizm.tarifehesap');
+  try {
+    if (app.isPackaged) {
+      app.setAppUserModelId('com.inzarturizm.tarifehesap');
+    } else {
+      app.setAppUserModelId(process.execPath);
+    }
+  } catch (e) {
+    console.warn('[AppUserModelId Error]:', e);
+  }
 }
 
 // Single instance lock
@@ -28,6 +36,7 @@ if (!gotTheLock) {
   app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
       mainWindow.focus();
     }
   });
@@ -43,7 +52,11 @@ function sendToWindow(channel, data) {
 ipcMain.handle('app:show-notification', (_event, { title, body, icon }) => {
   try {
     if (Notification && Notification.isSupported()) {
-      const iconPath = icon || path.join(__dirname, '../icon.ico');
+      let iconPath = icon;
+      if (!iconPath) {
+        iconPath = path.join(__dirname, '../icon.ico');
+      }
+
       const notif = new Notification({
         title: title || 'İnzar Turizm',
         body: body || '',
@@ -60,6 +73,12 @@ ipcMain.handle('app:show-notification', (_event, { title, body, icon }) => {
       });
 
       notif.show();
+
+      // Arka plandayken görev çubuğunda yanıp sönerek dikkat çek
+      if (mainWindow && !mainWindow.isFocused()) {
+        mainWindow.flashFrame(true);
+      }
+
       return { success: true };
     }
   } catch (err) {
