@@ -30,7 +30,13 @@ const WhatsAppIcon = ({ className = 'h-4 w-4' }) => (
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const { currentUser, isAdmin, logout } = useAuth();
-  const { unreadAnnouncementsCount, markAnnouncementsAsRead, savedQuotes } = useData();
+  const { 
+    unreadAnnouncementsCount, 
+    markAnnouncementsAsRead, 
+    savedQuotes, 
+    newQuotesCount = 0, 
+    markQuotesAsSeen 
+  } = useData();
   const { showLogoutConfirm } = useModal();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -54,6 +60,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     if (tabId === 'announcements') {
       markAnnouncementsAsRead();
     }
+    if (tabId === 'quotes' && markQuotesAsSeen) {
+      markQuotesAsSeen();
+    }
   };
 
   const menuItems = [
@@ -69,9 +78,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       label: 'Verilen Teklifler',
       icon: FileText,
       desc: isHqOrAdmin ? 'Merkez Onayı & Teklifler' : 'Geçmiş Teklif Listesi',
-      badgeCount: pendingHqCount,
-      badgeColor: 'bg-amber-600',
-      badgeText: 'Onay Bekliyor',
+      badgeCount: pendingHqCount > 0 ? pendingHqCount : newQuotesCount,
+      badgeColor: pendingHqCount > 0 ? 'bg-amber-600' : 'bg-emerald-600',
+      badgeText: pendingHqCount > 0 ? 'Onay Bekliyor' : `${newQuotesCount} Yeni`,
       adminOnly: false
     },
     {

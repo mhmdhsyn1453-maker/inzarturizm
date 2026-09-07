@@ -34,8 +34,16 @@ class NotificationService {
   }
 
   // 🔔 1. Windows Native veya Web Push Bildirimi Gönder
-  async showDesktopNotification({ title, body, icon, onClick }) {
+  async showDesktopNotification({ title, body, icon, onClick, forceDesktop = false }) {
     try {
+      // 🪟 Windows Bildirimi Mantığı:
+      // Kullanıcı aktif olarak uygulamanın içindeyse gereksiz masaüstü balonu çıkarılmaz (Uygulama içi Toast gösterilir).
+      // Kullanıcı başka bir pencerede/uygulamada veya simge durumundaysa Windows Native Bildirimi fırlatılır.
+      const isFocused = typeof document !== 'undefined' && document.hasFocus ? document.hasFocus() : true;
+      if (!forceDesktop && isFocused) {
+        return;
+      }
+
       // 1. Electron Masaüstü Uygulamasıysa (Windows Native Notification)
       if (window.electronAPI?.showNativeNotification) {
         window.electronAPI.showNativeNotification({
@@ -84,6 +92,7 @@ class NotificationService {
     type = 'info', // 'info' | 'quote' | 'announcement' | 'tariff' | 'staff' | 'warning'
     sound = 'default', // 'default' | 'urgent' | 'success' | 'none'
     showDesktop = true,
+    forceDesktop = false,
     data = null
   }) {
     // 1. Ses Çal
@@ -95,11 +104,12 @@ class NotificationService {
       soundService.playNotificationPing();
     }
 
-    // 2. Windows Masaüstü Bildirimi Gönder
+    // 2. Windows Masaüstü Bildirimi Gönder (Başka penceredeyken veya zorunlu test modundaysa)
     if (showDesktop) {
       this.showDesktopNotification({
         title: title || 'İnzar Turizm',
-        body: message || ''
+        body: message || '',
+        forceDesktop
       });
     }
 

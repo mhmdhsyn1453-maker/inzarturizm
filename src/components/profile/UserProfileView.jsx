@@ -29,13 +29,19 @@ import {
   Smartphone,
   FolderDown,
   Download,
-  RotateCcw
+  RotateCcw,
+  Bell,
+  Volume2,
+  VolumeX,
+  Radio
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatPhoneNumber } from '../../utils/phoneUtils';
 import ImageCropModal from '../common/ImageCropModal';
 import ImageLightboxModal from '../common/ImageLightboxModal';
 import TwoFactorSetupModal from './TwoFactorSetupModal';
+import { soundService } from '../../services/soundService';
+import { notificationService } from '../../services/notificationService';
 
 export default function UserProfileView() {
   const { currentUser, updateStaff, isAdmin, users } = useAuth();
@@ -96,6 +102,29 @@ export default function UserProfileView() {
         : 'PDF indirirken her zaman doğrudan İndirilenler klasörüne hızlıca kaydedilecektir.',
       type: 'success'
     });
+  };
+  const [soundEnabled, setSoundEnabled] = useState(() => soundService.getSoundEnabled());
+
+  const handleToggleSound = () => {
+    const nextVal = !soundEnabled;
+    setSoundEnabled(nextVal);
+    soundService.setSoundEnabled(nextVal);
+    if (nextVal) {
+      soundService.initContext();
+      soundService.playSuccessChime();
+    }
+  };
+
+  const handleTestNotification = () => {
+    soundService.initContext();
+    notificationService.notify({
+      title: '🔔 Canlı Bildirim & Ses Testi',
+      message: 'İnzar Turizm ses ve bildirim sistemi başarıyla çalışıyor! (Crystal Chime & Toast aktif)',
+      type: 'quote',
+      sound: 'success',
+      forceDesktop: true
+    });
+    confetti({ particleCount: 35, spread: 50, origin: { y: 0.8 } });
   };
 
   const handleTwoFactorComplete = (data) => {
@@ -792,6 +821,65 @@ export default function UserProfileView() {
                   </div>
                 </div>
               </button>
+            </div>
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════
+              🔔 SES VE CANLI BİLDİRİM TERCİHLERİ & TEST KARTI
+             ══════════════════════════════════════════════════════════════ */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/30 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-white border border-slate-300 text-emerald-700 shadow-2xs">
+                  <Bell className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <span>Ses ve Canlı Bildirimler</span>
+                    <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                      soundEnabled ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-200 text-slate-600 border-slate-300'
+                    }`}>
+                      {soundEnabled ? 'Sesler Açık 🔊' : 'Sessiz Mod 🔇'}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    Yeni teklif geldiğinde, merkez onayında veya duyurularda çalan sesler ve masaüstü bildirimleri.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Ses Aç / Kapa Butonu */}
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98 ${
+                    soundEnabled
+                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-300'
+                  }`}
+                >
+                  {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-700" /> : <VolumeX className="h-3.5 w-3.5 text-slate-500" />}
+                  <span>{soundEnabled ? 'Sesleri Kapat' : 'Sesleri Aç'}</span>
+                </button>
+
+                {/* Test Bildirimi Gönder Butonu */}
+                <button
+                  type="button"
+                  onClick={handleTestNotification}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-black shadow-md shadow-emerald-700/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
+                >
+                  <Radio className="h-3.5 w-3.5 animate-pulse" />
+                  <span>Test Bildirimi Gönder</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-slate-500 bg-white p-3 rounded-2xl border border-slate-200">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>
+                "Test Bildirimi Gönder" butonuna bastığınızda sağ üstte canlı kart çıkar, Windows masaüstü bildirimi tetiklenir ve hoparlörden kristal onay çanı çalar.
+              </span>
             </div>
           </div>
 

@@ -13,7 +13,7 @@ import {
   Volume2
 } from 'lucide-react';
 
-export default function NotificationToast() {
+export default function NotificationToast({ onNavigate }) {
   const { hotReloadAlert, dismissHotReloadAlert } = useData();
 
   if (!hotReloadAlert) return null;
@@ -48,16 +48,37 @@ export default function NotificationToast() {
     }
   };
 
+  const handleCardClick = () => {
+    if (!onNavigate) return;
+    if (hotReloadAlert.type === 'quote') {
+      onNavigate('quotes');
+      dismissHotReloadAlert();
+    } else if (hotReloadAlert.type === 'announcement') {
+      onNavigate('announcements');
+      dismissHotReloadAlert();
+    } else if (hotReloadAlert.type === 'tariff') {
+      onNavigate('monthly_matrix');
+      dismissHotReloadAlert();
+    }
+  };
+
+  const hasNavigationTarget = onNavigate && (hotReloadAlert.type === 'quote' || hotReloadAlert.type === 'announcement' || hotReloadAlert.type === 'tariff');
+
   return (
     <div className="fixed top-6 right-6 z-[99999] animate-slide-down max-w-md w-full px-2 pointer-events-auto">
-      <div className={`flex items-start justify-between gap-3 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 border shadow-2xl backdrop-blur-2xl transition-all ${getBorderColor()}`}>
+      <div 
+        onClick={hasNavigationTarget ? handleCardClick : undefined}
+        className={`group flex items-start justify-between gap-3 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 border shadow-2xl backdrop-blur-2xl transition-all ${
+          hasNavigationTarget ? 'cursor-pointer hover:scale-[1.02] hover:ring-2 hover:ring-emerald-500/50' : ''
+        } ${getBorderColor()}`}
+      >
         
-        <div className="flex items-start gap-3 min-w-0">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 border border-white/10 shadow-inner mt-0.5">
             {getIcon()}
           </div>
           
-          <div className="space-y-0.5 min-w-0">
+          <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className="text-xs font-black text-white font-display tracking-tight truncate">
                 {hotReloadAlert.title || 'Canlı Sistem Bildirimi'}
@@ -70,12 +91,23 @@ export default function NotificationToast() {
             <p className="text-xs text-slate-300 font-medium leading-relaxed break-words">
               {hotReloadAlert.message}
             </p>
+
+            {hasNavigationTarget && (
+              <div className="pt-0.5">
+                <span className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1 transition-colors">
+                  İlgili menüye gitmek için tıklayın →
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         <button
           type="button"
-          onClick={dismissHotReloadAlert}
+          onClick={(e) => {
+            e.stopPropagation();
+            dismissHotReloadAlert();
+          }}
           className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors shrink-0 cursor-pointer"
           title="Bildirimi Kapat"
         >

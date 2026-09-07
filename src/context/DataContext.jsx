@@ -87,7 +87,7 @@ export function DataProvider({ children }) {
     return () => clearInterval(timer);
   }, [refreshLiveCurrencies]);
 
-  // Sync listener for cross-tab, cross-device and real-time Supabase updates
+  // Listen for Live Updates from Supabase & Broadcast Channel
   useEffect(() => {
     // Pull fresh data from Supabase immediately on mount
     syncService.pullLatestFromSupabase();
@@ -95,22 +95,14 @@ export function DataProvider({ children }) {
     const unsubscribe = syncService.subscribe((event) => {
       setLastSyncTime(new Date());
 
-      if (event.type === 'PACKAGES_UPDATED' || event.type === 'STORAGE_CHANGE') {
-        const freshPackages = event.payload || syncService.getPackages();
-        setPackages(sortPackagesList(freshPackages));
-        setAuditLogs(syncService.getAuditLogs());
+      if (event.type === 'PACKAGES_UPDATED') {
+        setPackages(sortPackagesList(event.payload || syncService.getPackages()));
       } else if (event.type === 'CURRENCIES_UPDATED') {
-        const freshCurrencies = event.payload || syncService.getCurrencies();
-        setCurrencies(freshCurrencies);
-        setAuditLogs(syncService.getAuditLogs());
+        setCurrencies(event.payload || syncService.getCurrencies());
       } else if (event.type === 'MONTHS_UPDATED') {
-        const freshMonths = event.payload || syncService.getMonths();
-        setMonths(freshMonths);
-        setAuditLogs(syncService.getAuditLogs());
+        setMonths(event.payload || syncService.getMonths());
       } else if (event.type === 'ANNOUNCEMENTS_UPDATED') {
-        const freshAnnouncements = event.payload || syncService.getAnnouncements();
-        setAnnouncements(freshAnnouncements);
-        setAuditLogs(syncService.getAuditLogs());
+        setAnnouncements(event.payload || syncService.getAnnouncements());
       } else if (event.type === 'QUOTES_UPDATED') {
         const freshQuotes = event.payload || syncService.getSavedQuotes();
         setSavedQuotes(freshQuotes);
@@ -131,12 +123,22 @@ export function DataProvider({ children }) {
       }
     });
 
-    // 🔔 Notification Service Dinleyicisi
+    // 🔔 Notification Service Dinleyicisi (Canlı Bildirimler & Akış)
     const unsubscribeNotifs = notificationService.subscribe((notif) => {
       setHotReloadAlert(notif);
+      setNotifications(prev => [
+        { ...notif, isRead: false },
+        ...prev.filter(n => n.id !== notif.id)
+      ].slice(0, 40));
+      setUnreadNotifCount(prev => prev + 1);
+
+      if (notif.type === 'quote') {
+        setNewQuotesCount(prev => prev + 1);
+      }
+
       setTimeout(() => {
         setHotReloadAlert(prev => (prev && prev.id === notif.id ? null : prev));
-      }, 6000);
+      }, 7000);
     });
 
     return () => {
@@ -310,6 +312,20 @@ export function DataProvider({ children }) {
 
   const unreadAnnouncementsCount = announcements.filter(a => !readAnnouncementIds.includes(a.id)).length;
 
+  const markNotifsAsRead = useCallback(() => {
+    setUnreadNotifCount(0);
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  }, []);
+
+  const clearNotifs = useCallback(() => {
+    setNotifications([]);
+    setUnreadNotifCount(0);
+  }, []);
+
+  const markQuotesAsSeen = useCallback(() => {
+    setNewQuotesCount(0);
+  }, []);
+
   return (
     <DataContext.Provider value={{
       packages,
@@ -334,6 +350,12 @@ export function DataProvider({ children }) {
       lastSyncTime,
       hotReloadAlert,
       dismissHotReloadAlert: () => setHotReloadAlert(null),
+      notifications,
+      unreadNotifCount,
+      newQuotesCount,
+      markNotifsAsRead,
+      clearNotifs,
+      markQuotesAsSeen,
       updatePackage,
       updateAllPackages,
       addPackage,
