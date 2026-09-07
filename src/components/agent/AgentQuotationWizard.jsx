@@ -1129,387 +1129,425 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
             activeCurrency={activeCurrency}
           />
         ) : !isCustomerVerified ? (
-          
           /* ═══════════════════════════════════════════════════════════
-             GATEKEEPER STEP 0: MÜŞTERİ 360° DOSYASI & ÖN DOĞRULAMA
+             GATEKEEPER STEP 0: MÜŞTERİ 360° DOSYASI & ÖN DOĞRULAMA (TAM SAYFA GÖRÜNÜM)
              ═══════════════════════════════════════════════════════════ */
-          <div className="max-w-4xl mx-auto py-4 animate-scale-in">
+          <div className="w-full space-y-6 pb-10 animate-fade-scale">
             {!showDossier ? (
-              /* A) MÜŞTERİ BİLGİ GİRİŞ FORMU */
-              <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 shadow-xl overflow-hidden">
-                
-                {/* Header */}
-                <div className="p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white space-y-1 relative overflow-hidden">
-                  <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">
-                    <User className="h-40 w-40" />
+              /* A) MÜŞTERİ BİLGİ GİRİŞ FORMU (TAM SAYFA) */
+              <div className="w-full space-y-6">
+                {/* Page Header */}
+                <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white shadow-lg relative overflow-hidden">
+                  <div className="absolute right-0 top-0 translate-x-6 -translate-y-6 opacity-10 pointer-events-none">
+                    <User className="h-56 w-56 text-white" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-xl bg-white/20 backdrop-blur-xs">
-                      <User className="h-5 w-5 text-white" />
+                  <div className="relative z-10 space-y-2 max-w-3xl">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-emerald-200 text-xs font-extrabold uppercase tracking-wider">
+                      <User className="h-3.5 w-3.5 text-emerald-300" />
+                      <span>Adım 1 • Misafir Doğrulama & Dosya Sorgulama</span>
                     </div>
-                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-200">
-                      Adım 1 • Misafir Doğrulama & Dosya Sorgulama
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-black font-display tracking-tight text-white">
-                    Müşteri Bilgileri & Geçmiş Teklif Sorgulama
-                  </h3>
-                  <p className="text-xs text-emerald-100/90 max-w-xl">
-                    Yeni bir umre teklifi hazırlamak için misafirin kimlik veya iletişim bilgilerini giriniz. Sistem kayıtlı müşteri havuzundan ve geçmiş tekliflerden otomatik sorgulama yapacaktır.
-                  </p>
-                </div>
-
-                {/* Form Body */}
-                <form onSubmit={handleVerifyCustomer} className="p-6 sm:p-8 space-y-5">
-                  
-                  {/* 💡 Sistemde Kayıtlı Müşteri Önerileri (Canlı Arama Çipi) */}
-                  {matchedCustomerSuggestions.length > 0 && (
-                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 animate-fade-scale">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
-                        <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>Sistemde Eşleşen Kayıtlı Misafirler:</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {matchedCustomerSuggestions.map((cust) => (
-                          <button
-                            key={cust.id}
-                            type="button"
-                            onClick={() => handleSelectSuggestedCustomer(cust)}
-                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-950 border border-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:scale-105"
-                          >
-                            <User className="h-3 w-3 text-emerald-600" />
-                            <span>{cust.fullName || `${cust.firstName} ${cust.lastName}`}</span>
-                            {cust.phone && <span className="text-[10px] text-emerald-700 font-mono font-normal">({cust.phone})</span>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Input Fields (Ad, Soyad, TC, Telefon) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    
-                    {/* Ad */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>Müşteri Adı *</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Örn: Ahmet"
-                        value={customerFirstName}
-                        onChange={(e) => setCustomerFirstName(formatTurkishTitleCase(e.target.value))}
-                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
-                      />
-                    </div>
-
-                    {/* Soyad */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>Müşteri Soyadı *</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Örn: YILMAZ"
-                        value={customerLastName}
-                        onChange={(e) => setCustomerLastName(formatTurkishUpperCase(e.target.value))}
-                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs uppercase"
-                      />
-                    </div>
-
-                    {/* T.C. Kimlik Numarası */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <Layers className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>T.C. Kimlik No</span>
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={11}
-                        placeholder="11 Haneli T.C. No"
-                        value={customerTcNo}
-                        onChange={(e) => setCustomerTcNo(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs tracking-wider"
-                      />
-                    </div>
-
-                    {/* Telefon Numarası (+90 Otonom Format) */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                        <Phone className="h-3.5 w-3.5 text-emerald-600" />
-                        <span>Telefon Numarası *</span>
-                      </label>
-                      <input
-                        type="tel"
-                        placeholder="+90 (5XX) XXX XX XX"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
-                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
-                      />
-                    </div>
-
-                  </div>
-
-                  {/* Submit & Devam Et Button */}
-                  <div className="pt-3 flex items-center justify-end gap-3">
-                    <button
-                      type="submit"
-                      disabled={isSearchingCustomer}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-                    >
-                      {isSearchingCustomer ? (
-                        <>
-                          <Clock className="h-4 w-4 animate-spin" />
-                          <span>Dosya Sorgulanıyor...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
-                          <span>Misafir Geçmişini Tara & Devam Et</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                </form>
-
-              </div>
-            ) : (
-              /* B) 📂 MÜŞTERİ 360° DOSYASI & GEÇMİŞ TEKLİF İSTİHBARATI */
-              <div className="pearl-card rounded-3xl bg-white border-2 border-emerald-400 shadow-2xl overflow-hidden space-y-0 animate-scale-in">
-                
-                {/* Dossier Header */}
-                <div className="p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
-                      {(customerFirstName || '').charAt(0)}{(customerLastName || '').charAt(0)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-xl font-black font-display text-white tracking-tight">
-                          {customerFirstName} {(customerLastName).toUpperCase()}
-                        </h2>
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold">
-                          Kayıtlı Misafir Dosyası
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-300 flex items-center gap-3 mt-1 flex-wrap font-mono">
-                        {customerPhone && <span>Tel: <strong>{customerPhone}</strong></span>}
-                        {customerTcNo && <span>TC: <strong>{customerTcNo}</strong></span>}
-                        <span>Şube: <strong>{matchedCustomerProfile?.branch || 'Merkez'}</strong></span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-start md:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => setShowDossier(false)}
-                      className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-all border border-white/15 cursor-pointer"
-                    >
-                      Bilgileri Düzenle
-                    </button>
+                    <h2 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">
+                      Müşteri Kimlik & İletişim Bilgileri
+                    </h2>
+                    <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+                      Yeni bir umre teklifi oluşturmak için lütfen misafir bilgilerini giriniz. Sistem, kayıtlı müşteri havuzunda ve daha önce verilmiş tüm tekliflerde otomatik tarama yaparak misafirin dosyasını getirecektir.
+                    </p>
                   </div>
                 </div>
 
-                {/* Dossier Body */}
-                <div className="p-6 sm:p-8 space-y-6">
-                  
-                  {/* 📊 Metrik Sayaçları */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                      <span className="text-[11px] font-bold text-slate-500 uppercase">Toplam Teklif</span>
-                      <div className="text-xl font-black text-slate-900 font-mono">
-                        {customerHistoryQuotes.length} <span className="text-xs font-normal text-slate-500">Adet</span>
-                      </div>
-                    </div>
+                {/* Form Container */}
+                <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 shadow-sm">
+                  <form onSubmit={handleVerifyCustomer} className="space-y-6">
                     
-                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
-                      <span className="text-[11px] font-bold text-emerald-700 uppercase">Onaylananlar</span>
-                      <div className="text-xl font-black text-emerald-900 font-mono">
-                        {customerHistoryQuotes.filter(q => q.status === 'approved' || q.status === 'hq_approved' || q.status === 'customer_approved').length}
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
-                      <span className="text-[11px] font-bold text-amber-700 uppercase">Bekleyen Teklif</span>
-                      <div className="text-xl font-black text-amber-900 font-mono">
-                        {customerHistoryQuotes.filter(q => q.status === 'pending' || q.status === 'customer_approved').length}
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1">
-                      <span className="text-[11px] font-bold text-rose-700 uppercase">Reddedilen</span>
-                      <div className="text-xl font-black text-rose-900 font-mono">
-                        {customerHistoryQuotes.filter(q => q.status === 'rejected' || q.status === 'hq_rejected').length}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ⚠️ ÇAPRAZ PERSONEL & BEKLEMEDEKİ TEKLİF İSTİHBARAT UYARILARI */}
-                  {(() => {
-                    const otherStaffQuote = customerHistoryQuotes.find(q => 
-                      q.createdByName && currentUser?.name && q.createdByName.toLowerCase() !== currentUser.name.toLowerCase()
-                    );
-                    const pendingQuote = customerHistoryQuotes.find(q => q.status === 'pending' || q.status === 'customer_approved');
-
-                    return (
-                      <div className="space-y-3">
-                        {/* Çapraz Personel Uyarısı */}
-                        {otherStaffQuote && (
-                          <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 flex items-start gap-3 shadow-xs animate-fade-scale">
-                            <div className="p-2 rounded-xl bg-amber-500 text-white shrink-0 shadow-xs mt-0.5">
-                              <AlertTriangle className="h-5 w-5" />
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="text-xs font-black uppercase tracking-wide text-amber-950">
-                                Çapraz Personel Bildirimi
-                              </h4>
-                              <p className="text-xs font-semibold text-amber-900 leading-relaxed">
-                                Bu misafir için daha önce <strong>{otherStaffQuote.createdByName}</strong> ({otherStaffQuote.branch || 'Acente'}) tarafından <strong>{new Date(otherStaffQuote.createdAt).toLocaleDateString('tr-TR')}</strong> tarihinde <strong>{otherStaffQuote.packageName} ({otherStaffQuote.finalPriceUSD} USD)</strong> teklifi verilmiştir. Fiyat çelişkisi yaşanmaması için lütfen geçmiş teklifleri inceleyiniz.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Bekleyen Teklif Durumu */}
-                        {pendingQuote && (
-                          <div className="p-4 rounded-2xl bg-blue-50 border-2 border-blue-300 flex items-start gap-3 shadow-xs animate-fade-scale">
-                            <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 shadow-xs mt-0.5">
-                              <Clock className="h-5 w-5" />
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="text-xs font-black uppercase tracking-wide text-blue-950">
-                                Müşteri Kararı / Merkez Onayı Bekleyen Aktif Teklif Var
-                              </h4>
-                              <p className="text-xs font-semibold text-blue-900 leading-relaxed">
-                                Misafire ait <strong>{pendingQuote.id}</strong> numaralı <strong>{pendingQuote.packageName}</strong> teklifi henüz sonuçlandırılmamıştır ({pendingQuote.finalPriceUSD} USD). İsterseniz mevcut teklifi doğrudan düzenleyebilir veya inceleyerek yeni bir teklif oluşturabilirsiniz.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* 📋 MÜŞTERİYE DAİR TÜM GEÇMİŞ TEKLİFLERİN LİSTESİ */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-black text-slate-900 font-display flex items-center gap-2">
-                        <History className="h-4 w-4 text-emerald-600" />
-                        <span>Müşteriye Verilen Tüm Teklifler ({customerHistoryQuotes.length}):</span>
-                      </h4>
-                    </div>
-
-                    {customerHistoryQuotes.length === 0 ? (
-                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
-                        Bu misafir için geçmişte oluşturulmuş bir teklif bulunmamaktadır.
-                      </div>
-                    ) : (
-                      <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                        {customerHistoryQuotes.map((q) => {
-                          const isApproved = q.status === 'approved' || q.status === 'hq_approved' || q.status === 'customer_approved';
-                          const isPending = q.status === 'pending';
-                          const isRejected = q.status === 'rejected' || q.status === 'hq_rejected';
-
-                          return (
-                            <div
-                              key={q.id}
-                              className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                                isApproved 
-                                  ? 'bg-emerald-50/40 border-emerald-300' 
-                                  : isPending 
-                                  ? 'bg-amber-50/40 border-amber-300' 
-                                  : isRejected 
-                                  ? 'bg-rose-50/40 border-rose-300' 
-                                  : 'bg-slate-50 border-slate-200'
-                              }`}
+                    {/* 💡 Sistemde Kayıtlı Müşteri Önerileri (Canlı Arama Çipi) */}
+                    {matchedCustomerSuggestions.length > 0 && (
+                      <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2.5 animate-fade-scale">
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-950">
+                          <Sparkles className="h-4 w-4 text-emerald-600" />
+                          <span>Sistemde Eşleşen Kayıtlı Misafirler (T.C. & İsim Uyuşması):</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2.5">
+                          {matchedCustomerSuggestions.map((cust) => (
+                            <button
+                              key={cust.id}
+                              type="button"
+                              onClick={() => handleSelectSuggestedCustomer(cust)}
+                              className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-950 border border-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:scale-105"
                             >
-                              <div className="space-y-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-mono font-bold text-xs text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                    {q.id}
-                                  </span>
-                                  <span className="font-black text-xs text-slate-900">
-                                    {q.packageName}
-                                  </span>
-                                  <span className="text-[11px] text-slate-500">
-                                    • {new Date(q.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                  </span>
-                                </div>
-
-                                <div className="text-xs text-slate-600 flex items-center gap-3 flex-wrap">
-                                  <span>Temsilci: <strong>{q.createdByName || q.agentName || 'Personel'}</strong></span>
-                                  {q.branch && <span>Şube: <strong>{q.branch}</strong></span>}
-                                  <span>Otel: <strong>{q.hotelMakkah || 'Mekke'} / {q.hotelMadinah || 'Medine'}</strong></span>
-                                </div>
-
-                                {q.rejectReason && (
-                                  <div className="text-[11px] font-semibold text-rose-700 bg-rose-100/80 px-2.5 py-1 rounded-lg mt-1">
-                                    Ret Gerekçesi: {q.rejectReason}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-                                <div className="text-right">
-                                  <div className="font-mono font-black text-sm text-slate-950">
-                                    {q.finalPriceUSD} USD
-                                  </div>
-                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                                    isApproved 
-                                      ? 'bg-emerald-100 text-emerald-800' 
-                                      : isPending 
-                                      ? 'bg-amber-100 text-amber-900' 
-                                      : isRejected 
-                                      ? 'bg-rose-100 text-rose-800' 
-                                      : 'bg-slate-200 text-slate-700'
-                                  }`}>
-                                    {q.statusLabel || (isApproved ? 'Onaylandı' : isPending ? 'Beklemede' : isRejected ? 'Reddedildi' : q.status)}
-                                  </span>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedQuoteForPdf(q)}
-                                  className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-3xs cursor-pointer"
-                                  title="Teklifi ve Mektubu Görüntüle"
-                                >
-                                  <Eye className="h-4 w-4 text-emerald-700" />
-                                </button>
-                              </div>
-
-                            </div>
-                          );
-                        })}
+                              <User className="h-3.5 w-3.5 text-emerald-600" />
+                              <span>{cust.fullName || `${cust.firstName} ${cust.lastName}`}</span>
+                              {cust.phone && <span className="text-[11px] text-emerald-700 font-mono font-normal">({cust.phone})</span>}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
+
+                    {/* Input Fields (Ad, Soyad, TC, Telefon) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                      
+                      {/* Ad */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Müşteri Adı *</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Örn: Ahmet"
+                          value={customerFirstName}
+                          onChange={(e) => setCustomerFirstName(formatTurkishTitleCase(e.target.value))}
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
+                        />
+                      </div>
+
+                      {/* Soyad */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Müşteri Soyadı *</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Örn: YILMAZ"
+                          value={customerLastName}
+                          onChange={(e) => setCustomerLastName(formatTurkishUpperCase(e.target.value))}
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs uppercase"
+                        />
+                      </div>
+
+                      {/* T.C. Kimlik Numarası */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Layers className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>T.C. Kimlik No</span>
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={11}
+                          placeholder="11 Haneli T.C. No"
+                          value={customerTcNo}
+                          onChange={(e) => setCustomerTcNo(e.target.value.replace(/\D/g, ''))}
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs tracking-wider"
+                        />
+                      </div>
+
+                      {/* Telefon Numarası (+90 Otonom Format) */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Telefon Numarası *</span>
+                        </label>
+                        <input
+                          type="tel"
+                          placeholder="+90 (5XX) XXX XX XX"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
+                        />
+                      </div>
+
+                    </div>
+
+                    {/* Submit & Devam Et Button */}
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                      <button
+                        type="submit"
+                        disabled={isSearchingCustomer}
+                        className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2.5 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                      >
+                        {isSearchingCustomer ? (
+                          <>
+                            <Clock className="h-4 w-4 animate-spin" />
+                            <span>Dosya Sorgulanıyor...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+                            <span>Misafir Geçmişini & Tekliflerini Tara</span>
+                            <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                  </form>
+                </div>
+              </div>
+            ) : (
+              /* B) 📂 MÜŞTERİ 360° DOSYASI & GEÇMİŞ TEKLİF İSTİHBARATI (BAŞLI BAŞINA TAM SAYFA) */
+              <div className="w-full space-y-6">
+                
+                {/* 1. Full-Width Dossier Hero Banner */}
+                <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white border-2 border-emerald-500/30 shadow-xl relative overflow-hidden">
+                  <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 opacity-10 pointer-events-none">
+                    <User className="h-64 w-64 text-emerald-400" />
                   </div>
 
-                  {/* Actions Toolbar */}
-                  <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowDossier(false)}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-                    >
-                      ← Misafir Bilgilerini Değiştir
-                    </button>
+                  <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-800 text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-lg shrink-0 border-2 border-white/20">
+                        {(customerFirstName || '').charAt(0)}{(customerLastName || '').charAt(0)}
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h1 className="text-2xl sm:text-3xl font-black font-display text-white tracking-tight">
+                            {customerFirstName} {(customerLastName).toUpperCase()}
+                          </h1>
+                          <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold tracking-wide uppercase">
+                            ✓ Kayıtlı Misafir Dosyası
+                          </span>
+                        </div>
+                        <div className="text-xs sm:text-sm text-slate-300 flex items-center gap-4 sm:gap-6 flex-wrap font-mono">
+                          {customerPhone && (
+                            <span className="flex items-center gap-1.5">
+                              <Phone className="h-3.5 w-3.5 text-emerald-400" />
+                              <strong>{customerPhone}</strong>
+                            </span>
+                          )}
+                          {customerTcNo && (
+                            <span className="flex items-center gap-1.5">
+                              <Layers className="h-3.5 w-3.5 text-emerald-400" />
+                              TC: <strong>{customerTcNo}</strong>
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5">
+                            <Building2 className="h-3.5 w-3.5 text-emerald-400" />
+                            Şube: <strong>{matchedCustomerProfile?.branch || currentUser?.branch || 'Genel Merkez'}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={handleProceedFromDossier}
-                      className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95"
-                    >
-                      <span>✓ Geçmişi İnceledim, Yeni Teklif Oluşturmaya Devam Et</span>
-                      <ArrowRight className="h-4 w-4 stroke-[2.5]" />
-                    </button>
+                    <div className="flex items-center gap-3 self-start lg:self-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowDossier(false)}
+                        className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-all border border-white/15 cursor-pointer flex items-center gap-2 shadow-xs"
+                      >
+                        <Edit3 className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Misafir Bilgilerini Düzenle</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Full-Width 4-Metric Statistics Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="pearl-card rounded-2xl p-5 bg-white border border-slate-200 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="text-xs font-extrabold uppercase tracking-wider">Toplam Teklif</span>
+                      <History className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
+                      {customerHistoryQuotes.length} <span className="text-xs font-normal text-slate-500">Adet</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Misafire geçmişte açılan tüm teklifler</p>
+                  </div>
+                  
+                  <div className="pearl-card rounded-2xl p-5 bg-gradient-to-br from-emerald-50 to-teal-50/40 border border-emerald-200 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between text-emerald-700">
+                      <span className="text-xs font-extrabold uppercase tracking-wider">Onaylananlar</span>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-emerald-900 font-mono">
+                      {customerHistoryQuotes.filter(q => q.status === 'approved' || q.status === 'hq_approved' || q.status === 'customer_approved').length}
+                    </div>
+                    <p className="text-[11px] text-emerald-700/80">Kabul edilmiş ve kesinleşenler</p>
                   </div>
 
+                  <div className="pearl-card rounded-2xl p-5 bg-gradient-to-br from-amber-50 to-orange-50/40 border border-amber-200 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between text-amber-700">
+                      <span className="text-xs font-extrabold uppercase tracking-wider">Bekleyen Teklif</span>
+                      <Clock className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-amber-900 font-mono">
+                      {customerHistoryQuotes.filter(q => q.status === 'pending' || q.status === 'customer_approved').length}
+                    </div>
+                    <p className="text-[11px] text-amber-700/80">Henüz karara bağlanmamış</p>
+                  </div>
+
+                  <div className="pearl-card rounded-2xl p-5 bg-gradient-to-br from-rose-50 to-red-50/40 border border-rose-200 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between text-rose-700">
+                      <span className="text-xs font-extrabold uppercase tracking-wider">Reddedilen</span>
+                      <XCircle className="h-4 w-4 text-rose-600" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-rose-900 font-mono">
+                      {customerHistoryQuotes.filter(q => q.status === 'rejected' || q.status === 'hq_rejected').length}
+                    </div>
+                    <p className="text-[11px] text-rose-700/80">İptal edilen veya reddedilen</p>
+                  </div>
+                </div>
+
+                {/* 3. ⚠️ ÇAPRAZ PERSONEL & BEKLEMEDEKİ TEKLİF İSTİHBARAT UYARILARI */}
+                {(() => {
+                  const otherStaffQuote = customerHistoryQuotes.find(q => 
+                    q.createdByName && currentUser?.name && q.createdByName.toLowerCase() !== currentUser.name.toLowerCase()
+                  );
+                  const pendingQuote = customerHistoryQuotes.find(q => q.status === 'pending' || q.status === 'customer_approved');
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Çapraz Personel Uyarısı */}
+                      {otherStaffQuote && (
+                        <div className="p-5 rounded-3xl bg-amber-50 border-2 border-amber-300 flex flex-col sm:flex-row items-start gap-4 shadow-xs animate-fade-scale">
+                          <div className="p-3 rounded-2xl bg-amber-500 text-white shrink-0 shadow-xs">
+                            <AlertTriangle className="h-6 w-6" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-black uppercase tracking-wide text-amber-950 flex items-center gap-2">
+                              <span>⚠️ Çapraz Personel Teklif Bildirimi (Fiyat Çakışması Koruması)</span>
+                            </h4>
+                            <p className="text-xs sm:text-sm font-medium text-amber-900 leading-relaxed">
+                              Bu misafir için daha önce başka bir personelimiz <strong>{otherStaffQuote.createdByName}</strong> ({otherStaffQuote.branch || 'Acente'}) tarafından <strong>{new Date(otherStaffQuote.createdAt).toLocaleDateString('tr-TR')}</strong> tarihinde <strong>{otherStaffQuote.packageName} ({otherStaffQuote.finalPriceUSD} USD)</strong> teklifi verilmiştir. Acenteler arası fiyat çelişkisi ve mükerrer teklif oluşmaması adına lütfen verilen teklif detaylarını kontrol ediniz.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bekleyen Teklif Durumu */}
+                      {pendingQuote && (
+                        <div className="p-5 rounded-3xl bg-blue-50 border-2 border-blue-300 flex flex-col sm:flex-row items-start gap-4 shadow-xs animate-fade-scale">
+                          <div className="p-3 rounded-2xl bg-blue-600 text-white shrink-0 shadow-xs">
+                            <Clock className="h-6 w-6" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-black uppercase tracking-wide text-blue-950">
+                              Müşteri Kararı / Merkez Onayı Bekleyen Aktif Teklif Var
+                            </h4>
+                            <p className="text-xs sm:text-sm font-medium text-blue-900 leading-relaxed">
+                              Misafire ait <strong>{pendingQuote.id}</strong> numaralı <strong>{pendingQuote.packageName}</strong> teklifi henüz sonuçlandırılmamıştır ({pendingQuote.finalPriceUSD} USD). Mevcut teklif üzerinden devam edebilir veya inceleyerek yeni bir alternatif teklif oluşturabilirsiniz.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 4. 📋 MÜŞTERİYE DAİR TÜM GEÇMİŞ TEKLİFLERİN LİSTESİ */}
+                <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 font-display flex items-center gap-2.5">
+                      <History className="h-5 w-5 text-emerald-600" />
+                      <span>Müşteriye Verilen Tüm Teklifler ({customerHistoryQuotes.length})</span>
+                    </h3>
+                    <span className="text-xs text-slate-500 font-medium">
+                      Kronolojik Sıralama (En Yeni En Üstte)
+                    </span>
+                  </div>
+
+                  {customerHistoryQuotes.length === 0 ? (
+                    <div className="py-12 text-center space-y-2">
+                      <div className="inline-flex p-3 rounded-2xl bg-slate-100 text-slate-400">
+                        <History className="h-8 w-8" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-700">Henüz Kayıtlı Teklif Yok</p>
+                      <p className="text-xs text-slate-400">Bu misafir için geçmişte hazırlanmış bir umre teklifi bulunmamaktadır.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {customerHistoryQuotes.map((q) => {
+                        const isApproved = q.status === 'approved' || q.status === 'hq_approved' || q.status === 'customer_approved';
+                        const isPending = q.status === 'pending';
+                        const isRejected = q.status === 'rejected' || q.status === 'hq_rejected';
+
+                        return (
+                          <div
+                            key={q.id}
+                            className={`p-5 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                              isApproved 
+                                ? 'bg-emerald-50/40 border-emerald-300 hover:border-emerald-400' 
+                                : isPending 
+                                ? 'bg-amber-50/40 border-amber-300 hover:border-amber-400' 
+                                : isRejected 
+                                ? 'bg-rose-50/40 border-rose-300 hover:border-rose-400' 
+                                : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="space-y-2 min-w-0 flex-1">
+                              <div className="flex items-center gap-2.5 flex-wrap">
+                                <span className="font-mono font-bold text-xs text-slate-800 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-3xs">
+                                  {q.id}
+                                </span>
+                                <span className="font-black text-sm text-slate-950">
+                                  {q.packageName}
+                                </span>
+                                <span className="text-xs text-slate-500 font-medium">
+                                  • {new Date(q.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                              </div>
+
+                              <div className="text-xs text-slate-600 flex items-center gap-4 flex-wrap">
+                                <span>Temsilci: <strong className="text-slate-800">{q.createdByName || q.agentName || 'Personel'}</strong></span>
+                                {q.branch && <span>Şube: <strong className="text-slate-800">{q.branch}</strong></span>}
+                                <span>Otel: <strong className="text-slate-800">{q.hotelMakkah || 'Mekke'} / {q.hotelMadinah || 'Medine'}</strong></span>
+                                {q.paxCount && <span>Kişi: <strong className="text-slate-800">{q.paxCount} Kişi</strong></span>}
+                              </div>
+
+                              {q.rejectReason && (
+                                <div className="text-xs font-semibold text-rose-700 bg-rose-100/90 px-3 py-1.5 rounded-xl inline-block mt-1">
+                                  Ret Gerekçesi: {q.rejectReason}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-4 shrink-0 self-end md:self-center">
+                              <div className="text-right">
+                                <div className="font-mono font-black text-base sm:text-lg text-slate-950">
+                                  {q.finalPriceUSD} USD
+                                </div>
+                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                  isApproved 
+                                    ? 'bg-emerald-100 text-emerald-800' 
+                                    : isPending 
+                                    ? 'bg-amber-100 text-amber-900' 
+                                    : isRejected 
+                                    ? 'bg-rose-100 text-rose-800' 
+                                    : 'bg-slate-200 text-slate-700'
+                                }`}>
+                                  {q.statusLabel || (isApproved ? 'Onaylandı' : isPending ? 'Beklemede' : isRejected ? 'Reddedildi' : q.status)}
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedQuoteForPdf(q)}
+                                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-bold transition-all shadow-3xs cursor-pointer flex items-center gap-1.5 hover:scale-105"
+                                title="Teklif Mektubunu ve Detayları Görüntüle"
+                              >
+                                <Eye className="h-4 w-4 text-emerald-700" />
+                                <span>İncele</span>
+                              </button>
+                            </div>
+
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Full-Width Bottom Actions Bar */}
+                <div className="pearl-card rounded-3xl p-5 sm:p-6 bg-white border-2 border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowDossier(false)}
+                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>← Misafir Bilgilerini Değiştir</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProceedFromDossier}
+                    className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base transition-all cursor-pointer shadow-xl shadow-emerald-800/30 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95"
+                  >
+                    <span>✓ Geçmişi İnceledim, Yeni Teklif Oluşturmaya Devam Et</span>
+                    <ArrowRight className="h-5 w-5 stroke-[2.5]" />
+                  </button>
                 </div>
 
               </div>
