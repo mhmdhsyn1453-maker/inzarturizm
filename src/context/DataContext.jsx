@@ -19,6 +19,7 @@ export function DataProvider({ children }) {
   const [savedQuotes, setSavedQuotes] = useState(() => syncService.getSavedQuotes());
   const [announcements, setAnnouncements] = useState(() => syncService.getAnnouncements());
   const [auditLogs, setAuditLogs] = useState(() => syncService.getAuditLogs());
+  const [customers, setCustomers] = useState(() => syncService.getCustomers());
   const [lastSyncTime, setLastSyncTime] = useState(new Date());
   const [hotReloadAlert, setHotReloadAlert] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -110,6 +111,8 @@ export function DataProvider({ children }) {
         const freshQuotes = event.payload || syncService.getSavedQuotes();
         setSavedQuotes(freshQuotes);
         setAuditLogs(syncService.getAuditLogs());
+      } else if (event.type === 'CUSTOMERS_UPDATED') {
+        setCustomers(event.payload || syncService.getCustomers());
       } else if (event.type === 'AUDIT_LOGS_UPDATED') {
         setAuditLogs(event.payload || syncService.getAuditLogs());
       } else if (event.type === 'SYSTEM_RESET') {
@@ -117,6 +120,7 @@ export function DataProvider({ children }) {
         setCurrencies(syncService.getCurrencies());
         setMonths(syncService.getMonths());
         setAnnouncements(syncService.getAnnouncements());
+        setCustomers(syncService.getCustomers());
         setAuditLogs(syncService.getAuditLogs());
         triggerHotReloadAlert({
           title: 'Sistem Sıfırlandı',
@@ -359,6 +363,12 @@ export function DataProvider({ children }) {
       markNotifsAsRead,
       clearNotifs,
       markQuotesAsSeen,
+      customers,
+      saveCustomer: (cust) => {
+        const updated = syncService.saveCustomer(cust);
+        setCustomers(updated);
+        return updated;
+      },
       updatePackage,
       updateAllPackages,
       addPackage,

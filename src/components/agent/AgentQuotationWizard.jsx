@@ -47,7 +47,14 @@ import {
   Minus,
   Moon,
   Utensils,
-  Eraser
+  Eraser,
+  AlertTriangle,
+  ShieldAlert,
+  Eye,
+  UserCheck,
+  ArrowRight,
+  ExternalLink,
+  History
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuotationLetterView from './QuotationLetterView';
@@ -84,7 +91,17 @@ const getInitialDraft = () => {
 };
 
 export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
-  const { packages, currencies, months, saveQuote, editingQuote, setEditingQuote } = useData();
+  const { 
+    packages, 
+    currencies, 
+    months, 
+    saveQuote, 
+    editingQuote, 
+    setEditingQuote,
+    customers = [],
+    saveCustomer,
+    savedQuotes = []
+  } = useData();
   const { currentUser } = useAuth();
   const draft = getInitialDraft();
 
@@ -151,8 +168,11 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
   // Gatekeeper: isCustomerVerified is true only when customer passes query check
   const [isCustomerVerified, setIsCustomerVerified] = useState(Boolean(draft?.isCustomerVerified || editingQuote));
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [showDossier, setShowDossier] = useState(false);
   const [customerHistoryQuotes, setCustomerHistoryQuotes] = useState([]);
+  const [matchedCustomerProfile, setMatchedCustomerProfile] = useState(null);
   const [pendingQuoteBlocked, setPendingQuoteBlocked] = useState(null);
+  const [selectedQuoteForPdf, setSelectedQuoteForPdf] = useState(null);
 
   // UI State
   const [activeCurrency, setActiveCurrency] = useState('USD');
@@ -162,84 +182,27 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // 1-Second Live Clock Ticker
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Real-time suggested existing customers from Supabase/Local pool
+  const matchedCustomerSuggestions = useMemo(() => {
+    const termName = `${customerFirstName} ${customerLastName}`.trim().toLowerCase();
+    const termPhone = customerPhone.replace(/\D/g, '');
+    const termTc = customerTcNo.replace(/\D/g, '');
 
-  // Auto-Save Draft to LocalStorage (only when not editing an existing quote)
-  useEffect(() => {
-    if (!editingQuote) {
-      const dataToSave = {
-        startDate,
-        endDate,
-        routeOrder,
-        selectedPkgId,
-        selectedMakkahHotelId,
-        selectedMadinahHotelId,
-        includeMakkahMeals,
-        includeMadinahMeals,
-        includeMeals,
-        selectedMonth,
-        makkahDays,
-        makkahOccupancy,
-        madinahDays,
-        madinahOccupancy,
-        isMixedRoomMode,
-        mixedRooms,
-        paxCount,
-        discountUSD,
-        applyProfitMargin,
-        transfersSelection,
-        fixedExpensesIncluded,
-        customerFirstName,
-        customerLastName,
-        customerTcNo,
-        customerName,
-        customerPhone,
-        notes,
-        isCustomerVerified
-      };
-      try {
-        localStorage.setItem('inzar_wizard_draft_v2', JSON.stringify(dataToSave));
-      } catch (e) {}
-    }
-  }, [
-    startDate,
-    endDate,
-    routeOrder,
-    selectedPkgId,
-    selectedMakkahHotelId,
-    selectedMadinahHotelId,
-    includeMakkahMeals,
-    includeMadinahMeals,
-    includeMeals,
-    selectedMonth,
-    makkahDays,
-    makkahOccupancy,
-    madinahDays,
-    madinahOccupancy,
-    isMixedRoomMode,
-    mixedRooms,
-    paxCount,
-    discountUSD,
-    applyProfitMargin,
-    transfersSelection,
-    fixedExpensesIncluded,
-    customerFirstName,
-    customerLastName,
-    customerTcNo,
-    customerName,
-    customerPhone,
-    notes,
-    isCustomerVerified,
-    editingQuote
-  ]);
+    if (!termName && termPhone.length < 3 && termTc.length < 3) return [];
 
-  // Handle Verify Customer / Query Past Quotes
+    return (customers || []).filter(c => {
+      const cName = (c.fullName || `${c.firstName} ${c.lastName}`).toLowerCase();
+      const cPhone = (c.phone || '').replace(/\D/g, '');
+      const cTc = (c.tcNo || '').replace(/\D/g, '');
+
+      if (termTc && cTc && cTc.includes(termTc)) return true;
+      if (termPhone && cPhone && cPhone.includes(termPhone)) return true;
+      if (termName.length >= 2 && cName.includes(termName)) return true;
+      return false;
+    }).slice(0, 3);
+  }, [customers, customerFirstName, customerLastName, customerPhone, customerTcNo]);
+
+  // Handle Verify Customer / Query Past Quotes & Supabase Customer Dossier
   const handleVerifyCustomer = async (e) => {
     if (e) e.preventDefault();
 
@@ -261,14 +224,14 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     setIsSearchingCustomer(true);
 
     try {
-      const fullName = `${customerFirstName.trim()} ${customerLastName.trim()}`.toLowerCase();
+      const fullCustomerName = `${customerFirstName.trim()} ${customerLastName.trim().toUpperCase()}`;
       const rawPhone = customerPhone.replace(/\D/g, '');
       const cleanTc = customerTcNo.replace(/\D/g, '');
 
       // Tüm kayıtlı teklifleri yerel ve senkronize havuzdan al
-      const allSavedQuotes = syncService.getSavedQuotes();
+      const allSavedQuotes = Array.isArray(savedQuotes) && savedQuotes.length > 0 ? savedQuotes : syncService.getSavedQuotes();
       
-      // Eşleşen geçmiş teklifleri tara
+      // Eşleşen geçmiş teklifleri tara (TC, Telefon veya Ad Soyad bazında)
       const matchedQuotes = allSavedQuotes.filter(q => {
         const qFullName = (q.customerName || '').toLowerCase();
         const qPhone = (q.customerPhone || '').replace(/\D/g, '');
@@ -280,32 +243,45 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         return false;
       });
 
+      // Eşleşen müşteri kaydı var mı?
+      const matchedCust = (customers || []).find(c => {
+        const cPhone = (c.phone || '').replace(/\D/g, '');
+        const cTc = (c.tcNo || '').replace(/\D/g, '');
+        if (cleanTc && cTc && cleanTc === cTc) return true;
+        if (rawPhone && cPhone && (rawPhone.endsWith(cPhone) || cPhone.endsWith(rawPhone))) return true;
+        return false;
+      });
+
       setCustomerHistoryQuotes(matchedQuotes);
+      setMatchedCustomerProfile(matchedCust || null);
+      setCustomerName(fullCustomerName);
 
-      // KURAL: Eğer müşterinin onay bekleyen (pending) teklifi varsa -> YENİ TEKLİF VERİLEMEZ (BLOKE)
-      const pendingQuote = matchedQuotes.find(q => q.status === 'pending');
-      
-      if (pendingQuote) {
-        setPendingQuoteBlocked(pendingQuote);
-        setIsCustomerVerified(false);
-      } else {
-        setPendingQuoteBlocked(null);
-        setIsCustomerVerified(true);
-        const fullCustomerName = `${customerFirstName.trim()} ${customerLastName.trim().toUpperCase()}`;
-        setCustomerName(fullCustomerName);
-
-        // Müşteriyi doğrudan Supabase customers tablosuna ve yerel havuzuna anında kaydet
-        syncService.saveCustomer({
+      // Müşteriyi Supabase'e kaydet/güncelle
+      if (saveCustomer) {
+        saveCustomer({
+          id: matchedCust?.id || ('CUST-' + Date.now()),
           tcNo: cleanTc,
           firstName: customerFirstName.trim(),
           lastName: customerLastName.trim(),
           fullName: fullCustomerName,
-          phone: rawPhone,
-          createdById: currentUser?.id,
-          createdByName: currentUser?.name,
-          branch: currentUser?.branch
+          phone: customerPhone,
+          createdById: matchedCust?.createdById || currentUser?.id,
+          createdByName: matchedCust?.createdByName || currentUser?.name,
+          branch: matchedCust?.branch || currentUser?.branch || 'Merkez'
         });
+      }
 
+      // Kural: Bekleyen teklif var mı kontrol et
+      const pendingQuote = matchedQuotes.find(q => q.status === 'pending' || q.status === 'customer_approved');
+      setPendingQuoteBlocked(pendingQuote || null);
+
+      // Eğer daha önce verilmiş teklifler veya kayıtlı profil varsa 360° Dosya ekranını aç
+      if (matchedQuotes.length > 0 || matchedCust) {
+        setShowDossier(true);
+      } else {
+        // Tamamen yeni müşteriyse doğrudan forma geç
+        setShowDossier(false);
+        setIsCustomerVerified(true);
         confetti({
           particleCount: 40,
           spread: 50,
@@ -319,6 +295,23 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     } finally {
       setIsSearchingCustomer(false);
     }
+  };
+
+  const handleProceedFromDossier = () => {
+    setShowDossier(false);
+    setIsCustomerVerified(true);
+    confetti({
+      particleCount: 40,
+      spread: 50,
+      origin: { y: 0.6 }
+    });
+  };
+
+  const handleSelectSuggestedCustomer = (cust) => {
+    setCustomerFirstName(cust.firstName || cust.fullName?.split(' ')[0] || '');
+    setCustomerLastName(cust.lastName || cust.fullName?.split(' ').slice(1).join(' ') || '');
+    setCustomerTcNo(cust.tcNo || '');
+    setCustomerPhone(cust.phone ? formatPhoneNumber(cust.phone) : '');
   };
 
   const handleResetDraft = () => {
@@ -1110,198 +1103,389 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         ) : !isCustomerVerified ? (
           
           /* ═══════════════════════════════════════════════════════════
-             GATEKEEPER STEP 0: MÜŞTERİ BİLGİSİ & ÖN DOĞRULAMA EKRANI
-             (İlk başta hiçbir yer gözükmez, sadece müşteri bilgisi girilir)
+             GATEKEEPER STEP 0: MÜŞTERİ 360° DOSYASI & ÖN DOĞRULAMA
              ═══════════════════════════════════════════════════════════ */
-          <div className="max-w-3xl mx-auto py-6 animate-scale-in">
-            <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 shadow-xl overflow-hidden">
-              
-              {/* Header */}
-              <div className="p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white space-y-1 relative overflow-hidden">
-                <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">
-                  <User className="h-40 w-40" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-white/20 backdrop-blur-xs">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-200">
-                    Teklif Başlangıç Adımı
-                  </span>
-                </div>
-                <h3 className="text-xl font-black font-display tracking-tight text-white">
-                  Müşteri Bilgileri & Teklif Uygunluk Sorgulama
-                </h3>
-                <p className="text-xs text-emerald-100/90 max-w-xl">
-                  Yeni bir umre teklifi hazırlayabilmek için lütfen misafirin kimlik ve iletişim bilgilerini giriniz. Sistem otomatik olarak geçmiş teklif geçmişini kontrol edecektir.
-                </p>
-              </div>
-
-              {/* Form Body */}
-              <form onSubmit={handleVerifyCustomer} className="p-6 sm:p-8 space-y-6">
+          <div className="max-w-4xl mx-auto py-4 animate-scale-in">
+            {!showDossier ? (
+              /* A) MÜŞTERİ BİLGİ GİRİŞ FORMU */
+              <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 shadow-xl overflow-hidden">
                 
-                {/* 🛑 BLOKE UYARISI: Eğer onay bekleyen teklif varsa */}
-                {pendingQuoteBlocked && (
-                  <div className="p-5 rounded-2xl bg-rose-50 border-2 border-rose-300 shadow-sm space-y-3 animate-shake">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-xl bg-rose-600 text-white shrink-0 shadow-xs">
-                        <XCircle className="h-5 w-5" />
+                {/* Header */}
+                <div className="p-6 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white space-y-1 relative overflow-hidden">
+                  <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">
+                    <User className="h-40 w-40" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-white/20 backdrop-blur-xs">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-200">
+                      Adım 1 • Misafir Doğrulama & Dosya Sorgulama
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black font-display tracking-tight text-white">
+                    Müşteri Bilgileri & Geçmiş Teklif Sorgulama
+                  </h3>
+                  <p className="text-xs text-emerald-100/90 max-w-xl">
+                    Yeni bir umre teklifi hazırlamak için misafirin kimlik veya iletişim bilgilerini giriniz. Sistem kayıtlı müşteri havuzundan ve geçmiş tekliflerden otomatik sorgulama yapacaktır.
+                  </p>
+                </div>
+
+                {/* Form Body */}
+                <form onSubmit={handleVerifyCustomer} className="p-6 sm:p-8 space-y-5">
+                  
+                  {/* 💡 Sistemde Kayıtlı Müşteri Önerileri (Canlı Arama Çipi) */}
+                  {matchedCustomerSuggestions.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 animate-fade-scale">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+                        <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Sistemde Eşleşen Kayıtlı Misafirler:</span>
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-black text-rose-950">
-                          Bu Müşteriye Yeni Teklif Verilemez!
-                        </h4>
-                        <p className="text-xs font-semibold text-rose-800 leading-relaxed">
-                          Müşteriye ait <strong>onay bekleyen (beklemede)</strong> aktif bir teklif bulunmaktadır. Müşteri bu teklifi onaylamadan veya sonuçlandırmadan aynı kişi için mükerrer teklif oluşturulamaz.
-                        </p>
+                      <div className="flex flex-wrap gap-2">
+                        {matchedCustomerSuggestions.map((cust) => (
+                          <button
+                            key={cust.id}
+                            type="button"
+                            onClick={() => handleSelectSuggestedCustomer(cust)}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100 text-emerald-950 border border-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:scale-105"
+                          >
+                            <User className="h-3 w-3 text-emerald-600" />
+                            <span>{cust.fullName || `${cust.firstName} ${cust.lastName}`}</span>
+                            {cust.phone && <span className="text-[10px] text-emerald-700 font-mono font-normal">({cust.phone})</span>}
+                          </button>
+                        ))}
                       </div>
                     </div>
+                  )}
 
-                    {/* Bekleyen Teklif Özeti */}
-                    <div className="p-3.5 bg-white rounded-xl border border-rose-200 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between font-bold text-slate-800">
-                        <span>Teklif No: <span className="font-mono text-rose-700">{pendingQuoteBlocked.id}</span></span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold text-[10px] uppercase">
-                          Müşteri Onayı Bekliyor
+                  {/* Input Fields (Ad, Soyad, TC, Telefon) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    {/* Ad */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Müşteri Adı *</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Örn: Ahmet"
+                        value={customerFirstName}
+                        onChange={(e) => setCustomerFirstName(formatTurkishTitleCase(e.target.value))}
+                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
+                      />
+                    </div>
+
+                    {/* Soyad */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Müşteri Soyadı *</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Örn: YILMAZ"
+                        value={customerLastName}
+                        onChange={(e) => setCustomerLastName(formatTurkishUpperCase(e.target.value))}
+                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs uppercase"
+                      />
+                    </div>
+
+                    {/* T.C. Kimlik Numarası */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>T.C. Kimlik No</span>
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={11}
+                        placeholder="11 Haneli T.C. No"
+                        value={customerTcNo}
+                        onChange={(e) => setCustomerTcNo(e.target.value.replace(/\D/g, ''))}
+                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs tracking-wider"
+                      />
+                    </div>
+
+                    {/* Telefon Numarası (+90 Otonom Format) */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Telefon Numarası *</span>
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="+90 (5XX) XXX XX XX"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
+                        className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
+                      />
+                    </div>
+
+                  </div>
+
+                  {/* Submit & Devam Et Button */}
+                  <div className="pt-3 flex items-center justify-end gap-3">
+                    <button
+                      type="submit"
+                      disabled={isSearchingCustomer}
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                    >
+                      {isSearchingCustomer ? (
+                        <>
+                          <Clock className="h-4 w-4 animate-spin" />
+                          <span>Dosya Sorgulanıyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+                          <span>Misafir Geçmişini Tara & Devam Et</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                </form>
+
+              </div>
+            ) : (
+              /* B) 📂 MÜŞTERİ 360° DOSYASI & GEÇMİŞ TEKLİF İSTİHBARATI */
+              <div className="pearl-card rounded-3xl bg-white border-2 border-emerald-400 shadow-2xl overflow-hidden space-y-0 animate-scale-in">
+                
+                {/* Dossier Header */}
+                <div className="p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center font-black text-xl shadow-md shrink-0">
+                      {(customerFirstName || '').charAt(0)}{(customerLastName || '').charAt(0)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xl font-black font-display text-white tracking-tight">
+                          {customerFirstName} {(customerLastName).toUpperCase()}
+                        </h2>
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold">
+                          Kayıtlı Misafir Dosyası
                         </span>
                       </div>
-                      <div className="text-slate-600 flex items-center justify-between">
-                        <span>Paket: <strong>{pendingQuoteBlocked.packageName}</strong></span>
-                        <span className="font-mono font-black text-slate-900">{pendingQuoteBlocked.finalPriceUSD} USD</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        Oluşturulma: {new Date(pendingQuoteBlocked.createdAt).toLocaleDateString('tr-TR')} • Temsilci: {pendingQuoteBlocked.agentName || pendingQuoteBlocked.createdByName}
+                      <div className="text-xs text-slate-300 flex items-center gap-3 mt-1 flex-wrap font-mono">
+                        {customerPhone && <span>Tel: <strong>{customerPhone}</strong></span>}
+                        {customerTcNo && <span>TC: <strong>{customerTcNo}</strong></span>}
+                        <span>Şube: <strong>{matchedCustomerProfile?.branch || 'Merkez'}</strong></span>
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* Input Fields (Ad, Soyad, TC, Telefon) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  
-                  {/* Ad */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <User className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Müşteri Adı *</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Örn: Ahmet"
-                      value={customerFirstName}
-                      onChange={(e) => setCustomerFirstName(formatTurkishTitleCase(e.target.value))}
-                      className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
-                    />
+                  <div className="flex items-center gap-2 self-start md:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setShowDossier(false)}
+                      className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-all border border-white/15 cursor-pointer"
+                    >
+                      Bilgileri Düzenle
+                    </button>
                   </div>
-
-                  {/* Soyad */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <User className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Müşteri Soyadı *</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Örn: YILMAZ"
-                      value={customerLastName}
-                      onChange={(e) => setCustomerLastName(formatTurkishUpperCase(e.target.value))}
-                      className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs uppercase"
-                    />
-                  </div>
-
-                  {/* T.C. Kimlik Numarası */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>T.C. Kimlik No</span>
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={11}
-                      placeholder="11 Haneli T.C. No"
-                      value={customerTcNo}
-                      onChange={(e) => setCustomerTcNo(e.target.value.replace(/\D/g, ''))}
-                      className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs tracking-wider"
-                    />
-                  </div>
-
-                  {/* Telefon Numarası (+90 Otonom Format) */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Telefon Numarası *</span>
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="+90 (5XX) XXX XX XX"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
-                      className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-3.5 py-2.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
-                    />
-                  </div>
-
                 </div>
 
-                {/* Varsa Geçmiş Onaylanmış / Reddedilmiş Teklifler Dökümü */}
-                {customerHistoryQuotes.length > 0 && !pendingQuoteBlocked && (
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">
-                        Misafirin Geçmiş Teklif Geçmişi ({customerHistoryQuotes.length} Kayıt):
-                      </span>
+                {/* Dossier Body */}
+                <div className="p-6 sm:p-8 space-y-6">
+                  
+                  {/* 📊 Metrik Sayaçları */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">Toplam Teklif</span>
+                      <div className="text-xl font-black text-slate-900 font-mono">
+                        {customerHistoryQuotes.length} <span className="text-xs font-normal text-slate-500">Adet</span>
+                      </div>
                     </div>
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                      {customerHistoryQuotes.map(q => {
-                        const isApproved = q.status === 'approved' || q.status === 'approved_revised';
-                        const isRejected = q.status === 'rejected';
+                    
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
+                      <span className="text-[11px] font-bold text-emerald-700 uppercase">Onaylananlar</span>
+                      <div className="text-xl font-black text-emerald-900 font-mono">
+                        {customerHistoryQuotes.filter(q => q.status === 'approved' || q.status === 'hq_approved' || q.status === 'customer_approved').length}
+                      </div>
+                    </div>
 
-                        return (
-                          <div key={q.id} className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-                            <div>
-                              <span className="font-bold text-slate-900">{q.packageName}</span>
-                              <span className="text-[10px] text-slate-400 ml-2">{new Date(q.createdAt).toLocaleDateString('tr-TR')}</span>
+                    <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
+                      <span className="text-[11px] font-bold text-amber-700 uppercase">Bekleyen Teklif</span>
+                      <div className="text-xl font-black text-amber-900 font-mono">
+                        {customerHistoryQuotes.filter(q => q.status === 'pending' || q.status === 'customer_approved').length}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1">
+                      <span className="text-[11px] font-bold text-rose-700 uppercase">Reddedilen</span>
+                      <div className="text-xl font-black text-rose-900 font-mono">
+                        {customerHistoryQuotes.filter(q => q.status === 'rejected' || q.status === 'hq_rejected').length}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ⚠️ ÇAPRAZ PERSONEL & BEKLEMEDEKİ TEKLİF İSTİHBARAT UYARILARI */}
+                  {(() => {
+                    const otherStaffQuote = customerHistoryQuotes.find(q => 
+                      q.createdByName && currentUser?.name && q.createdByName.toLowerCase() !== currentUser.name.toLowerCase()
+                    );
+                    const pendingQuote = customerHistoryQuotes.find(q => q.status === 'pending' || q.status === 'customer_approved');
+
+                    return (
+                      <div className="space-y-3">
+                        {/* Çapraz Personel Uyarısı */}
+                        {otherStaffQuote && (
+                          <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 flex items-start gap-3 shadow-xs animate-fade-scale">
+                            <div className="p-2 rounded-xl bg-amber-500 text-white shrink-0 shadow-xs mt-0.5">
+                              <AlertTriangle className="h-5 w-5" />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono font-black text-slate-800">{q.finalPriceUSD} USD</span>
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                                isApproved ? 'bg-emerald-100 text-emerald-800' : isRejected ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                {isApproved ? 'Onaylandı' : isRejected ? 'Reddedildi' : q.status}
-                              </span>
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-black uppercase tracking-wide text-amber-950">
+                                Çapraz Personel Bildirimi
+                              </h4>
+                              <p className="text-xs font-semibold text-amber-900 leading-relaxed">
+                                Bu misafir için daha önce <strong>{otherStaffQuote.createdByName}</strong> ({otherStaffQuote.branch || 'Acente'}) tarafından <strong>{new Date(otherStaffQuote.createdAt).toLocaleDateString('tr-TR')}</strong> tarihinde <strong>{otherStaffQuote.packageName} ({otherStaffQuote.finalPriceUSD} USD)</strong> teklifi verilmiştir. Fiyat çelişkisi yaşanmaması için lütfen geçmiş teklifleri inceleyiniz.
+                              </p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                        )}
 
-                {/* Submit & Devam Et Button */}
-                <div className="pt-2 flex items-center justify-end gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSearchingCustomer}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-                  >
-                    {isSearchingCustomer ? (
-                      <>
-                        <Clock className="h-4 w-4 animate-spin" />
-                        <span>Sorgulanıyor...</span>
-                      </>
+                        {/* Bekleyen Teklif Durumu */}
+                        {pendingQuote && (
+                          <div className="p-4 rounded-2xl bg-blue-50 border-2 border-blue-300 flex items-start gap-3 shadow-xs animate-fade-scale">
+                            <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 shadow-xs mt-0.5">
+                              <Clock className="h-5 w-5" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-black uppercase tracking-wide text-blue-950">
+                                Müşteri Kararı / Merkez Onayı Bekleyen Aktif Teklif Var
+                              </h4>
+                              <p className="text-xs font-semibold text-blue-900 leading-relaxed">
+                                Misafire ait <strong>{pendingQuote.id}</strong> numaralı <strong>{pendingQuote.packageName}</strong> teklifi henüz sonuçlandırılmamıştır ({pendingQuote.finalPriceUSD} USD). İsterseniz mevcut teklifi doğrudan düzenleyebilir veya inceleyerek yeni bir teklif oluşturabilirsiniz.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* 📋 MÜŞTERİYE DAİR TÜM GEÇMİŞ TEKLİFLERİN LİSTESİ */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-black text-slate-900 font-display flex items-center gap-2">
+                        <History className="h-4 w-4 text-emerald-600" />
+                        <span>Müşteriye Verilen Tüm Teklifler ({customerHistoryQuotes.length}):</span>
+                      </h4>
+                    </div>
+
+                    {customerHistoryQuotes.length === 0 ? (
+                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
+                        Bu misafir için geçmişte oluşturulmuş bir teklif bulunmamaktadır.
+                      </div>
                     ) : (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
-                        <span>Devam Et & Teklif Oluştur</span>
-                      </>
+                      <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                        {customerHistoryQuotes.map((q) => {
+                          const isApproved = q.status === 'approved' || q.status === 'hq_approved' || q.status === 'customer_approved';
+                          const isPending = q.status === 'pending';
+                          const isRejected = q.status === 'rejected' || q.status === 'hq_rejected';
+
+                          return (
+                            <div
+                              key={q.id}
+                              className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                isApproved 
+                                  ? 'bg-emerald-50/40 border-emerald-300' 
+                                  : isPending 
+                                  ? 'bg-amber-50/40 border-amber-300' 
+                                  : isRejected 
+                                  ? 'bg-rose-50/40 border-rose-300' 
+                                  : 'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-mono font-bold text-xs text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                    {q.id}
+                                  </span>
+                                  <span className="font-black text-xs text-slate-900">
+                                    {q.packageName}
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    • {new Date(q.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </span>
+                                </div>
+
+                                <div className="text-xs text-slate-600 flex items-center gap-3 flex-wrap">
+                                  <span>Temsilci: <strong>{q.createdByName || q.agentName || 'Personel'}</strong></span>
+                                  {q.branch && <span>Şube: <strong>{q.branch}</strong></span>}
+                                  <span>Otel: <strong>{q.hotelMakkah || 'Mekke'} / {q.hotelMadinah || 'Medine'}</strong></span>
+                                </div>
+
+                                {q.rejectReason && (
+                                  <div className="text-[11px] font-semibold text-rose-700 bg-rose-100/80 px-2.5 py-1 rounded-lg mt-1">
+                                    Ret Gerekçesi: {q.rejectReason}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                                <div className="text-right">
+                                  <div className="font-mono font-black text-sm text-slate-950">
+                                    {q.finalPriceUSD} USD
+                                  </div>
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                                    isApproved 
+                                      ? 'bg-emerald-100 text-emerald-800' 
+                                      : isPending 
+                                      ? 'bg-amber-100 text-amber-900' 
+                                      : isRejected 
+                                      ? 'bg-rose-100 text-rose-800' 
+                                      : 'bg-slate-200 text-slate-700'
+                                  }`}>
+                                    {q.statusLabel || (isApproved ? 'Onaylandı' : isPending ? 'Beklemede' : isRejected ? 'Reddedildi' : q.status)}
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedQuoteForPdf(q)}
+                                  className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition-all shadow-3xs cursor-pointer"
+                                  title="Teklifi ve Mektubu Görüntüle"
+                                >
+                                  <Eye className="h-4 w-4 text-emerald-700" />
+                                </button>
+                              </div>
+
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
-                  </button>
+                  </div>
+
+                  {/* Actions Toolbar */}
+                  <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowDossier(false)}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+                    >
+                      ← Misafir Bilgilerini Değiştir
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleProceedFromDossier}
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95"
+                    >
+                      <span>✓ Geçmişi İnceledim, Yeni Teklif Oluşturmaya Devam Et</span>
+                      <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                    </button>
+                  </div>
+
                 </div>
 
-              </form>
-
-            </div>
+              </div>
+            )}
           </div>
 
         ) : (
@@ -2300,7 +2484,15 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       </div>
     </div>
   )}
-</div>
-</div>
-);
+      </div>
+
+      {/* 📄 Müşteri Geçmişi PDF Önizleme Modalı */}
+      {selectedQuoteForPdf && (
+        <QuotationPdfModal
+          quotation={selectedQuoteForPdf}
+          onClose={() => setSelectedQuoteForPdf(null)}
+        />
+      )}
+    </div>
+  );
 }
