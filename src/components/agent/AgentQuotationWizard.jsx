@@ -54,7 +54,8 @@ import {
   UserCheck,
   ArrowRight,
   ExternalLink,
-  History
+  History,
+  Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import QuotationLetterView from './QuotationLetterView';
@@ -100,6 +101,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     setEditingQuote,
     customers = [],
     saveCustomer,
+    deleteCustomer,
     savedQuotes = []
   } = useData();
   const { currentUser } = useAuth();
@@ -168,10 +170,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
   // Gatekeeper: isCustomerVerified is true only when customer passes query check
   const [isCustomerVerified, setIsCustomerVerified] = useState(Boolean(draft?.isCustomerVerified || editingQuote));
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
-  const [showDossier, setShowDossier] = useState(false);
-  const [customerHistoryQuotes, setCustomerHistoryQuotes] = useState([]);
-  const [matchedCustomerProfile, setMatchedCustomerProfile] = useState(null);
-  const [pendingQuoteBlocked, setPendingQuoteBlocked] = useState(null);
+  const [showDossier, setShowDossier] = useState(Boolean(draft?.showDossier));
+  const [customerHistoryQuotes, setCustomerHistoryQuotes] = useState(draft?.customerHistoryQuotes || []);
+  const [matchedCustomerProfile, setMatchedCustomerProfile] = useState(draft?.matchedCustomerProfile || null);
+  const [pendingQuoteBlocked, setPendingQuoteBlocked] = useState(draft?.pendingQuoteBlocked || null);
   const [selectedQuoteForPdf, setSelectedQuoteForPdf] = useState(null);
 
   // UI State
@@ -366,6 +368,8 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     setCustomerName('');
     setNotes('');
     setIsCustomerVerified(false);
+    setShowDossier(false);
+    setMatchedCustomerProfile(null);
     setPendingQuoteBlocked(null);
     setCustomerHistoryQuotes([]);
     setSavedQuoteId(null);
@@ -374,6 +378,141 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       setEditingQuote(null);
     }
   };
+
+  // 🗑️ Misafiri Veritabanından (Supabase & Yerel Havuz) Kalıcı Olarak Sil
+  const handleDeleteCustomerFromDb = async () => {
+    const custName = customerName || `${customerFirstName} ${customerLastName}`.trim() || 'Misafir';
+    
+    // Silinecek müşteri ID'sini belirle
+    let custId = matchedCustomerProfile?.id;
+    if (!custId) {
+      const cleanTc = customerTcNo.replace(/\D/g, '');
+      const rawPhone = customerPhone.replace(/\D/g, '');
+      const found = (customers || []).find(c => {
+        const cTc = (c.tcNo || '').replace(/\D/g, '');
+        const cPhone = (c.phone || '').replace(/\D/g, '');
+        const cName = (c.fullName || `${c.firstName || ''} ${c.lastName || ''}`).toLocaleLowerCase('tr-TR');
+        if (cleanTc && cTc && cleanTc === cTc) return true;
+        if (rawPhone && cPhone && (rawPhone.endsWith(cPhone) || cPhone.endsWith(rawPhone))) return true;
+        if (cName && custName.toLocaleLowerCase('tr-TR') === cName) return true;
+        return false;
+      });
+      if (found) custId = found.id;
+    }
+
+    const confirmed = await showConfirm({
+      title: 'Misafir Kaydını Veritabanından Sil',
+      message: `"${custName}" misafirinin veritabanındaki (Supabase & Yerel Havuz) tüm kayıt bilgileri kalıcı olarak silinecektir. Teklif ekranı sıfırlanacaktır. Bu işlemi onaylıyor musunuz?`,
+      confirmText: 'Evet, Veritabanından Sil',
+      cancelText: 'Vazgeç',
+      type: 'danger',
+      confirmVariant: 'danger',
+      onConfirm: async () => {
+        if (custId && deleteCustomer) {
+          await deleteCustomer(custId);
+        }
+        handleResetDraft();
+        showAlert({
+          title: '✓ Misafir Veritabanından Silindi',
+          message: `"${custName}" misafir kaydı sistemden ve veritabanından kalıcı olarak kaldırıldı.`,
+          type: 'success'
+        });
+      }
+    });
+
+    if (confirmed) {
+      if (custId && deleteCustomer) {
+        await deleteCustomer(custId);
+      }
+      handleResetDraft();
+      showAlert({
+        title: '✓ Misafir Veritabanından Silindi',
+        message: `"${custName}" misafir kaydı sistemden ve veritabanından kalıcı olarak kaldırıldı.`,
+        type: 'success'
+      });
+    }
+  };
+
+  // 💾 Auto-save Wizard & Dossier Draft to LocalStorage (Persistent across Menu/Tab Switching)
+  useEffect(() => {
+    // Düzenleme modunda değilsek ve herhangi bir girdi varsa taslağı otomatik kaydet
+    if (editingQuote) return;
+
+    const hasData = customerFirstName || customerLastName || customerPhone || customerTcNo || isCustomerVerified || showDossier;
+    if (!hasData) return;
+
+    try {
+      const draftObj = {
+        startDate,
+        endDate,
+        routeOrder,
+        selectedPkgId,
+        selectedMakkahHotelId,
+        selectedMadinahHotelId,
+        includeMakkahMeals,
+        includeMadinahMeals,
+        selectedMonth,
+        makkahDays,
+        makkahOccupancy,
+        madinahDays,
+        madinahOccupancy,
+        isMixedRoomMode,
+        mixedRooms,
+        paxCount,
+        discountUSD,
+        applyProfitMargin,
+        transfersSelection,
+        fixedExpensesIncluded,
+        customerFirstName,
+        customerLastName,
+        customerTcNo,
+        customerPhone,
+        customerName,
+        notes,
+        isCustomerVerified,
+        showDossier,
+        matchedCustomerProfile,
+        customerHistoryQuotes,
+        pendingQuoteBlocked
+      };
+      localStorage.setItem('inzar_wizard_draft_v2', JSON.stringify(draftObj));
+    } catch (e) {
+      console.warn('Draft save error:', e);
+    }
+  }, [
+    startDate,
+    endDate,
+    routeOrder,
+    selectedPkgId,
+    selectedMakkahHotelId,
+    selectedMadinahHotelId,
+    includeMakkahMeals,
+    includeMadinahMeals,
+    selectedMonth,
+    makkahDays,
+    makkahOccupancy,
+    madinahDays,
+    madinahOccupancy,
+    isMixedRoomMode,
+    mixedRooms,
+    paxCount,
+    discountUSD,
+    applyProfitMargin,
+    transfersSelection,
+    fixedExpensesIncluded,
+    customerFirstName,
+    customerLastName,
+    customerTcNo,
+    customerPhone,
+    customerName,
+    notes,
+    isCustomerVerified,
+    showDossier,
+    matchedCustomerProfile,
+    customerHistoryQuotes,
+    pendingQuoteBlocked,
+    editingQuote
+  ]);
 
   // Edit Mode Initialization with Ref Guard
   const loadedQuoteIdRef = useRef(null);
@@ -1329,14 +1468,24 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 self-start lg:self-center">
+                    <div className="flex items-center gap-2.5 self-start lg:self-center flex-wrap">
                       <button
                         type="button"
                         onClick={() => setShowDossier(false)}
-                        className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all border border-white/25 cursor-pointer flex items-center gap-2 shadow-xs backdrop-blur-xs"
+                        className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all border border-white/25 cursor-pointer flex items-center gap-2 shadow-xs backdrop-blur-xs active:scale-95"
                       >
                         <Edit3 className="h-3.5 w-3.5 text-emerald-200" />
                         <span>Misafir Bilgilerini Düzenle</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDeleteCustomerFromDb}
+                        className="px-4 py-2.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-bold transition-all border border-rose-400/40 cursor-pointer flex items-center gap-2 shadow-xs backdrop-blur-xs hover:shadow-md hover:shadow-rose-600/40 active:scale-95"
+                        title="Misafir kaydını hem yerel havuzdan hem Supabase veritabanından sil"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-rose-100" />
+                        <span>Misafiri Veritabanından Sil</span>
                       </button>
                     </div>
                   </div>
@@ -1540,13 +1689,26 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
 
                 {/* 5. Full-Width Bottom Actions Bar */}
                 <div className="pearl-card rounded-3xl p-5 sm:p-6 bg-white border-2 border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowDossier(false)}
-                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>← Misafir Bilgilerini Değiştir</span>
-                  </button>
+                  <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setShowDossier(false)}
+                      className="flex-1 sm:flex-initial px-5 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Edit3 className="h-4 w-4 text-slate-500" />
+                      <span>Misafir Bilgilerini Değiştir</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleDeleteCustomerFromDb}
+                      className="px-4 py-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                      title="Misafiri veritabanından kalıcı olarak sil"
+                    >
+                      <Trash2 className="h-4 w-4 text-rose-600" />
+                      <span>Misafiri Sil</span>
+                    </button>
+                  </div>
 
                   <button
                     type="button"
@@ -1587,13 +1749,35 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCustomerVerified(false)}
-                  className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold transition-all cursor-pointer shadow-3xs self-start sm:self-auto hover:border-slate-400"
-                >
-                  Misafiri Değiştir
-                </button>
+                <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setShowDossier(true)}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                    title="Misafirin geçmiş teklif ve detay dosyasını görüntüle"
+                  >
+                    <History className="h-3.5 w-3.5 text-emerald-700" />
+                    <span>Misafir Dosyası</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomerVerified(false)}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold transition-all cursor-pointer shadow-3xs hover:border-slate-400"
+                  >
+                    Misafiri Değiştir
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteCustomerFromDb}
+                    className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-3xs flex items-center gap-1"
+                    title="Misafiri veritabanından kalıcı olarak sil"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                    <span>Sil</span>
+                  </button>
+                </div>
               </div>
 
         {/* Step 1: Seyahat Tarihleri, Kalış Süresi & Rota Sıralaması */}

@@ -369,6 +369,11 @@ export function DataProvider({ children }) {
         setCustomers(updated);
         return updated;
       },
+      deleteCustomer: (customerId) => {
+        const updated = syncService.deleteCustomer(customerId, currentUser);
+        setCustomers(updated);
+        return updated;
+      },
       updatePackage,
       updateAllPackages,
       addPackage,

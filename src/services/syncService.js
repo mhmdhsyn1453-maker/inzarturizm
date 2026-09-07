@@ -1096,6 +1096,28 @@ class SyncService {
     return updated;
   }
 
+  deleteCustomer(customerId, user = null) {
+    const current = this.getCustomers();
+    const target = current.find(c => c.id === customerId);
+    const updated = current.filter(c => c.id !== customerId);
+    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
+    this.addAuditLog({
+      action: 'CUSTOMER_DELETED',
+      user: user?.name || 'Personel',
+      details: `${target?.fullName || target?.firstName || customerId} misafir kaydı sistemden silindi.`,
+      timestamp: new Date().toISOString()
+    });
+    this.broadcast('CUSTOMERS_UPDATED', updated);
+
+    if (this.isSupabaseReady) {
+      supabase.from('customers').delete().eq('id', customerId).then(({ error }) => {
+        if (error) console.error('Supabase customer delete error:', error);
+      });
+    }
+
+    return updated;
+  }
+
   updateQuoteStatus(quoteId, newStatus, user = null, note = '') {
     const current = this.getSavedQuotes();
     const nowISO = new Date().toISOString();
