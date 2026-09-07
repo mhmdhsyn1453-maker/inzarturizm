@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { generateQuotationPdf, shareQuoteOnWhatsApp, downloadDirectQuotationPdf } from '../../services/pdfService';
 import { useModal } from '../../context/ModalContext';
 import { 
@@ -102,8 +103,8 @@ export default function QuotationPdfModal({ quotation, onClose }) {
   };
   const getTransferText = getTransferDesc;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto no-print">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-md overflow-y-auto no-print animate-fade-in">
       <div className="relative w-full max-w-4xl bg-slate-100 rounded-3xl border border-slate-300 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col font-sans">
         
         {/* Modal Top Action Bar */}
@@ -558,16 +559,16 @@ export default function QuotationPdfModal({ quotation, onClose }) {
 
             {/* Vurgulu Toplam Bedel (Standalone) */}
             <div style={{ 
-              marginBottom: '10px',
+              marginBottom: '10px', 
               padding: '10px 16px', 
               borderRadius: '12px', 
               backgroundColor: '#064e3b', 
-              color: '#ffffff',
+              color: '#ffffff', 
               display: 'flex', 
               alignItems: 'center', 
-              justifyContent: 'space-between',
-              boxShadow: '0 4px 12px rgba(6, 78, 59, 0.25)',
-              border: '1.5px solid #047857'
+              justifyContent: 'space-between', 
+              boxShadow: '0 4px 12px rgba(6, 78, 59, 0.25)', 
+              border: '1.5px solid #047857' 
             }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.4px', color: '#fef08a' }}>
@@ -623,6 +624,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
