@@ -15,6 +15,11 @@ process.on('uncaughtException', (error) => {
   console.error('[Uncaught Exception]:', error);
 });
 
+// Set App User Model ID for Windows Notifications
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.inzarturizm.tarifehesap');
+}
+
 // Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {

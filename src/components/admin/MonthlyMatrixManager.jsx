@@ -553,13 +553,15 @@ export default function MonthlyMatrixManager() {
   // Transfer change (Price or Vehicle Label)
   const handleTransferChange = (field, value, isText = false) => {
     const val = isText ? value : (parseFloat(value) || 0);
-    setLocalPkg(prev => ({
-      ...prev,
+    const updated = {
+      ...localPkg,
       transfers: {
-        ...prev.transfers,
+        ...localPkg.transfers,
         [field]: val
       }
-    }));
+    };
+    setLocalPkg(updated);
+    updatePackage(selectedPkgId, updated, `${localPkg.name} transfer fiyatları güncellendi.`);
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -586,17 +588,17 @@ export default function MonthlyMatrixManager() {
       isVisible: isVis
     };
 
-    setAllPkgsDraft(prev => {
-      const next = {};
-      Object.keys(prev).forEach(pkgId => {
-        const p = prev[pkgId];
-        next[pkgId] = {
-          ...p,
-          fixedExpensesList: [...(p.fixedExpensesList || []), { ...newExpenseObj }]
-        };
-      });
-      return next;
+    const next = {};
+    Object.keys(allPkgsDraft).forEach(pkgId => {
+      const p = allPkgsDraft[pkgId];
+      next[pkgId] = {
+        ...p,
+        fixedExpensesList: [...(p.fixedExpensesList || []), { ...newExpenseObj }]
+      };
     });
+
+    setAllPkgsDraft(next);
+    updateAllPackages(Object.values(next), `Yeni dahili hizmet eklendi: ${newExpenseObj.name}`);
 
     setNewExpenseDraft({ name: '', desc: '', priceSAR: '', isVisible: true });
     setExpenseFormOpen(false);
@@ -611,42 +613,40 @@ export default function MonthlyMatrixManager() {
   // 2. Fiyat Güncelle (YALNIZCA SEÇİLİ PAKET İÇİN GEÇERLİDİR)
   const handleUpdateExpensePrice = (expId, price) => {
     const val = parseFloat(price) || 0;
-    setAllPkgsDraft(prev => {
-      const current = prev[selectedPkgId];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [selectedPkgId]: {
-          ...current,
-          fixedExpensesList: (current.fixedExpensesList || []).map(item => {
-            if (item.id !== expId) return item;
-            return { ...item, priceSAR: val };
-          })
-        }
-      };
-    });
+    const current = allPkgsDraft[selectedPkgId] || localPkg;
+    if (!current) return;
+
+    const updatedPkg = {
+      ...current,
+      fixedExpensesList: (current.fixedExpensesList || []).map(item => {
+        if (item.id !== expId) return item;
+        return { ...item, priceSAR: val };
+      })
+    };
+
+    setLocalPkg(updatedPkg);
+    updatePackage(selectedPkgId, updatedPkg, `${updatedPkg.name} dahili hizmet fiyatı güncellendi.`);
   };
 
   // 3. Görünürlük Switch'i (AÇ / KAPA - TÜM PAKETLERE ANINDA ETKİ EDER)
   const handleToggleExpenseVisibility = (expId) => {
-    setAllPkgsDraft(prev => {
-      const next = {};
-      const currentItem = (prev[selectedPkgId]?.fixedExpensesList || []).find(item => item.id === expId);
-      const newVisibility = currentItem ? !currentItem.isVisible : true;
+    const currentItem = (localPkg.fixedExpensesList || []).find(item => item.id === expId);
+    const newVisibility = currentItem ? !currentItem.isVisible : true;
 
-      // TÜM PAKETLERDE BU HİZMETİN GÖRÜNÜRLÜĞÜNÜ GÜNCELLE
-      Object.keys(prev).forEach(pkgId => {
-        const p = prev[pkgId];
-        next[pkgId] = {
-          ...p,
-          fixedExpensesList: (p.fixedExpensesList || []).map(item => {
-            if (item.id !== expId) return item;
-            return { ...item, isVisible: newVisibility };
-          })
-        };
-      });
-      return next;
+    const next = {};
+    Object.keys(allPkgsDraft).forEach(pkgId => {
+      const p = allPkgsDraft[pkgId];
+      next[pkgId] = {
+        ...p,
+        fixedExpensesList: (p.fixedExpensesList || []).map(item => {
+          if (item.id !== expId) return item;
+          return { ...item, isVisible: newVisibility };
+        })
+      };
     });
+
+    setAllPkgsDraft(next);
+    updateAllPackages(Object.values(next), `Dahili hizmet görünürlüğü değiştirildi.`);
   };
 
   // 4. Hizmeti Sil (TÜM PAKETLERDEN KALDIRILIR)
@@ -660,19 +660,20 @@ export default function MonthlyMatrixManager() {
     });
 
     if (confirmed) {
-      setAllPkgsDraft(prev => {
-        const next = {};
-        Object.keys(prev).forEach(pkgId => {
-          const p = prev[pkgId];
-          next[pkgId] = {
-            ...p,
-            fixedExpensesList: (p.fixedExpensesList || []).filter(item => item.id !== expId)
-          };
-        });
-        return next;
+      const next = {};
+      Object.keys(allPkgsDraft).forEach(pkgId => {
+        const p = allPkgsDraft[pkgId];
+        next[pkgId] = {
+          ...p,
+          fixedExpensesList: (p.fixedExpensesList || []).filter(item => item.id !== expId)
+        };
       });
+
+      setAllPkgsDraft(next);
+      updateAllPackages(Object.values(next), `Dahili hizmet silindi: ${expName}`);
     }
   };
+
 
   // Save All changes (Tüm paketleri ve tarih tarifelerini atomik olarak kaydeder)
   const handleSaveAll = () => {

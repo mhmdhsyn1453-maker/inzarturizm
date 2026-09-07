@@ -5,6 +5,15 @@ class SoundEngine {
   constructor() {
     this.ctx = null;
     this.soundEnabled = this.getSoundEnabled();
+
+    if (typeof window !== 'undefined') {
+      const unlockAudio = () => {
+        this.initContext();
+      };
+      ['click', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
+        window.addEventListener(evt, unlockAudio, { passive: true });
+      });
+    }
   }
 
   getSoundEnabled() {
@@ -24,14 +33,18 @@ class SoundEngine {
   }
 
   initContext() {
-    if (!this.ctx && typeof window !== 'undefined') {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) {
-        this.ctx = new AudioContext();
+    try {
+      if (!this.ctx && typeof window !== 'undefined') {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
       }
-    }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      console.warn('AudioContext init error:', e);
     }
   }
 
