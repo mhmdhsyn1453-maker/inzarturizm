@@ -226,16 +226,16 @@ export default function MonthlyMatrixManager() {
   // Keep selected hotel IDs synchronized when localPkg changes
   useEffect(() => {
     if (localPkg.makkahHotels?.length > 0) {
-      if (!localPkg.makkahHotels.some(h => h.id === selectedMakkahHotelId)) {
+      if (!selectedMakkahHotelId || !localPkg.makkahHotels.some(h => h.id === selectedMakkahHotelId)) {
         setSelectedMakkahHotelId(localPkg.makkahHotels[0].id);
       }
     }
     if (localPkg.madinahHotels?.length > 0) {
-      if (!localPkg.madinahHotels.some(h => h.id === selectedMadinahHotelId)) {
+      if (!selectedMadinahHotelId || !localPkg.madinahHotels.some(h => h.id === selectedMadinahHotelId)) {
         setSelectedMadinahHotelId(localPkg.madinahHotels[0].id);
       }
     }
-  }, [localPkg, selectedMakkahHotelId, selectedMadinahHotelId]);
+  }, [localPkg.makkahHotels, localPkg.madinahHotels, selectedMakkahHotelId, selectedMadinahHotelId]);
 
   // Switch package
   const handleSelectPackage = (pkgId) => {
@@ -330,18 +330,35 @@ export default function MonthlyMatrixManager() {
       const newHotel = {
         id: inlineFormData.id || `${localPkg.id}_${inlineFormCity}_${Date.now()}`,
         name: inlineFormData.name.trim(),
-        distance: inlineFormData.distance.trim() || (inlineFormCity === 'makkah' ? '1000m Servisli' : '300m Yürüme'),
-        mealType: inlineFormData.mealType,
+        distance: inlineFormData.distance.trim() || (inlineFormCity === 'makkah' ? '1000m (Ring Servis)' : '250m (Yürüme)'),
+        mealType: inlineFormData.mealType || 'Açık Büfe',
         dateRanges: [] // Clean empty date ranges awaiting user entries!
       };
 
-      setLocalPkg(prev => ({
-        ...prev,
-        [listKey]: [...(prev[listKey] || []), newHotel]
-      }));
+      const updatedHotels = [...(localPkg[listKey] || []), newHotel];
+      const updatedPkg = {
+        ...localPkg,
+        [listKey]: updatedHotels,
+        ...(inlineFormCity === 'makkah' && (localPkg.makkahHotels?.length === 0 || !localPkg.hotelMakkah) ? {
+          hotelMakkah: newHotel.name,
+          distanceMakkah: newHotel.distance,
+          mealMakkah: newHotel.mealType
+        } : {}),
+        ...(inlineFormCity === 'madinah' && (localPkg.madinahHotels?.length === 0 || !localPkg.hotelMadinah) ? {
+          hotelMadinah: newHotel.name,
+          distanceMadinah: newHotel.distance,
+          mealMadinah: newHotel.mealType
+        } : {})
+      };
 
-      if (inlineFormCity === 'makkah') setSelectedMakkahHotelId(newHotel.id);
-      else setSelectedMadinahHotelId(newHotel.id);
+      setLocalPkg(updatedPkg);
+      updatePackage(selectedPkgId, updatedPkg, `${localPkg.name} ${inlineFormCity === 'makkah' ? 'Mekke' : 'Medine'} oteli eklendi: ${newHotel.name}`);
+
+      if (inlineFormCity === 'makkah') {
+        setSelectedMakkahHotelId(newHotel.id);
+      } else {
+        setSelectedMadinahHotelId(newHotel.id);
+      }
 
       confetti({
         particleCount: 40,
@@ -350,35 +367,36 @@ export default function MonthlyMatrixManager() {
       });
 
     } else {
-      setLocalPkg(prev => {
-        const updatedHotels = (prev[listKey] || []).map(h => {
-          if (h.id !== inlineFormData.id) return h;
-          return {
-            ...h,
-            name: inlineFormData.name.trim(),
-            distance: inlineFormData.distance.trim(),
-            mealType: inlineFormData.mealType
-          };
-        });
-
-        const activeMakkah = inlineFormCity === 'makkah' 
-          ? updatedHotels.find(h => h.id === inlineFormData.id) 
-          : prev.makkahHotels?.find(h => h.id === selectedMakkahHotelId);
-        const activeMadinah = inlineFormCity === 'madinah'
-          ? updatedHotels.find(h => h.id === inlineFormData.id)
-          : prev.madinahHotels?.find(h => h.id === selectedMadinahHotelId);
-
+      const updatedHotels = (localPkg[listKey] || []).map(h => {
+        if (h.id !== inlineFormData.id) return h;
         return {
-          ...prev,
-          [listKey]: updatedHotels,
-          hotelMakkah: activeMakkah?.name || prev.hotelMakkah,
-          distanceMakkah: activeMakkah?.distance || prev.distanceMakkah,
-          mealMakkah: activeMakkah?.mealType || prev.mealMakkah,
-          hotelMadinah: activeMadinah?.name || prev.hotelMadinah,
-          distanceMadinah: activeMadinah?.distance || prev.distanceMadinah,
-          mealMadinah: activeMadinah?.mealType || prev.mealMadinah,
+          ...h,
+          name: inlineFormData.name.trim(),
+          distance: inlineFormData.distance.trim(),
+          mealType: inlineFormData.mealType
         };
       });
+
+      const activeMakkah = inlineFormCity === 'makkah' 
+        ? updatedHotels.find(h => h.id === inlineFormData.id) 
+        : localPkg.makkahHotels?.find(h => h.id === selectedMakkahHotelId);
+      const activeMadinah = inlineFormCity === 'madinah'
+        ? updatedHotels.find(h => h.id === inlineFormData.id)
+        : localPkg.madinahHotels?.find(h => h.id === selectedMadinahHotelId);
+
+      const updatedPkg = {
+        ...localPkg,
+        [listKey]: updatedHotels,
+        hotelMakkah: activeMakkah?.name || localPkg.hotelMakkah,
+        distanceMakkah: activeMakkah?.distance || localPkg.distanceMakkah,
+        mealMakkah: activeMakkah?.mealType || localPkg.mealMakkah,
+        hotelMadinah: activeMadinah?.name || localPkg.hotelMadinah,
+        distanceMadinah: activeMadinah?.distance || localPkg.distanceMadinah,
+        mealMadinah: activeMadinah?.mealType || localPkg.mealMadinah,
+      };
+
+      setLocalPkg(updatedPkg);
+      updatePackage(selectedPkgId, updatedPkg, `${localPkg.name} ${inlineFormCity === 'makkah' ? 'Mekke' : 'Medine'} oteli güncellendi: ${inlineFormData.name}`);
     }
 
     // Formu derhal kapat
@@ -410,10 +428,13 @@ export default function MonthlyMatrixManager() {
 
     if (confirmed) {
       const remainingHotels = hotelList.filter(h => h.id !== hotelId);
-      setLocalPkg(prev => ({
-        ...prev,
+      const updatedPkg = {
+        ...localPkg,
         [listKey]: remainingHotels
-      }));
+      };
+
+      setLocalPkg(updatedPkg);
+      updatePackage(selectedPkgId, updatedPkg, `${localPkg.name} ${city === 'makkah' ? 'Mekke' : 'Medine'} oteli silindi: ${hotelToDelete?.name || ''}`);
 
       if (city === 'makkah') {
         setSelectedMakkahHotelId(remainingHotels[0]?.id || '');

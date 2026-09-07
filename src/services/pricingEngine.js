@@ -69,8 +69,8 @@ function calculateCityStayRates({
       }
     }
 
-    // 2. Eğer takvimden tarih seçilmemişse (sadece ay seçimi varsa) monthlyPrices devreye girer
-    if (!startDateStr && !isDayPriced) {
+    // 2. Eğer o güne ait özel tarih aralığı fiyatı girilmemişse monthlyPrices fallback devreye girer
+    if (!isDayPriced) {
       if (hotel?.monthlyPrices?.[monthKey]?.roomSAR) {
         dayRoomPrice = Number(hotel.monthlyPrices[monthKey].roomSAR) || 0;
         isDayPriced = dayRoomPrice > 0;
