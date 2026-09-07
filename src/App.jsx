@@ -3,7 +3,7 @@ import { useAuth } from './context/AuthContext';
 import SplashScreen from './components/common/SplashScreen';
 import LoginScreen from './components/auth/LoginScreen';
 import Sidebar from './components/layout/Sidebar';
-import Topbar from './components/layout/TopBar';
+import Topbar from './components/layout/Topbar';
 import AgentQuotationWizard from './components/agent/AgentQuotationWizard';
 import SavedQuotesList from './components/agent/SavedQuotesList';
 import MonthlyMatrixManager from './components/admin/MonthlyMatrixManager';

@@ -21,6 +21,9 @@ export function DataProvider({ children }) {
   const [auditLogs, setAuditLogs] = useState(() => syncService.getAuditLogs());
   const [lastSyncTime, setLastSyncTime] = useState(new Date());
   const [hotReloadAlert, setHotReloadAlert] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [newQuotesCount, setNewQuotesCount] = useState(0);
 
   // Quote being edited in wizard
   const [editingQuote, setEditingQuote] = useState(null);
