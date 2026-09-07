@@ -559,39 +559,54 @@ export default function QuotationLetterView({
               gap: '6px'
             }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#064e3b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-2-2"/></svg>
-              <span>{quotation.hasPartialFixedExpenses ? 'PAKET SEÇENEKLERİNE GÖRE KİŞİ BAŞI HİZMET BEDELLERİ' : isMixed ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
+              <span>{quotation.hasPartialFixedExpenses ? 'TEMEL KONAKLAMA & TRANSFER BEDELİ VE TALEP EDİLEN HİZMETLER' : isMixed ? 'ODA TERCİHİNE GÖRE KİŞİ BAŞI TOPLAM HİZMET BEDELLERİ (HER ŞEY DAHİL)' : 'KİŞİ BAŞI TOPLAM HİZMET BEDELİ (HER ŞEY DAHİL)'}</span>
             </div>
 
-            {quotation.hasPartialFixedExpenses && quotation.partialExpensesSummary ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', textAlign: 'center' }}>
-                <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1.5px solid #10b981' }}>
-                  <div style={{ fontSize: '9px', fontWeight: '900', color: '#065f46', textTransform: 'uppercase' }}>
-                    ✨ TAM PAKET (HİZMET DAHİL)
+            {quotation.hasPartialFixedExpenses ? (
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1.5px solid #10b981', padding: '8px 10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px', marginBottom: '6px' }}>
+                  <div>
+                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#064e3b', textTransform: 'uppercase' }}>
+                      TEMEL KONAKLAMA & TRANSFER BEDELİ (KİŞİ BAŞI)
+                    </div>
+                    <div style={{ fontSize: '8px', color: '#64748b', marginTop: '1px' }}>
+                      Otel Konaklaması, Şehirlerarası ve Havalimanı Transferleri Dahildir
+                    </div>
                   </div>
-                  <div style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', marginTop: '2px' }}>
-                    ${quotation.partialExpensesSummary.fullPackagePriceUSD?.toLocaleString('tr-TR')} USD
-                  </div>
-                  <div style={{ fontSize: '8.5px', color: '#047857', fontWeight: '700' }}>
-                    ~{quotation.partialExpensesSummary.fullPackagePriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                  </div>
-                  <div style={{ fontSize: '7.5px', color: '#64748b', marginTop: '1px' }}>
-                    Vize / Bilet / Dahili Hizmetleri Alan Misafirler
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#064e3b' }}>
+                      ${(quotation.partialExpensesSummary?.basePriceUSD || quotation.basePriceUSD || 0).toLocaleString('tr-TR')} USD
+                    </div>
+                    <div style={{ fontSize: '8px', color: '#047857', fontWeight: '700' }}>
+                      ~{(quotation.partialExpensesSummary?.basePriceTRY || quotation.basePriceTRY || 0).toLocaleString('tr-TR')} ₺ / Kişi
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}>
-                  <div style={{ fontSize: '9px', fontWeight: '900', color: '#475569', textTransform: 'uppercase' }}>
-                    🏨 KARA PAKETİ (HİZMETSİZ)
+                <div style={{ marginTop: '6px' }}>
+                  <div style={{ fontSize: '8.5px', fontWeight: '800', color: '#065f46', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    TALEP EDİLEN DAHİLİ HİZMETLER VE BİRİM FİYATLARI
                   </div>
-                  <div style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', marginTop: '2px' }}>
-                    ${quotation.partialExpensesSummary.groundPackagePriceUSD?.toLocaleString('tr-TR')} USD
-                  </div>
-                  <div style={{ fontSize: '8.5px', color: '#475569', fontWeight: '700' }}>
-                    ~{quotation.partialExpensesSummary.groundPackagePriceTRY?.toLocaleString('tr-TR')} ₺ / Kişi
-                  </div>
-                  <div style={{ fontSize: '7.5px', color: '#64748b', marginTop: '1px' }}>
-                    Sadece Konaklama & Ulaşım Alan Misafirler
-                  </div>
+                  <table style={{ width: '100%', fontSize: '8.5px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', color: '#475569', fontWeight: 'bold', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '4px 6px' }}>Hizmet Adı</th>
+                        <th style={{ padding: '4px 6px', textAlign: 'center' }}>Birim Fiyat</th>
+                        <th style={{ padding: '4px 6px', textAlign: 'center' }}>Talep Eden Kişi</th>
+                        <th style={{ padding: '4px 6px', textAlign: 'right' }}>Hizmet Toplamı</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(quotation.partialExpensesSummary?.includedServicesList || quotation.includedServicesList || []).map((srv, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '4px 6px', fontWeight: '700', color: '#0f172a' }}>{srv.label}</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'center', color: '#475569' }}>${srv.unitUSD} USD (~{srv.unitTRY} ₺)</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'center', fontWeight: '800', color: '#065f46' }}>{srv.paxCount} Kişi</td>
+                          <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: '900', color: '#0f172a' }}>${srv.subtotalUSD} USD (~{srv.subtotalTRY} ₺)</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ) : isMixed && quotation.mixedRoomsBreakdown ? (() => {

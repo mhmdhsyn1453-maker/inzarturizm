@@ -521,6 +521,53 @@ export function calculateQuotation({
     }
   }
 
+  // Temel Konaklama & Ulaşım Taban Fiyatı (Sabit Giderler Hariç)
+  const calcRoomTypeBaseUSD = (occupancy) => {
+    const mkDailyRoom = occupancy > 0 ? (makkahRoomSAR / occupancy) : 0;
+    const mdDailyRoom = occupancy > 0 ? (madinahRoomSAR / occupancy) : 0;
+    const mkTotal = (mkDailyRoom + makkahFoodSAR) * makkahDays;
+    const mdTotal = (mdDailyRoom + madinahFoodSAR) * madinahDays;
+    const totalSAR = mkTotal + mdTotal + transfersTotalSAR;
+    const baseUSD = totalSAR / sarUsdRate;
+    const profitUSD = baseUSD * (profitMarginPercent / 100);
+    const beforeDiscount = baseUSD + profitUSD;
+    return Math.round(Math.max(0, beforeDiscount - (customDiscountUSD || 0)));
+  };
+
+  const basePriceUSD = calcRoomTypeBaseUSD(makkahRoomOccupancy || 2);
+  const basePriceTRY = Math.round(basePriceUSD * usdTryRate);
+  const basePriceEUR = Math.round(basePriceUSD / eurUsdRate);
+  const basePriceSAR = Math.round(basePriceUSD * sarUsdRate);
+
+  const includedServicesList = fixedExpensesBreakdown
+    .filter(item => item.included)
+    .map(item => {
+      const unitCostSAR = item.unitCostSAR;
+      const unitUSD = Math.round((unitCostSAR / sarUsdRate) * (1 + profitMarginPercent / 100));
+      const unitTRY = Math.round(unitUSD * usdTryRate);
+      const unitEUR = Math.round(unitUSD / eurUsdRate);
+      const unitSAR = Math.round(unitCostSAR * (1 + profitMarginPercent / 100));
+      const subtotalUSD = unitUSD * (item.paxCount || 1);
+      const subtotalTRY = unitTRY * (item.paxCount || 1);
+      const subtotalEUR = unitEUR * (item.paxCount || 1);
+      const subtotalSAR = unitSAR * (item.paxCount || 1);
+      return {
+        key: item.key,
+        label: item.label,
+        paxCount: item.paxCount,
+        totalPax: effectivePax,
+        isPartial: item.isPartial,
+        unitUSD,
+        unitTRY,
+        unitEUR,
+        unitSAR,
+        subtotalUSD,
+        subtotalTRY,
+        subtotalEUR,
+        subtotalSAR
+      };
+    });
+
   return {
     packageId: pkg.id,
     packageName: pkg.name,
@@ -564,18 +611,20 @@ export function calculateQuotation({
     finalPriceTRY: Math.round(finalPriceTRY),
     finalPriceEUR: Math.round(finalPriceEUR),
     finalPriceSAR: Math.round(finalPriceSAR),
+    basePriceUSD,
+    basePriceTRY,
+    basePriceEUR,
+    basePriceSAR,
+    includedServicesList,
     hasPartialFixedExpenses,
     partialExpensesSummary: hasPartialFixedExpenses ? {
       hasPartial: true,
       totalPax: effectivePax,
-      fullPackagePriceUSD: Math.round(finalPriceUSD + fullPkgFixedDiffUSD),
-      fullPackagePriceTRY: Math.round((finalPriceUSD + fullPkgFixedDiffUSD) * usdTryRate),
-      fullPackagePriceEUR: Math.round((finalPriceUSD + fullPkgFixedDiffUSD) / eurUsdRate),
-      fullPackagePriceSAR: Math.round((finalPriceUSD + fullPkgFixedDiffUSD) * sarUsdRate),
-      groundPackagePriceUSD: Math.round(finalPriceUSD + groundPkgFixedDiffUSD),
-      groundPackagePriceTRY: Math.round((finalPriceUSD + groundPkgFixedDiffUSD) * usdTryRate),
-      groundPackagePriceEUR: Math.round((finalPriceUSD + groundPkgFixedDiffUSD) / eurUsdRate),
-      groundPackagePriceSAR: Math.round((finalPriceUSD + groundPkgFixedDiffUSD) * sarUsdRate),
+      basePriceUSD,
+      basePriceTRY,
+      basePriceEUR,
+      basePriceSAR,
+      includedServices: includedServicesList,
       partialServices: partialFixedExpensesList
     } : null,
     fixedExpensesPax,
