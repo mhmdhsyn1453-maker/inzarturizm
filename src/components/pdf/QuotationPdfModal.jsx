@@ -51,12 +51,12 @@ export default function QuotationPdfModal({ quotation, onClose }) {
   const validUntilStr = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   // Safe checks for dynamic inclusions
-  const fixed = quotation.fixedExpensesIncluded || {};
-  const transfers = quotation.transfersSelection || {};
-  const roomMatrix = quotation.roomMatrix || [];
+  const fixed = quotation?.fixedExpensesIncluded || quotation?.fixedExpenses || {};
+  const transfers = quotation?.transfersSelection || quotation?.transfers || {};
+  const roomMatrix = quotation?.roomMatrix || [];
 
   const getRoomCost = (occ) => {
-    if (quotation.roomMatrix && quotation.roomMatrix.length > 0) {
+    if (quotation?.roomMatrix && quotation.roomMatrix.length > 0) {
       const rm = quotation.roomMatrix.find(r => r.occupancy === occ);
       if (rm) {
         return {
@@ -65,14 +65,14 @@ export default function QuotationPdfModal({ quotation, onClose }) {
         };
       }
     }
-    const mkDays = Number(quotation.makkahDays) || 0;
-    const mdDays = Number(quotation.madinahDays) || 0;
-    const mkRoom = Number(quotation.makkahRoomSAR) || 0;
-    const mdRoom = Number(quotation.madinahRoomSAR) || 0;
-    const mkFood = Number(quotation.makkahFoodSAR) || 0;
-    const mdFood = Number(quotation.madinahFoodSAR) || 0;
-    const sarUsd = quotation.currenciesUsed?.SAR_USD || 3.75;
-    const usdTry = quotation.currenciesUsed?.USD_TRY || (quotation.finalPriceUSD ? (quotation.finalPriceTRY / quotation.finalPriceUSD) : 36.50);
+    const mkDays = Number(quotation?.makkahDays) || 0;
+    const mdDays = Number(quotation?.madinahDays) || 0;
+    const mkRoom = Number(quotation?.makkahRoomSAR) || 0;
+    const mdRoom = Number(quotation?.madinahRoomSAR) || 0;
+    const mkFood = Number(quotation?.makkahFoodSAR) || 0;
+    const mdFood = Number(quotation?.madinahFoodSAR) || 0;
+    const sarUsd = quotation?.currenciesUsed?.SAR_USD || 3.75;
+    const usdTry = quotation?.currenciesUsed?.USD_TRY || (quotation?.finalPriceUSD ? (quotation.finalPriceTRY / quotation.finalPriceUSD) : 36.50);
 
     if (mkRoom > 0 || mdRoom > 0) {
       const mkDaily = occ > 0 ? (mkRoom / occ) : 0;
@@ -82,24 +82,25 @@ export default function QuotationPdfModal({ quotation, onClose }) {
       return { usd, try: Math.round(usd * usdTry) };
     }
 
-    if (quotation.totalAccommodationSAR) {
+    if (quotation?.totalAccommodationSAR) {
       const baseSAR = (quotation.totalAccommodationSAR / (quotation.makkahRoomOccupancy || 2)) * (2 / occ);
       const usd = Math.round(baseSAR / sarUsd);
       return { usd, try: Math.round(usd * usdTry) };
     }
 
     const factor = occ === 1 ? 1.7 : occ === 2 ? 1.0 : occ === 3 ? 0.78 : 0.68;
-    const estimatedBaseHotelUSD = Math.round((quotation.finalPriceUSD || 500) * 0.45 * factor);
+    const estimatedBaseHotelUSD = Math.round((quotation?.finalPriceUSD || 500) * 0.45 * factor);
     return { usd: estimatedBaseHotelUSD, try: Math.round(estimatedBaseHotelUSD * usdTry) };
   };
 
   // Transfer labels
   const getTransferDesc = (sel) => {
-    if (!sel || sel.vehicleType === 'none') return 'Talep Edilmedi (Kendi İmkânıyla)';
-    if (sel.vehicleType === 'small') return `Özel VIP Araç (${sel.passengerCount || 2} Kişi)`;
-    if (sel.vehicleType === 'big') return `Lüks Otobüs (${sel.passengerCount || 45} Kişi Paylaşımlı)`;
-    return 'Dahil';
+    if (!sel || sel.vehicleType === 'none' || sel === 'none') return 'Talep Edilmedi (Kendi İmkânıyla)';
+    if (sel.vehicleType === 'small' || sel === 'small') return `Özel VIP Araç (${sel.passengerCount || 2} Kişi)`;
+    if (sel.vehicleType === 'big' || sel === 'big') return `Lüks Otobüs (${sel.passengerCount || 45} Kişi Paylaşımlı)`;
+    return typeof sel === 'string' ? sel : 'Dahil';
   };
+  const getTransferText = getTransferDesc;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto no-print">
@@ -290,16 +291,16 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                       </div>
                     </td>
                     <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
-                      {quotation.makkahDays > 0 ? (quotation.pkgDetails?.hotelMakkah || 'Merkezi Otel') : 'Konaklama Yok'}
+                      {quotation.makkahDays > 0 ? (quotation.selectedMakkahHotel?.name || quotation.pkgDetails?.hotelMakkah || quotation.hotelMakkah || 'Merkezi Otel') : 'Konaklama Yok'}
                     </td>
                     <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>
                       {quotation.makkahDays > 0 ? `${quotation.makkahDays} Gece / Gün` : '0 Gün'}
                     </td>
                     <td style={{ padding: '6px 10px', color: '#475569' }}>
-                      {quotation.makkahDays > 0 ? (quotation.pkgDetails?.distanceMakkah || 'Yürüme / Ring Servis') : '-'}
+                      {quotation.makkahDays > 0 ? (quotation.selectedMakkahHotel?.distance || quotation.pkgDetails?.distanceMakkah || quotation.distanceMakkah || 'Yürüme / Ring Servis') : '-'}
                     </td>
                     <td style={{ padding: '6px 10px', color: quotation.makkahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '700' }}>
-                      {quotation.makkahDays > 0 ? (quotation.includeMakkahMeals !== false ? `${quotation.selectedMakkahHotel?.mealType || quotation.pkgDetails?.mealMakkah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}
+                      {quotation.makkahDays > 0 ? (quotation.includeMakkahMeals !== false ? `${quotation.selectedMakkahHotel?.mealType || quotation.pkgDetails?.mealMakkah || quotation.mealMakkah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}
                     </td>
                   </tr>
                   <tr>
@@ -310,16 +311,16 @@ export default function QuotationPdfModal({ quotation, onClose }) {
                       </div>
                     </td>
                     <td style={{ padding: '6px 10px', fontWeight: '700', color: '#0f172a' }}>
-                      {quotation.madinahDays > 0 ? (quotation.selectedMadinahHotel?.name || quotation.pkgDetails?.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}
+                      {quotation.madinahDays > 0 ? (quotation.selectedMadinahHotel?.name || quotation.pkgDetails?.hotelMadinah || quotation.hotelMadinah || 'Merkezi Otel') : 'Konaklama Yok'}
                     </td>
                     <td style={{ padding: '6px 10px', fontWeight: 'bold', color: '#334155' }}>
                       {quotation.madinahDays > 0 ? `${quotation.madinahDays} Gece / Gün` : '0 Gün'}
                     </td>
                     <td style={{ padding: '6px 10px', color: '#475569' }}>
-                      {quotation.madinahDays > 0 ? (quotation.selectedMadinahHotel?.distance || quotation.pkgDetails?.distanceMadinah || 'Yürüme Mesafesi') : '-'}
+                      {quotation.madinahDays > 0 ? (quotation.selectedMadinahHotel?.distance || quotation.pkgDetails?.distanceMadinah || quotation.distanceMadinah || 'Yürüme Mesafesi') : '-'}
                     </td>
                     <td style={{ padding: '6px 10px', color: quotation.madinahDays > 0 ? '#047857' : '#94a3b8', fontWeight: '700' }}>
-                      {quotation.madinahDays > 0 ? (quotation.includeMadinahMeals !== false ? `${quotation.selectedMadinahHotel?.mealType || quotation.pkgDetails?.mealMadinah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}
+                      {quotation.madinahDays > 0 ? (quotation.includeMadinahMeals !== false ? `${quotation.selectedMadinahHotel?.mealType || quotation.pkgDetails?.mealMadinah || quotation.mealMadinah || 'Açık Büfe'} (Sabah & Akşam)` : 'Yemeksiz (Sadece Konaklama)') : 'Dahil Değil'}
                     </td>
                   </tr>
                 </tbody>
