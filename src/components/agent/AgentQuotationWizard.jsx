@@ -105,6 +105,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     savedQuotes = []
   } = useData();
   const { currentUser } = useAuth();
+  const isHqOrAdmin = currentUser?.role?.toUpperCase() === 'ADMIN' || currentUser?.role?.toUpperCase() === 'HQ_ASSISTANT';
   const draft = getInitialDraft();
 
   // Wizard View Mode: 'form' | 'letter'
@@ -379,8 +380,17 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     }
   };
 
-  // 🗑️ Misafiri Veritabanından (Supabase & Yerel Havuz) Kalıcı Olarak Sil
+  // 🗑️ Misafiri Veritabanından (Supabase & Yerel Havuz) Kalıcı Olarak Sil (Yalnızca Genel Merkez & Yardımcısı)
   const handleDeleteCustomerFromDb = async () => {
+    if (!isHqOrAdmin) {
+      showAlert({
+        title: 'Yetki Sınırı',
+        message: 'Misafir kaydını veritabanından silme yetkisi yalnızca Genel Merkez Sorumlusu ve Genel Merkez Yardımcısına aittir.',
+        type: 'error'
+      });
+      return;
+    }
+
     const custName = customerName || `${customerFirstName} ${customerLastName}`.trim() || 'Misafir';
     
     // Silinecek müşteri ID'sini belirle
@@ -1478,15 +1488,17 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                         <span>Misafir Bilgilerini Düzenle</span>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={handleDeleteCustomerFromDb}
-                        className="px-4 py-2.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-bold transition-all border border-rose-400/40 cursor-pointer flex items-center gap-2 shadow-xs backdrop-blur-xs hover:shadow-md hover:shadow-rose-600/40 active:scale-95"
-                        title="Misafir kaydını hem yerel havuzdan hem Supabase veritabanından sil"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-rose-100" />
-                        <span>Misafiri Veritabanından Sil</span>
-                      </button>
+                      {isHqOrAdmin && (
+                        <button
+                          type="button"
+                          onClick={handleDeleteCustomerFromDb}
+                          className="px-4 py-2.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-bold transition-all border border-rose-400/40 cursor-pointer flex items-center gap-2 shadow-xs backdrop-blur-xs hover:shadow-md hover:shadow-rose-600/40 active:scale-95"
+                          title="Misafir kaydını hem yerel havuzdan hem Supabase veritabanından sil"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-rose-100" />
+                          <span>Misafiri Veritabanından Sil</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1699,15 +1711,17 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       <span>Misafir Bilgilerini Değiştir</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={handleDeleteCustomerFromDb}
-                      className="px-4 py-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
-                      title="Misafiri veritabanından kalıcı olarak sil"
-                    >
-                      <Trash2 className="h-4 w-4 text-rose-600" />
-                      <span>Misafiri Sil</span>
-                    </button>
+                    {isHqOrAdmin && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteCustomerFromDb}
+                        className="px-4 py-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                        title="Misafiri veritabanından kalıcı olarak sil"
+                      >
+                        <Trash2 className="h-4 w-4 text-rose-600" />
+                        <span>Misafiri Sil</span>
+                      </button>
+                    )}
                   </div>
 
                   <button
@@ -1768,15 +1782,17 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                     Misafiri Değiştir
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleDeleteCustomerFromDb}
-                    className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-3xs flex items-center gap-1"
-                    title="Misafiri veritabanından kalıcı olarak sil"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-                    <span>Sil</span>
-                  </button>
+                  {isHqOrAdmin && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteCustomerFromDb}
+                      className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all cursor-pointer shadow-3xs flex items-center gap-1"
+                      title="Misafiri veritabanından kalıcı olarak sil"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                      <span>Sil</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
