@@ -1134,7 +1134,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
              ═══════════════════════════════════════════════════════════ */
           <div className="w-full space-y-6 pb-10 animate-fade-scale">
             {!showDossier ? (
-              /* A) MÜŞTERİ BİLGİ GİRİŞ FORMU (TAM SAYFA) */
+              /* A) MÜŞTERİ BİLGİ GİRİŞ FORMU (TAM SAYFA ESTETİK DÜZEN) */
               <div className="w-full space-y-6">
                 {/* Page Header */}
                 <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white shadow-lg relative overflow-hidden">
@@ -1155,9 +1155,9 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                   </div>
                 </div>
 
-                {/* Form Container */}
-                <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-8 shadow-sm">
-                  <form onSubmit={handleVerifyCustomer} className="space-y-6">
+                {/* Form Container (Estetik Dengeli 2x2 Grid & Ortalı Buton) */}
+                <div className="pearl-card rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-10 shadow-sm">
+                  <form onSubmit={handleVerifyCustomer} className="space-y-8 max-w-5xl mx-auto">
                     
                     {/* 💡 Sistemde Kayıtlı Müşteri Önerileri (Canlı Arama Çipi) */}
                     {matchedCustomerSuggestions.length > 0 && (
@@ -1183,14 +1183,16 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       </div>
                     )}
 
-                    {/* Input Fields (Ad, Soyad, TC, Telefon) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {/* Input Fields (Estetik 2 Sütunlu Dengeli Grid) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                       
-                      {/* Ad */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>Müşteri Adı *</span>
+                      {/* 1. Müşteri Adı */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-extrabold text-slate-700 flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <span>Müşteri Adı <strong className="text-rose-500">*</strong></span>
                         </label>
                         <input
                           type="text"
@@ -1198,15 +1200,17 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                           placeholder="Örn: Ahmet"
                           value={customerFirstName}
                           onChange={(e) => setCustomerFirstName(formatTurkishTitleCase(e.target.value))}
-                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm sm:text-base rounded-2xl px-4 py-3.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/15 transition-all shadow-2xs placeholder:text-slate-400 font-sans"
                         />
                       </div>
 
-                      {/* Soyad */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>Müşteri Soyadı *</span>
+                      {/* 2. Müşteri Soyadı */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-extrabold text-slate-700 flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <span>Müşteri Soyadı <strong className="text-rose-500">*</strong></span>
                         </label>
                         <input
                           type="text"
@@ -1214,60 +1218,64 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                           placeholder="Örn: YILMAZ"
                           value={customerLastName}
                           onChange={(e) => setCustomerLastName(formatTurkishUpperCase(e.target.value))}
-                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs uppercase"
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-bold text-sm sm:text-base rounded-2xl px-4 py-3.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/15 transition-all shadow-2xs uppercase placeholder:text-slate-400 font-sans"
                         />
                       </div>
 
-                      {/* T.C. Kimlik Numarası */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <Layers className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>T.C. Kimlik No</span>
+                      {/* 3. T.C. Kimlik Numarası */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-extrabold text-slate-700 flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <Layers className="h-4 w-4" />
+                          </div>
+                          <span>T.C. Kimlik Numarası</span>
                         </label>
                         <input
                           type="text"
                           maxLength={11}
-                          placeholder="11 Haneli T.C. No"
+                          placeholder="11 Haneli T.C. Kimlik No"
                           value={customerTcNo}
                           onChange={(e) => setCustomerTcNo(e.target.value.replace(/\D/g, ''))}
-                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs tracking-wider"
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm sm:text-base rounded-2xl px-4 py-3.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/15 transition-all shadow-2xs tracking-widest placeholder:tracking-normal placeholder:text-slate-400"
                         />
                       </div>
 
-                      {/* Telefon Numarası (+90 Otonom Format) */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <Phone className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>Telefon Numarası *</span>
+                      {/* 4. Telefon Numarası (+90 Otonom Format) */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-extrabold text-slate-700 flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <Phone className="h-4 w-4" />
+                          </div>
+                          <span>Telefon Numarası <strong className="text-rose-500">*</strong></span>
                         </label>
                         <input
                           type="tel"
                           placeholder="+90 (5XX) XXX XX XX"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
-                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm rounded-xl px-4 py-3 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/20 transition-all shadow-3xs"
+                          className="w-full bg-slate-50 focus:bg-white text-slate-900 font-mono font-bold text-sm sm:text-base rounded-2xl px-4 py-3.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/15 transition-all shadow-2xs placeholder:text-slate-400"
                         />
                       </div>
 
                     </div>
 
-                    {/* Submit & Devam Et Button */}
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    {/* Submit & Devam Et Button (ESTETİK & ORTALI) */}
+                    <div className="pt-6 border-t border-slate-100 flex items-center justify-center">
                       <button
                         type="submit"
                         disabled={isSearchingCustomer}
-                        className="w-full sm:w-auto px-10 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm transition-all cursor-pointer shadow-lg shadow-emerald-800/30 flex items-center justify-center gap-2.5 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                        className="w-full sm:w-auto min-w-[320px] px-12 py-4 rounded-2xl bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base transition-all cursor-pointer shadow-xl shadow-emerald-800/30 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                       >
                         {isSearchingCustomer ? (
                           <>
-                            <Clock className="h-4 w-4 animate-spin" />
-                            <span>Dosya Sorgulanıyor...</span>
+                            <Clock className="h-5 w-5 animate-spin" />
+                            <span>Dosya ve Teklifler Taranıyor...</span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+                            <CheckCircle2 className="h-5 w-5 stroke-[2.5]" />
                             <span>Misafir Geçmişini & Tekliflerini Tara</span>
-                            <ArrowRight className="h-4 w-4 stroke-[2.5]" />
+                            <ArrowRight className="h-5 w-5 stroke-[2.5]" />
                           </>
                         )}
                       </button>
@@ -1280,15 +1288,15 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               /* B) 📂 MÜŞTERİ 360° DOSYASI & GEÇMİŞ TEKLİF İSTİHBARATI (BAŞLI BAŞINA TAM SAYFA) */
               <div className="w-full space-y-6">
                 
-                {/* 1. Full-Width Dossier Hero Banner */}
-                <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white border-2 border-emerald-500/30 shadow-xl relative overflow-hidden">
+                {/* 1. Full-Width Dossier Hero Banner (AYNI ZÜMRÜT YEŞİLİ GRADYAN BAR) */}
+                <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white border-2 border-emerald-500/40 shadow-xl relative overflow-hidden">
                   <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 opacity-10 pointer-events-none">
-                    <User className="h-64 w-64 text-emerald-400" />
+                    <User className="h-64 w-64 text-white" />
                   </div>
 
                   <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-800 text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-lg shrink-0 border-2 border-white/20">
+                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center font-black text-2xl sm:text-3xl shadow-lg shrink-0 border-2 border-white/30">
                         {(customerFirstName || '').charAt(0)}{(customerLastName || '').charAt(0)}
                       </div>
                       <div className="space-y-1.5">
@@ -1296,25 +1304,25 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                           <h1 className="text-2xl sm:text-3xl font-black font-display text-white tracking-tight">
                             {customerFirstName} {(customerLastName).toUpperCase()}
                           </h1>
-                          <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold tracking-wide uppercase">
+                          <span className="px-3 py-1 rounded-full bg-white/20 text-emerald-100 border border-white/30 text-xs font-extrabold tracking-wide uppercase backdrop-blur-xs">
                             ✓ Kayıtlı Misafir Dosyası
                           </span>
                         </div>
-                        <div className="text-xs sm:text-sm text-slate-300 flex items-center gap-4 sm:gap-6 flex-wrap font-mono">
+                        <div className="text-xs sm:text-sm text-emerald-100 flex items-center gap-4 sm:gap-6 flex-wrap font-mono">
                           {customerPhone && (
                             <span className="flex items-center gap-1.5">
-                              <Phone className="h-3.5 w-3.5 text-emerald-400" />
+                              <Phone className="h-3.5 w-3.5 text-emerald-300" />
                               <strong>{customerPhone}</strong>
                             </span>
                           )}
                           {customerTcNo && (
                             <span className="flex items-center gap-1.5">
-                              <Layers className="h-3.5 w-3.5 text-emerald-400" />
+                              <Layers className="h-3.5 w-3.5 text-emerald-300" />
                               TC: <strong>{customerTcNo}</strong>
                             </span>
                           )}
                           <span className="flex items-center gap-1.5">
-                            <Building2 className="h-3.5 w-3.5 text-emerald-400" />
+                            <Building2 className="h-3.5 w-3.5 text-emerald-300" />
                             Şube: <strong>{matchedCustomerProfile?.branch || currentUser?.branch || 'Genel Merkez'}</strong>
                           </span>
                         </div>
@@ -1325,9 +1333,9 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       <button
                         type="button"
                         onClick={() => setShowDossier(false)}
-                        className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-all border border-white/15 cursor-pointer flex items-center gap-2 shadow-xs"
+                        className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-all border border-white/25 cursor-pointer flex items-center gap-2 shadow-xs backdrop-blur-xs"
                       >
-                        <Edit3 className="h-3.5 w-3.5 text-emerald-400" />
+                        <Edit3 className="h-3.5 w-3.5 text-emerald-200" />
                         <span>Misafir Bilgilerini Düzenle</span>
                       </button>
                     </div>
