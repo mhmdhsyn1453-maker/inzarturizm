@@ -680,6 +680,18 @@ export default function MonthlyMatrixManager() {
     updateAllPackages(Object.values(next), `Dahili hizmet mektup/PDF görünürlüğü güncellendi.`);
   };
 
+  // 3c. Paket Kâr Marjını Güncelle ve Supabase'e Kaydet
+  const handleProfitMarginCommit = (val) => {
+    const margin = Math.max(0, Math.min(100, parseFloat(val) || 0));
+    const current = localPkg || {};
+    const updatedPkg = {
+      ...current,
+      profitMargin: margin
+    };
+    setLocalPkg(updatedPkg);
+    updatePackage(selectedPkgId, updatedPkg, `${localPkg.name} paket kâr marjı %${margin} olarak güncellendi.`);
+  };
+
   // 4. Hizmeti Sil (TÜM PAKETLERDEN KALDIRILIR)
   const handleDeleteExpense = async (expId, expName) => {
     const confirmed = await showConfirm({
@@ -800,8 +812,15 @@ export default function MonthlyMatrixManager() {
                 max="100"
                 value={localPkg.profitMargin !== undefined ? localPkg.profitMargin : 15}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setLocalPkg({ ...localPkg, profitMargin: parseFloat(e.target.value) || 0 })}
-                className="w-12 bg-transparent font-mono font-black text-center text-amber-950 focus:outline-none text-sm"
+                onChange={(e) => setLocalPkg({ ...localPkg, profitMargin: e.target.value === '' ? '' : (parseFloat(e.target.value) || 0) })}
+                onBlur={(e) => handleProfitMarginCommit(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.target.blur();
+                  }
+                }}
+                className="w-14 bg-transparent font-mono font-black text-center text-amber-950 focus:outline-none text-sm"
+                title="Paket Kâr Marjı (%) - Değiştirildiğinde otomatik kaydedilir"
               />
             </div>
           </div>

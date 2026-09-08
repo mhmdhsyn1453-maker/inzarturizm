@@ -33,6 +33,13 @@ class SyncService {
     this.hasInitializedAnnouncements = false;
     this.knownQuoteStatusMap = new Map();
     this.hasInitializedQuotes = false;
+    try {
+      const initialQuotes = this.getSavedQuotes();
+      if (Array.isArray(initialQuotes) && initialQuotes.length > 0) {
+        initialQuotes.forEach(q => this.knownQuoteStatusMap.set(q.id, q.status));
+        this.hasInitializedQuotes = true;
+      }
+    } catch (e) {}
 
     if (this.broadcastChannel) {
       this.broadcastChannel.onmessage = (event) => {
@@ -420,6 +427,9 @@ class SyncService {
           finalPriceUSD: Number(q.final_price_usd),
           finalPriceTRY: Number(q.final_price_try),
           finalPriceEUR: Number(q.final_price_eur),
+          profitMarginPercent: q.profit_margin_percent !== undefined ? Number(q.profit_margin_percent) : (q.profit_margin !== undefined ? Number(q.profit_margin) : 15),
+          packageProfitMargin: q.package_profit_margin !== undefined ? Number(q.package_profit_margin) : (q.profit_margin !== undefined ? Number(q.profit_margin) : 15),
+          applyProfitMargin: q.apply_profit_margin !== undefined ? Boolean(q.apply_profit_margin) : true,
           currency: q.currency,
           status: q.status,
           statusLabel: q.status === 'customer_approved' ? 'Müşteri Onayladı • Merkez Onayı Bekleniyor' : q.status === 'hq_approved' || q.status === 'approved' ? 'Genel Merkez Onayladı' : q.status === 'hq_rejected' ? 'Genel Merkez Reddetti' : q.status === 'approved_revised' ? 'Onaylı & Revize' : q.status === 'rejected' ? 'Müşteri Reddetti' : q.status === 'revised' ? 'Sonradan Düzenlendi' : q.status === 'expired' ? 'Süresi Doldu (7 Gün)' : 'Müşteri Kararı Bekleniyor',
@@ -428,7 +438,14 @@ class SyncService {
           customerApprovedBy: q.customer_approved_by,
           hqApprovedAt: q.hq_approved_at,
           hqApprovedBy: q.hq_approved_by,
-          hqNote: q.hq_note,
+          hqNote: (() => {
+            const raw = q.hq_note;
+            if (!raw) return '';
+            if (typeof raw === 'string' && (raw.startsWith('{"id":') || raw.includes('"sessionToken"'))) {
+              return 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+            }
+            return typeof raw === 'string' ? raw : (raw?.reason || raw?.note || 'Genel Merkez tarafından uygun görülmedi / revize istendi.');
+          })(),
           createdById: q.created_by_id,
           createdByName: q.created_by_name,
           branch: q.branch,
@@ -1059,7 +1076,24 @@ class SyncService {
   getSavedQuotes() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.QUOTES);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return parsed.map(q => {
+            let hqNote = q.hqNote || q.hq_note || '';
+            if (typeof hqNote === 'object' && hqNote !== null) {
+              hqNote = hqNote.reason || hqNote.note || '';
+            }
+            if (typeof hqNote === 'string' && (hqNote.startsWith('{"id":') || hqNote.includes('"sessionToken"'))) {
+              hqNote = 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+            }
+            return {
+              ...q,
+              hqNote
+            };
+          });
+        }
+      }
     } catch (e) {}
     return [];
   }
@@ -1170,6 +1204,9 @@ class SyncService {
         final_price_usd: quoteToSave.finalPriceUSD || 0,
         final_price_try: quoteToSave.finalPriceTRY || 0,
         final_price_eur: quoteToSave.finalPriceEUR || 0,
+        profit_margin_percent: quoteToSave.profitMarginPercent !== undefined ? quoteToSave.profitMarginPercent : (quoteToSave.packageProfitMargin || 15),
+        package_profit_margin: quoteToSave.packageProfitMargin || 15,
+        apply_profit_margin: quoteToSave.applyProfitMargin !== undefined ? quoteToSave.applyProfitMargin : true,
         currency: quoteToSave.currency || 'USD',
         status: quoteToSave.status || 'pending',
         valid_until: quoteToSave.validUntil || (quoteToSave.createdAt ? new Date(new Date(quoteToSave.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
@@ -1177,7 +1214,7 @@ class SyncService {
         customer_approved_by: quoteToSave.customerApprovedBy || null,
         hq_approved_at: quoteToSave.hqApprovedAt || null,
         hq_approved_by: quoteToSave.hqApprovedBy || null,
-        hq_note: quoteToSave.hqNote || null,
+        hq_note: (typeof quoteToSave.hqNote === 'string' && !quoteToSave.hqNote.startsWith('{"id":')) ? quoteToSave.hqNote : null,
         created_by_id: quoteToSave.createdById || null,
         created_by_name: quoteToSave.createdByName || 'Personel',
         branch: quoteToSave.branch || 'Merkez',
@@ -1305,6 +1342,21 @@ class SyncService {
     const current = this.getSavedQuotes();
     const nowISO = new Date().toISOString();
 
+    // 🛡️ Sanitize note: ensure it is always a clean string, NEVER an object or JSON user dump
+    let cleanNote = '';
+    if (typeof note === 'string') {
+      cleanNote = note.trim();
+      if (cleanNote.startsWith('{"id":') || cleanNote.includes('"sessionToken"')) {
+        cleanNote = 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+      }
+    } else if (typeof note === 'object' && note !== null) {
+      cleanNote = typeof note.reason === 'string' ? note.reason : (typeof note.note === 'string' ? note.note : '');
+    }
+
+    if (newStatus === 'hq_rejected' && !cleanNote) {
+      cleanNote = 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+    }
+
     const getStatusLabel = (s) => {
       switch(s) {
         case 'customer_approved': return 'Müşteri Onayladı • Merkez Onayı Bekleniyor';
@@ -1329,8 +1381,8 @@ class SyncService {
           customerApprovedBy: newStatus === 'customer_approved' ? (user?.name || 'Personel') : q.customerApprovedBy,
           hqApprovedAt: (newStatus === 'hq_approved' || newStatus === 'approved') ? nowISO : (newStatus === 'hq_rejected' ? nowISO : q.hqApprovedAt),
           hqApprovedBy: (newStatus === 'hq_approved' || newStatus === 'approved' || newStatus === 'hq_rejected') ? (user?.name || 'Genel Merkez') : q.hqApprovedBy,
-          hqNote: (newStatus === 'hq_approved' || newStatus === 'hq_rejected') ? (note || q.hqNote) : q.hqNote,
-          statusNote: note || q.statusNote,
+          hqNote: (newStatus === 'hq_approved' || newStatus === 'hq_rejected') ? (cleanNote || q.hqNote || '') : (q.hqNote || ''),
+          statusNote: cleanNote || q.statusNote || '',
           updatedAt: nowISO
         };
       }
@@ -1342,7 +1394,7 @@ class SyncService {
     this.addAuditLog({
       action: newStatus === 'customer_approved' ? 'QUOTE_CUSTOMER_APPROVED' : newStatus === 'hq_approved' ? 'QUOTE_HQ_APPROVED' : newStatus === 'hq_rejected' ? 'QUOTE_HQ_REJECTED' : 'QUOTE_STATUS_CHANGED',
       user: user?.name || 'Personel',
-      details: `${target?.customerName || 'Misafir'} adına teklif durumu: ${getStatusLabel(newStatus).toUpperCase()} olarak güncellendi.${note ? ` (Merkez Notu: ${note})` : ''}`,
+      details: `${target?.customerName || 'Misafir'} adına teklif durumu: ${getStatusLabel(newStatus).toUpperCase()} olarak güncellendi.${cleanNote ? ` (Merkez Notu: ${cleanNote})` : ''}`,
       timestamp: nowISO
     });
 
@@ -1384,7 +1436,7 @@ class SyncService {
       if (newStatus === 'hq_approved' || newStatus === 'approved' || newStatus === 'hq_rejected') {
         updatePayload.hq_approved_at = nowISO;
         updatePayload.hq_approved_by = user?.name || 'Genel Merkez';
-        if (note) updatePayload.hq_note = note;
+        if (cleanNote) updatePayload.hq_note = cleanNote;
       }
 
       supabase.from('quotes').update(updatePayload).eq('id', quoteId).then();

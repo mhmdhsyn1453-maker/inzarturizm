@@ -78,9 +78,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       label: 'Verilen Teklifler',
       icon: FileText,
       desc: isHqOrAdmin ? 'Merkez Onayı & Teklifler' : 'Geçmiş Teklif Listesi',
-      badgeCount: pendingHqCount > 0 ? pendingHqCount : newQuotesCount,
-      badgeColor: pendingHqCount > 0 ? 'bg-amber-600' : 'bg-emerald-600',
-      badgeText: pendingHqCount > 0 ? 'Onay Bekliyor' : `${newQuotesCount} Yeni`,
+      badgeCount: newQuotesCount,
+      badgeColor: 'bg-emerald-600',
+      badgeText: newQuotesCount === 1 ? '1 Yeni' : `${newQuotesCount} Yeni`,
       adminOnly: false
     },
     {
@@ -159,7 +159,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 </h1>
                 <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
                   <span>UTH&TP</span>
-                  <span className="text-[8.5px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">v1.0.17</span>
+                  <span className="text-[8.5px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">v1.0.18</span>
                 </p>
               </div>
             </div>

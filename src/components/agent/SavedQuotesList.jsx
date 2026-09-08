@@ -359,6 +359,21 @@ export default function SavedQuotesList({ onEditQuote }) {
     }
   };
 
+  // 🛡️ Güvenli Ret Açıklaması Yardımcısı (JSON sızıntılarını ve Obje render çökmesini önler)
+  const getSafeHqNote = (note) => {
+    if (!note) return '';
+    if (typeof note === 'string') {
+      if (note.startsWith('{"id":') || note.includes('"sessionToken"')) {
+        return 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+      }
+      return note;
+    }
+    if (typeof note === 'object') {
+      return note.reason || note.note || 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+    }
+    return String(note);
+  };
+
   // 2. AŞAMA RET: Global Tam Ekran Blur'lu Ret Modalını Açar
   const handleOpenRejectModal = async (quote, e) => {
     e?.stopPropagation();
@@ -368,8 +383,10 @@ export default function SavedQuotesList({ onEditQuote }) {
     });
 
     if (result && result.confirmed) {
-      const finalReason = result.reason?.trim() || 'Genel Merkez tarafından uygun görülmedi.';
-      updateQuoteStatus(quote.id, 'hq_rejected', currentUser, finalReason);
+      const finalReason = (typeof result.reason === 'string' && result.reason.trim())
+        ? result.reason.trim()
+        : 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
+      updateQuoteStatus(quote.id, 'hq_rejected', finalReason);
       showAlert({
         title: 'Teklif Reddedildi',
         message: `"${quote.customerName || 'Misafir'}" adına olan teklif reddedildi ve ret gerekçesi sisteme işlendi.`,
@@ -719,7 +736,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                             <span>Genel Merkez Onayladı</span>
                           </span>
                         ) : isHqRejected ? (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-rose-100 text-rose-900 border border-rose-300 shadow-3xs" title={quote.hqNote || 'Gerekçe belirtilmedi'}>
+                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-rose-100 text-rose-900 border border-rose-300 shadow-3xs" title={getSafeHqNote(quote.hqNote) || 'Gerekçe belirtilmedi'}>
                             <XCircle className="h-4 w-4 text-rose-700" />
                             <span>Merkez Reddetti</span>
                           </span>
@@ -796,11 +813,11 @@ export default function SavedQuotesList({ onEditQuote }) {
                     </div>
 
                     {/* Ret Gerekçesi Varsa Göster */}
-                    {isHqRejected && quote.hqNote && (
+                    {isHqRejected && getSafeHqNote(quote.hqNote) && (
                       <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
                         <div>
-                          <strong className="font-bold">Genel Merkez Ret Açıklaması:</strong> {quote.hqNote}
+                          <strong className="font-bold">Genel Merkez Ret Açıklaması:</strong> {getSafeHqNote(quote.hqNote)}
                         </div>
                       </div>
                     )}

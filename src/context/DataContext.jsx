@@ -265,8 +265,24 @@ export function DataProvider({ children }) {
     return updated;
   }, [currentUser]);
 
-  const updateQuoteStatus = useCallback((quoteId, newStatus, note = '') => {
-    const updated = syncService.updateQuoteStatus(quoteId, newStatus, currentUser, note);
+  const updateQuoteStatus = useCallback((quoteId, newStatus, noteOrUser = '', maybeNote = '') => {
+    let note = '';
+    let actingUser = currentUser;
+
+    if (typeof noteOrUser === 'string') {
+      note = noteOrUser;
+      if (typeof maybeNote === 'string' && maybeNote.trim()) {
+        note = maybeNote;
+      }
+    } else if (typeof noteOrUser === 'object' && noteOrUser !== null) {
+      // If user object was passed as 3rd param: updateQuoteStatus(id, status, currentUser, note)
+      actingUser = noteOrUser;
+      if (typeof maybeNote === 'string') {
+        note = maybeNote;
+      }
+    }
+
+    const updated = syncService.updateQuoteStatus(quoteId, newStatus, actingUser, note);
     setSavedQuotes(updated);
     setAuditLogs(syncService.getAuditLogs());
     return updated;

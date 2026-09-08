@@ -731,6 +731,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       currencies,
       customDiscountUSD: discountUSD,
       applyProfitMargin,
+      customProfitMargin: editingQuote ? (editingQuote.profitMarginPercent !== undefined ? editingQuote.profitMarginPercent : (editingQuote.packageProfitMargin !== undefined ? editingQuote.packageProfitMargin : null)) : null,
       paxCount,
       customerName,
       customerPhone,
