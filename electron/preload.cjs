@@ -1,4 +1,6 @@
-let appVersion = '1.0.20';
+const { contextBridge, ipcRenderer } = require('electron');
+
+let appVersion = '1.0.21';
 try {
   const pkg = require('../package.json');
   if (pkg?.version) appVersion = pkg.version;

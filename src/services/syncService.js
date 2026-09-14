@@ -750,7 +750,6 @@ class SyncService {
         const formatted = data.map(u => ({
           id: u.id,
           username: u.username || u.email?.split('@')[0],
-          password: u.password || '123',
           name: u.name,
           role: u.role,
           city: u.city,
@@ -760,8 +759,6 @@ class SyncService {
           avatarImage: u.avatar_image,
           isActive: u.is_active,
           twoFactorEnabled: Boolean(u.two_factor_enabled),
-          twoFactorSecret: u.two_factor_secret || null,
-          twoFactorBackupCodes: Array.isArray(u.two_factor_backup_codes) ? u.two_factor_backup_codes : [],
           readAnnouncements: Array.isArray(u.read_announcements) ? u.read_announcements : [],
           createdAt: u.created_at,
           lastLogin: u.last_login
@@ -881,7 +878,7 @@ class SyncService {
   async publishAppVersion(versionData, user = null) {
     const payload = {
       id: versionData.id || 'latest_release',
-      version: versionData.version || '1.0.20',
+      version: versionData.version || '1.0.21',
       release_notes: versionData.releaseNotes || versionData.release_notes || '',
       download_url: versionData.downloadUrl || versionData.download_url || '',
       is_mandatory: Boolean(versionData.isMandatory || versionData.is_mandatory),
@@ -2082,8 +2079,14 @@ class SyncService {
   }
 
   saveUsers(users) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    this.broadcast('USERS_UPDATED', users);
+    const safeUsersForStorage = (users || []).map(u => {
+      const copy = { ...u };
+      delete copy.twoFactorSecret;
+      delete copy.twoFactorBackupCodes;
+      return copy;
+    });
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(safeUsersForStorage));
+    this.broadcast('USERS_UPDATED', safeUsersForStorage);
 
     if (this.isSupabaseReady) {
       users.forEach(async (u) => {
@@ -2091,7 +2094,7 @@ class SyncService {
           await supabase.from('profiles').upsert({
             id: (u.id && u.id.includes('-')) ? u.id : undefined,
             username: u.username,
-            password: u.password || '123',
+            password: u.password || 'Inzar@2026',
             name: u.name,
             role: u.role || 'STAFF',
             city: u.city || 'İstanbul',

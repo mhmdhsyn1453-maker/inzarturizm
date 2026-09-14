@@ -21,16 +21,48 @@ function sanitizeInput(str) {
   }).trim();
 }
 
-export async function hashPassword(plainText) {
+export async function hashPassword(plainText, saltHex = null) {
   if (!plainText) return '';
   try {
     const encoder = new TextEncoder();
+    const passwordBuffer = encoder.encode(String(plainText).trim());
+    
+    let salt;
+    if (saltHex) {
+      const match = saltHex.match(/.{1,2}/g) || [];
+      salt = new Uint8Array(match.map(byte => parseInt(byte, 16)));
+    } else {
+      salt = new Uint8Array(16);
+      window.crypto.getRandomValues(salt);
+    }
+    const currentSaltHex = Array.from(salt, b => b.toString(16).padStart(2, '0')).join('');
+
+    const keyMaterial = await window.crypto.subtle.importKey(
+      'raw',
+      passwordBuffer,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveBits']
+    );
+
+    const derivedBits = await window.crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      256
+    );
+
+    const hashHex = Array.from(new Uint8Array(derivedBits), b => b.toString(16).padStart(2, '0')).join('');
+    return `pbkdf2:100000:${currentSaltHex}:${hashHex}`;
+  } catch (e) {
+    const encoder = new TextEncoder();
     const data = encoder.encode(String(plainText).trim());
     const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return 'sha256:' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch (e) {
-    return String(plainText).trim();
+    return 'sha256:' + Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
   }
 }
 
@@ -39,10 +71,26 @@ export async function verifyPassword(inputPassword, storedPasswordOrHash) {
   const trimmedInput = String(inputPassword).trim();
   const trimmedStored = String(storedPasswordOrHash).trim();
 
-  if (trimmedStored.startsWith('sha256:')) {
-    const hashed = await hashPassword(trimmedInput);
-    return hashed === trimmedStored;
+  // 1. PBKDF2 Hash Format: pbkdf2:100000:saltHex:hashHex
+  if (trimmedStored.startsWith('pbkdf2:')) {
+    const parts = trimmedStored.split(':');
+    if (parts.length === 4) {
+      const saltHex = parts[2];
+      const computed = await hashPassword(trimmedInput, saltHex);
+      return computed === trimmedStored;
+    }
   }
+
+  // 2. Legacy SHA-256 Hash Format: sha256:hashHex
+  if (trimmedStored.startsWith('sha256:')) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(trimmedInput);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const computedSha = 'sha256:' + Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
+    return computedSha === trimmedStored;
+  }
+
+  // 3. Legacy Plaintext fallback
   return trimmedStored === trimmedInput;
 }
 
@@ -122,8 +170,8 @@ export function AuthProvider({ children }) {
         const isMatch = await verifyPassword(trimmedPass, u.password);
         if (isMatch) {
           user = { ...u };
-          // Auto-upgrade legacy plaintext password to secure SHA-256 hash
-          if (user.password && !user.password.startsWith('sha256:')) {
+          // Auto-upgrade legacy password to secure PBKDF2 hash
+          if (user.password && !user.password.startsWith('pbkdf2:')) {
             const secureHash = await hashPassword(trimmedPass);
             user.password = secureHash;
             const updatedUsers = users.map(item => item.id === user.id ? { ...item, password: secureHash } : item);
@@ -148,7 +196,7 @@ export function AuthProvider({ children }) {
           const isMatch = await verifyPassword(trimmedPass, data.password);
           if (isMatch) {
             let passwordToStore = data.password;
-            if (!passwordToStore || !passwordToStore.startsWith('sha256:')) {
+            if (!passwordToStore || !passwordToStore.startsWith('pbkdf2:')) {
               passwordToStore = await hashPassword(trimmedPass);
               // Update hash in Supabase profiles
               supabase.from('profiles').update({ 
@@ -321,8 +369,8 @@ export function AuthProvider({ children }) {
     const roleUpper = (newStaff.role || 'STAFF').toUpperCase();
     const cleanUsername = sanitizeInput(newStaff.username).toLowerCase();
     const email = sanitizeInput(newStaff.email || `${cleanUsername}@inzarturizm.com`).toLowerCase();
-    const rawPassword = newStaff.password ? newStaff.password.trim() : '123';
-    const finalPassword = rawPassword.startsWith('sha256:') ? rawPassword : await hashPassword(rawPassword);
+    const rawPassword = newStaff.password?.trim() ? newStaff.password.trim() : 'Inzar@' + Math.floor(100000 + Math.random() * 900000);
+    const finalPassword = (rawPassword.startsWith('pbkdf2:') || rawPassword.startsWith('sha256:')) ? rawPassword : await hashPassword(rawPassword);
 
     const created = {
       id: 'staff_' + Date.now(),
@@ -354,7 +402,7 @@ export function AuthProvider({ children }) {
 
   const updateStaff = async (staffId, updatedFields) => {
     let fieldsToApply = { ...updatedFields };
-    if (fieldsToApply.password && !fieldsToApply.password.startsWith('sha256:')) {
+    if (fieldsToApply.password && !fieldsToApply.password.startsWith('pbkdf2:')) {
       fieldsToApply.password = await hashPassword(fieldsToApply.password);
     }
 
