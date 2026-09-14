@@ -745,7 +745,9 @@ class SyncService {
   async fetchProfilesFromSupabase() {
     if (!this.isSupabaseReady) return;
     try {
-      const { data, error } = await supabase.from('profiles').select('*');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, name, role, city, branch, phone, email, avatar_image, is_active, two_factor_enabled, read_announcements, created_at, last_login');
       if (!error && data && data.length > 0) {
         const formatted = data.map(u => ({
           id: u.id,
@@ -878,7 +880,7 @@ class SyncService {
   async publishAppVersion(versionData, user = null) {
     const payload = {
       id: versionData.id || 'latest_release',
-      version: versionData.version || '1.0.21',
+      version: versionData.version || '1.0.22',
       release_notes: versionData.releaseNotes || versionData.release_notes || '',
       download_url: versionData.downloadUrl || versionData.download_url || '',
       is_mandatory: Boolean(versionData.isMandatory || versionData.is_mandatory),
@@ -2091,10 +2093,9 @@ class SyncService {
     if (this.isSupabaseReady) {
       users.forEach(async (u) => {
         try {
-          await supabase.from('profiles').upsert({
+          const profilePayload = {
             id: (u.id && u.id.includes('-')) ? u.id : undefined,
             username: u.username,
-            password: u.password || 'Inzar@2026',
             name: u.name,
             role: u.role || 'STAFF',
             city: u.city || 'İstanbul',
@@ -2104,10 +2105,18 @@ class SyncService {
             avatar_image: u.avatarImage || u.avatar || '',
             is_active: u.isActive !== false,
             two_factor_enabled: Boolean(u.twoFactorEnabled),
-            two_factor_secret: u.twoFactorSecret || null,
-            two_factor_backup_codes: Array.isArray(u.twoFactorBackupCodes) ? u.twoFactorBackupCodes : [],
             updated_at: new Date().toISOString()
-          }, { onConflict: 'username' });
+          };
+          if (u.password) {
+            profilePayload.password = u.password;
+          }
+          if (u.twoFactorSecret !== undefined) {
+            profilePayload.two_factor_secret = u.twoFactorSecret;
+          }
+          if (u.twoFactorBackupCodes !== undefined) {
+            profilePayload.two_factor_backup_codes = Array.isArray(u.twoFactorBackupCodes) ? u.twoFactorBackupCodes : [];
+          }
+          await supabase.from('profiles').upsert(profilePayload, { onConflict: 'username' });
         } catch (err) {
           console.error('Supabase profile save error:', err);
         }

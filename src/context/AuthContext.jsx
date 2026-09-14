@@ -369,7 +369,13 @@ export function AuthProvider({ children }) {
     const roleUpper = (newStaff.role || 'STAFF').toUpperCase();
     const cleanUsername = sanitizeInput(newStaff.username).toLowerCase();
     const email = sanitizeInput(newStaff.email || `${cleanUsername}@inzarturizm.com`).toLowerCase();
-    const rawPassword = newStaff.password?.trim() ? newStaff.password.trim() : 'Inzar@' + Math.floor(100000 + Math.random() * 900000);
+    let rawPassword = newStaff.password?.trim();
+    if (!rawPassword) {
+      const randBytes = new Uint8Array(4);
+      window.crypto.getRandomValues(randBytes);
+      const randNum = ((randBytes[0] << 24) | (randBytes[1] << 16) | (randBytes[2] << 8) | randBytes[3]) >>> 0;
+      rawPassword = `Inzar@${(randNum % 900000) + 100000}!`;
+    }
     const finalPassword = (rawPassword.startsWith('pbkdf2:') || rawPassword.startsWith('sha256:')) ? rawPassword : await hashPassword(rawPassword);
 
     const created = {
@@ -499,6 +505,98 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const changePassword = async (oldPassword, newPassword) => {
+    if (!currentUser?.id && !currentUser?.username) {
+      return { success: false, message: 'Oturum bilgisi bulunamadı!' };
+    }
+    const cleanOld = String(oldPassword || '').trim();
+    const cleanNew = String(newPassword || '').trim();
+
+    if (!cleanOld) {
+      return { success: false, message: 'Mevcut (eski) şifrenizi giriniz.' };
+    }
+    if (!cleanNew || cleanNew.length < 6) {
+      return { success: false, message: 'Yeni şifreniz en az 6 karakter olmalıdır.' };
+    }
+
+    // 1. Fetch current user's stored password from Supabase
+    let storedPass = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let query = supabase.from('profiles').select('id, password');
+        if (currentUser.id && currentUser.id.includes('-')) {
+          query = query.eq('id', currentUser.id);
+        } else {
+          query = query.eq('username', currentUser.username);
+        }
+        const { data, error } = await query.maybeSingle();
+        if (!error && data?.password) {
+          storedPass = data.password;
+        }
+      } catch (e) {}
+    }
+
+    // Fallback: check in-memory or DEFAULT_USERS
+    if (!storedPass) {
+      const found = users.find(u => (currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username)) ||
+                    DEFAULT_USERS.find(u => (currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username));
+      storedPass = found?.password;
+    }
+
+    if (!storedPass) {
+      return { success: false, message: 'Kullanıcı hesabı doğrulanamadı.' };
+    }
+
+    // 2. Verify old password using verifyPassword (handles pbkdf2, sha256, and plaintext)
+    const isMatch = await verifyPassword(cleanOld, storedPass);
+    if (!isMatch) {
+      return { success: false, message: 'Girdiğiniz mevcut (eski) şifre doğru değil.' };
+    }
+
+    // 3. Hash new password with PBKDF2 (100,000 rounds + 16-byte random salt)
+    const newPbkdf2Hash = await hashPassword(cleanNew);
+
+    // 4. Update in Supabase profiles
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let updateQuery = supabase.from('profiles').update({
+          password: newPbkdf2Hash,
+          updated_at: new Date().toISOString()
+        });
+        if (currentUser.id && currentUser.id.includes('-')) {
+          updateQuery = updateQuery.eq('id', currentUser.id);
+        } else {
+          updateQuery = updateQuery.eq('username', currentUser.username);
+        }
+        const { error: upErr } = await updateQuery;
+        if (upErr) {
+          console.error('Supabase password change error:', upErr);
+          return { success: false, message: 'Veritabanı güncelleme hatası: ' + upErr.message };
+        }
+      } catch (err) {
+        return { success: false, message: 'Bağlantı hatası oluştu.' };
+      }
+    }
+
+    // 5. Update local users list if present
+    const updatedUsers = users.map(u => {
+      if ((currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username)) {
+        return { ...u, password: newPbkdf2Hash };
+      }
+      return u;
+    });
+    setUsers(updatedUsers);
+
+    syncService.addAuditLog({
+      action: 'USER_UPDATED',
+      user: currentUser.name || currentUser.username,
+      details: `${currentUser.name || currentUser.username} hesap şifresini başarıyla değiştirdi.`,
+      timestamp: new Date().toISOString()
+    });
+
+    return { success: true, message: 'Şifreniz başarıyla güncellendi.' };
+  };
+
   const isAdmin = currentUser?.role?.toUpperCase() === 'ADMIN';
 
   return (
@@ -509,6 +607,7 @@ export function AuthProvider({ children }) {
       login,
       verify2FAAndLogin,
       logout,
+      changePassword,
       addStaff,
       updateStaff,
       deleteStaff,

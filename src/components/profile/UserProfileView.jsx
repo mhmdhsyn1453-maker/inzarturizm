@@ -44,7 +44,7 @@ import { soundService } from '../../services/soundService';
 import { notificationService } from '../../services/notificationService';
 
 export default function UserProfileView() {
-  const { currentUser, updateStaff, isAdmin, users } = useAuth();
+  const { currentUser, updateStaff, isAdmin, users, changePassword } = useAuth();
   const { savedQuotes } = useData();
   const { showAlert } = useModal();
   const fileInputRef = useRef(null);
@@ -225,7 +225,7 @@ export default function UserProfileView() {
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.username.trim()) {
       showAlert({ title: 'Eksik Bilgi', message: 'Ad Soyad ve Kullanıcı Adı boş bırakılamaz.', type: 'error' });
@@ -244,16 +244,8 @@ export default function UserProfileView() {
 
     // Password change validation
     if (oldPassword || newPassword || confirmPassword) {
-      const activeUserRecord = users?.find(u => (currentUser?.id && u.id === currentUser.id) || (currentUser?.username && u.username.toLowerCase() === currentUser.username.toLowerCase()));
-      const currentStoredPass = String(activeUserRecord?.password || currentUser?.password || '').trim();
-
       if (!oldPassword) {
         showAlert({ title: 'Mevcut Şifre Gerekli', message: 'Şifrenizi değiştirmek için lütfen mevcut (eski) şifrenizi giriniz.', type: 'error' });
-        return;
-      }
-
-      if (oldPassword.trim() !== currentStoredPass) {
-        showAlert({ title: 'Hatalı Mevcut Şifre', message: 'Girdiğiniz mevcut (eski) şifre doğru değil.', type: 'error' });
         return;
       }
 
@@ -267,7 +259,11 @@ export default function UserProfileView() {
         return;
       }
 
-      payload.password = newPassword.trim();
+      const passResult = await changePassword(oldPassword, newPassword);
+      if (!passResult.success) {
+        showAlert({ title: 'Hatalı Mevcut Şifre', message: passResult.message, type: 'error' });
+        return;
+      }
     }
 
     updateStaff(currentUser.id, payload);
