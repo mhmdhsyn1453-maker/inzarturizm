@@ -209,10 +209,12 @@ export default function Topbar({ setActiveTab }) {
                         <p className="text-xs text-slate-300 leading-snug line-clamp-2">
                           {n.message}
                         </p>
-                        <div className="pt-0.5 flex items-center text-[10px] font-semibold text-emerald-400">
-                          <span>Görüntülemek için tıkla</span>
-                          <ExternalLink className="h-2.5 w-2.5 ml-1" />
-                        </div>
+                        {(n.type === 'quote' || n.type === 'announcement') && (
+                          <div className="pt-0.5 flex items-center text-[10px] font-semibold text-emerald-400">
+                            <span>Görüntülemek için tıkla</span>
+                            <ExternalLink className="h-2.5 w-2.5 ml-1" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))

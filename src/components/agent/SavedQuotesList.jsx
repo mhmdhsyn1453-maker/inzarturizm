@@ -1038,6 +1038,11 @@ export default function SavedQuotesList({ onEditQuote }) {
                               });
                               if (confirmed) {
                                 deleteQuote(quote.id);
+                                showAlert({
+                                  title: 'Teklif Silindi',
+                                  message: `"${quote.customerName || 'Misafir'}" adına olan teklif kalıcı olarak silindi.`,
+                                  type: 'info'
+                                });
                               }
                             }}
                             className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"

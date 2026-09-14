@@ -378,15 +378,38 @@ export default function LoginScreen() {
   const [scannedUser, setScannedUser] = useState(null);
   const [pendingCredentials, setPendingCredentials] = useState(null);
 
-  // Rate-limiting / Brute-force protection
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [lockoutTimer, setLockoutTimer] = useState(0);
+  // Rate-limiting / Brute-force protection with sessionStorage persistence
+  const [failedAttempts, setFailedAttempts] = useState(() => {
+    try {
+      return parseInt(sessionStorage.getItem('inzar_login_failed_attempts') || '0', 10);
+    } catch (e) {
+      return 0;
+    }
+  });
+  const [lockoutTimer, setLockoutTimer] = useState(() => {
+    try {
+      const lockUntil = parseInt(sessionStorage.getItem('inzar_login_lockout_until') || '0', 10);
+      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
+      return remaining > 0 ? remaining : 0;
+    } catch (e) {
+      return 0;
+    }
+  });
 
   useEffect(() => {
     let timer;
     if (lockoutTimer > 0) {
       timer = setInterval(() => {
-        setLockoutTimer(prev => prev - 1);
+        setLockoutTimer(prev => {
+          if (prev <= 1) {
+            try {
+              sessionStorage.removeItem('inzar_login_lockout_until');
+              sessionStorage.removeItem('inzar_login_failed_attempts');
+            } catch (e) {}
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
     }
     return () => clearInterval(timer);
@@ -464,20 +487,35 @@ export default function LoginScreen() {
       if (!result.success) {
         const newFailed = failedAttempts + 1;
         setFailedAttempts(newFailed);
+        try {
+          sessionStorage.setItem('inzar_login_failed_attempts', String(newFailed));
+        } catch (e) {}
+
         if (newFailed >= 5) {
           setLockoutTimer(30);
+          try {
+            sessionStorage.setItem('inzar_login_lockout_until', String(Date.now() + 30000));
+          } catch (e) {}
           triggerError('Çok sayıda hatalı deneme! 30sn kilitlendi.');
         } else {
           triggerError(result.message);
         }
       } else if (result.requires2FA) {
         setFailedAttempts(0);
+        try {
+          sessionStorage.removeItem('inzar_login_failed_attempts');
+          sessionStorage.removeItem('inzar_login_lockout_until');
+        } catch (e) {}
         setTwoFactorUser(result.tempUser);
         setIs2FAPrompt(true);
         setTwoFactorCode('');
         setIsBackupMode(false);
       } else {
         setFailedAttempts(0);
+        try {
+          sessionStorage.removeItem('inzar_login_failed_attempts');
+          sessionStorage.removeItem('inzar_login_lockout_until');
+        } catch (e) {}
         startBiometricVerification(result.user, cleanUser, cleanPass, false);
       }
     } catch (err) {

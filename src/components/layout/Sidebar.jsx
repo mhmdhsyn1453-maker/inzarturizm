@@ -126,17 +126,17 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   return (
     <aside 
       className={`sidebar-gpu sticky top-0 h-screen bg-white/95 dark:bg-slate-900/95 border-r border-slate-200/90 dark:border-slate-800 z-30 select-none overflow-hidden ${
-        collapsed ? 'w-[74px]' : 'w-72'
+        collapsed ? 'w-[70px]' : 'w-60'
       }`}
     >
       {/* Fixed-Width Inner Container (Eliminates all layout reflows for 120 FPS performance) */}
-      <div className="w-72 h-full flex flex-col justify-between">
+      <div className="w-60 h-full flex flex-col justify-between">
         
         {/* Top Header / Logo Section */}
         <div>
-          <div className="p-3.5 border-b border-slate-100/90 dark:border-slate-800 flex items-center justify-between">
+          <div className="px-3 py-3 border-b border-slate-100/90 dark:border-slate-800 flex items-center justify-between">
             {/* Logo Container */}
-            <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex items-center gap-2.5 overflow-hidden">
               <div 
                 onClick={() => setCollapsed(!collapsed)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 p-1.5 shadow-sm border border-slate-200/90 dark:border-slate-700 transform hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
@@ -180,7 +180,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="p-3 space-y-1.5 overflow-y-auto max-h-[calc(100vh-170px)]">
+          <nav className="px-2.5 py-2 space-y-1 overflow-y-auto max-h-[calc(100vh-170px)]">
             {menuItems.map(item => {
               if (item.adminOnly && !isAdmin) return null;
               if (item.hqOnly && !isHqOrAdmin) return null;
@@ -193,7 +193,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   type="button"
                   onClick={() => handleTabClick(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`sidebar-item-fluid relative w-full flex items-center rounded-2xl p-2.5 text-left font-medium group cursor-pointer overflow-hidden ${
+                  className={`sidebar-item-fluid relative w-full flex items-center rounded-2xl p-2 text-left font-medium group cursor-pointer overflow-hidden ${
                     isActive
                       ? 'bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100 font-bold border border-emerald-300/80 dark:border-emerald-600/50 shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-slate-100 border border-transparent'
@@ -204,7 +204,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                     <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-emerald-600 dark:bg-emerald-500" />
                   )}
 
-                  <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
+                  <div className={`relative flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
                     isActive 
                       ? 'bg-gradient-to-tr from-emerald-600 to-emerald-500 text-white shadow-md shadow-emerald-700/30 scale-105' 
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200/80 dark:group-hover:bg-slate-700 group-hover:text-slate-800 dark:group-hover:text-slate-200 group-hover:scale-105'
@@ -218,7 +218,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   </div>
 
                   <div 
-                    className={`sidebar-text-gpu whitespace-nowrap overflow-hidden flex-1 ml-3.5 ${
+                    className={`sidebar-text-gpu whitespace-nowrap overflow-hidden flex-1 ml-2.5 ${
                       collapsed ? 'opacity-0 -translate-x-3 pointer-events-none' : 'opacity-100 translate-x-0'
                     }`}
                   >
@@ -241,7 +241,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         </div>
 
         {/* Bottom Date & Profile & Logout Box */}
-        <div className="p-3 border-t border-slate-100/90 dark:border-slate-800 space-y-2">
+        <div className="p-2.5 border-t border-slate-100/90 dark:border-slate-800 space-y-1.5">
           {/* Subtle Date */}
           <div className={`px-2 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium sidebar-text-gpu whitespace-nowrap overflow-hidden flex items-center gap-1.5 ${
             collapsed ? 'opacity-0 -translate-x-3 pointer-events-none h-0' : 'opacity-100 translate-x-0'

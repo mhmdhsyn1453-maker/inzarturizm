@@ -22,6 +22,7 @@ import {
   Check, 
   Info,
   Layers,
+  Award,
   User,
   Phone,
   MessageSquare,
@@ -347,21 +348,41 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
 
   const handleResetDraft = () => {
     localStorage.removeItem('inzar_wizard_draft_v2');
-    setSelectedPkgId('');
-    setSelectedMonth('');
-    setMakkahDays(0);
-    setMakkahOccupancy(0);
-    setMadinahDays(0);
-    setMadinahOccupancy(0);
-    setPaxCount(0);
+    setSelectedPkgId(packages[0]?.id || 'standart');
+    setSelectedMonth(months?.[0]?.id || 'jan');
+    setStartDate(defaultStartDate);
+    setEndDate(defaultEndDate);
+    setRouteOrder('makkah_first');
+    setMakkahDays(7);
+    setMakkahOccupancy(2);
+    setMadinahDays(4);
+    setMadinahOccupancy(2);
+    setSelectedMakkahHotelId(null);
+    setSelectedMadinahHotelId(null);
+    setIncludeMakkahMeals(true);
+    setIncludeMadinahMeals(true);
+    setPaxCount(2);
     setDiscountUSD(0);
     setApplyProfitMargin(true);
+    setIsMixedRoomMode(false);
+    setMixedRooms({ single: 0, double: 1, triple: 0, quad: 0 });
     setTransfersSelection({
-      jedMek: { vehicleType: 'none', passengerCount: 0 },
-      mekMed: { vehicleType: 'none', passengerCount: 0 },
-      medAir: { vehicleType: 'none', passengerCount: 0 },
+      jedMek: { vehicleType: 'small', passengerCount: 2 },
+      mekMed: { vehicleType: 'small', passengerCount: 2 },
+      medAir: { vehicleType: 'small', passengerCount: 2 },
     });
-    setFixedExpensesIncluded({});
+    setFixedExpensesIncluded({
+      flightTicketSAR: true,
+      visaTaxSAR: true,
+      insuranceSAR: true,
+      bagSAR: true,
+      scarfSAR: true,
+      guideSAR: true,
+      commissionSAR: false,
+      bonusSAR: false,
+      zamzamSAR: true,
+      branchExpenseSAR: false,
+    });
     setCustomerFirstName('');
     setCustomerLastName('');
     setCustomerTcNo('');
@@ -1099,44 +1120,47 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
     }
   };
 
-  // 🧹 Yalnızca Seçimleri Temizle (Misafir Bilgileri Korunur)
-  const handleClearSelections = async () => {
-    const confirmed = await showConfirm({
-      title: 'Seçimleri Temizle',
-      message: 'Formdaki paket, otel günleri, oda dağılımı, transfer ve gider seçimleri sıfırlanacaktır. Misafir bilgileri korunacaktır. Onaylıyor musunuz?',
-      confirmText: 'Evet, Seçimleri Temizle',
-      cancelText: 'Vazgeç',
-      type: 'warning',
-      confirmVariant: 'amber',
-      onConfirm: () => {
-        doClearSelections();
-      }
-    });
-    if (confirmed) {
-      doClearSelections();
-    }
-  };
 
   const doClearSelections = () => {
     localStorage.removeItem('inzar_wizard_draft_v2');
-    setSelectedPkgId('');
-    setSelectedMonth('');
-    setMakkahDays(0);
-    setMakkahOccupancy(0);
-    setMadinahDays(0);
-    setMadinahOccupancy(0);
-    setPaxCount(0);
+    setSelectedPkgId(packages[0]?.id || 'standart');
+    setSelectedMonth(months?.[0]?.id || 'jan');
+    setStartDate(defaultStartDate);
+    setEndDate(defaultEndDate);
+    setRouteOrder('makkah_first');
+    setMakkahDays(7);
+    setMakkahOccupancy(2);
+    setMadinahDays(4);
+    setMadinahOccupancy(2);
+    setSelectedMakkahHotelId(null);
+    setSelectedMadinahHotelId(null);
+    setIncludeMakkahMeals(true);
+    setIncludeMadinahMeals(true);
+    setPaxCount(2);
     setDiscountUSD(0);
     setApplyProfitMargin(true);
     setIsMixedRoomMode(false);
-    setMixedRooms({ single: 0, double: 0, triple: 0, quad: 0 });
+    setMixedRooms({ single: 0, double: 1, triple: 0, quad: 0 });
     setTransfersSelection({
-      jedMek: { vehicleType: 'none', passengerCount: 0 },
-      mekMed: { vehicleType: 'none', passengerCount: 0 },
-      medAir: { vehicleType: 'none', passengerCount: 0 },
+      jedMek: { vehicleType: 'small', passengerCount: 2 },
+      mekMed: { vehicleType: 'small', passengerCount: 2 },
+      medAir: { vehicleType: 'small', passengerCount: 2 },
     });
-    setFixedExpensesIncluded({});
+    setFixedExpensesIncluded({
+      flightTicketSAR: true,
+      visaTaxSAR: true,
+      insuranceSAR: true,
+      bagSAR: true,
+      scarfSAR: true,
+      guideSAR: true,
+      commissionSAR: false,
+      bonusSAR: false,
+      zamzamSAR: true,
+      branchExpenseSAR: false,
+    });
     setNotes('');
+    setIsSaved(false);
+    setSavedQuoteId(null);
   };
 
   return (
@@ -1190,18 +1214,6 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
             <span>Formu Sıfırla</span>
           </button>
 
-          {/* 🧹 SEÇİMLERİ TEMİZLE BUTONU (Müşteri içerideyken ve sadece Form modunda görünür, mektuba geçince kalkar) */}
-          {isCustomerVerified && viewMode === 'form' && (
-            <button
-              type="button"
-              onClick={handleClearSelections}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-white text-xs font-black transition-all cursor-pointer shadow-xs shadow-amber-500/30 hover:shadow-md hover:shadow-amber-500/40 animate-scale-in"
-              title="Misafir bilgilerini koruyarak sadece formdaki seçimleri temizle"
-            >
-              <Eraser className="h-3.5 w-3.5 stroke-[2.5]" />
-              <span>Seçimleri Temizle</span>
-            </button>
-          )}
 
           {/* Sliding Pill Switcher (Yalnızca Müşteri Doğrulandıktan Sonra CSS Animasyonuyla Belirir) */}
           {isCustomerVerified && (
@@ -1813,43 +1825,46 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               </div>
 
         {/* Step 1: Seyahat Tarihleri, Kalış Süresi & Rota Sıralaması */}
-        <div id="step-1" className={`pearl-card rounded-2xl p-5 sm:p-6 space-y-5 shadow-2xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
-          !startDate || !endDate ? 'border-amber-300 dark:border-amber-700 ring-2 ring-amber-400/20' : 'border-slate-200/90 dark:border-slate-800'
+        <div id="step-1" className={`pearl-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
+          !startDate || !endDate ? 'border-amber-300/80 dark:border-amber-700/80 ring-2 ring-amber-400/15' : 'border-slate-200/80 dark:border-slate-800'
         }`}>
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
+          {/* Header */}
+          <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
             <div className="flex items-center gap-2.5">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
+              <div className="h-6 w-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-black text-xs">
+                1
+              </div>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
                 <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Seyahat Tarihleri & Rota Sıralaması</span>
+                <span>Seyahat Tarihleri & Rota Dağılımı</span>
               </h3>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div>
               {startDate && endDate ? (
-                <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-100/90 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 animate-scale-in">
-                  <Check className="h-3 w-3 stroke-[3]" />
+                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/80 inline-flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                   <span>
                     {calculateNights(startDate, routeSchedule?.calculatedEndDate || endDate) > 0
-                      ? `${calculateNights(startDate, routeSchedule?.calculatedEndDate || endDate) + 1} Gün ${calculateNights(startDate, routeSchedule?.calculatedEndDate || endDate)} Gece Belirlendi`
+                      ? `${calculateNights(startDate, routeSchedule?.calculatedEndDate || endDate) + 1} Gün • ${calculateNights(startDate, routeSchedule?.calculatedEndDate || endDate)} Gece`
                       : 'Tarih Belirlendi'}
                   </span>
                 </span>
               ) : (
-                <span className="text-[11px] text-rose-700 dark:text-rose-400 font-black bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800 animate-pulse">
+                <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-900/60">
                   * Tarih Seçimi Zorunlu
                 </span>
               )}
             </div>
           </div>
 
-          {/* Tarih Aralığı ve Rota Sıralaması Kontrolleri */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            
-            {/* Sol 6 Kolon: Tarih Aralığı Seçici */}
-            <div className="md:col-span-6 space-y-1.5">
+          {/* Tarih Seçimi & Rota Sıralaması (Üst Satır 2 Kolon) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            {/* 1. Tarih Aralığı */}
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Giriş & Çıkış Tarihleri (Seyahat Aralığı) *</span>
+                <span>Giriş & Çıkış Tarihi (Seyahat Aralığı)</span>
               </label>
               <CustomDateRangePicker
                 startDate={startDate}
@@ -1874,314 +1889,268 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               />
             </div>
 
-            {/* Sağ 6 Kolon: Rota Sıralaması (Önce Mekke / Önce Medine) */}
-            <div className="md:col-span-6 space-y-2">
+            {/* 2. Rota Sıralaması (Sade ve Şık Segmented Switch) */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Navigation className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Seyahat Rotası Sıralaması *</span>
+                  <span>Rota Sıralaması</span>
                 </label>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic">
-                  Seçilen şehir 1. sıraya geçer
-                </span>
+                <span className="text-[10px] text-slate-400 font-medium">İlk varış şehri</span>
               </div>
 
-              {/* Akıcı Yer Değiştiren Buton Grubu */}
-              <div className="grid grid-cols-2 gap-2 relative">
-                {/* Önce Mekke Butonu */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 gap-1 h-[46px] items-center">
                 <button
-                  key={`${routeOrder}-makkah`}
                   type="button"
                   onClick={() => setRouteOrder('makkah_first')}
-                  className={`p-2.5 rounded-2xl border text-left cursor-pointer transition-all duration-300 select-none relative overflow-hidden flex flex-col justify-between h-[68px] ${
+                  className={`h-full px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
                     routeOrder === 'makkah_first'
-                      ? 'order-1 border-emerald-600 dark:border-emerald-500 bg-gradient-to-br from-emerald-50 via-teal-50/70 to-emerald-50/90 dark:from-emerald-950/60 dark:via-teal-950/40 dark:to-slate-900 text-emerald-950 dark:text-emerald-200 ring-2 ring-emerald-600/30 shadow-xs font-black animate-swap-front'
-                      : 'order-2 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-emerald-300 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 opacity-75 hover:opacity-100 animate-swap-back'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-950 dark:text-emerald-200 shadow-xs border border-emerald-600/20 font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full gap-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain shrink-0 dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
-                      <span className="text-xs font-bold truncate">Önce Mekke</span>
-                    </div>
-                    {routeOrder === 'makkah_first' ? (
-                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-700 text-white text-[9px] font-black uppercase tracking-wider shrink-0 shadow-3xs">
-                        1. Durak
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[9px] font-bold shrink-0">
-                        2. Durak
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between w-full pt-1 border-t border-slate-200/50 dark:border-slate-700/50 text-[10px]">
-                    <span className="text-slate-400 dark:text-slate-500 font-semibold truncate">Mekke ➔ Medine</span>
-                    {routeOrder === 'makkah_first' && (
-                      <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3] shrink-0" />
-                    )}
-                  </div>
+                  <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain dark:brightness-0 dark:invert shrink-0" />
+                  <span className="truncate">1. Mekke ➔ 2. Medine</span>
                 </button>
 
-                {/* Önce Medine Butonu */}
                 <button
-                  key={`${routeOrder}-madinah`}
                   type="button"
                   onClick={() => setRouteOrder('madinah_first')}
-                  className={`p-2.5 rounded-2xl border text-left cursor-pointer transition-all duration-300 select-none relative overflow-hidden flex flex-col justify-between h-[68px] ${
+                  className={`h-full px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer select-none ${
                     routeOrder === 'madinah_first'
-                      ? 'order-1 border-amber-600 dark:border-amber-500 bg-gradient-to-br from-amber-50 via-yellow-50/70 to-amber-50/90 dark:from-amber-950/60 dark:via-amber-900/40 dark:to-slate-900 text-amber-950 dark:text-amber-200 ring-2 ring-amber-600/30 shadow-xs font-black animate-swap-front'
-                      : 'order-2 border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-amber-300 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 opacity-75 hover:opacity-100 animate-swap-back'
+                      ? 'bg-white dark:bg-slate-700 text-amber-950 dark:text-amber-200 shadow-xs border border-amber-600/20 font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full gap-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain shrink-0 dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
-                      <span className="text-xs font-bold truncate">Önce Medine</span>
-                    </div>
-                    {routeOrder === 'madinah_first' ? (
-                      <span className="px-1.5 py-0.5 rounded-md bg-amber-700 text-white text-[9px] font-black uppercase tracking-wider shrink-0 shadow-3xs">
-                        1. Durak
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[9px] font-bold shrink-0">
-                        2. Durak
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between w-full pt-1 border-t border-slate-200/50 dark:border-slate-700/50 text-[10px]">
-                    <span className="text-slate-400 dark:text-slate-500 font-semibold truncate">Medine ➔ Mekke</span>
-                    {routeOrder === 'madinah_first' && (
-                      <Check className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 stroke-[3] shrink-0" />
-                    )}
-                  </div>
+                  <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain dark:brightness-0 dark:invert shrink-0" />
+                  <span className="truncate">1. Medine ➔ 2. Mekke</span>
                 </button>
               </div>
             </div>
-
           </div>
 
-          {/* Mekke & Medine Kalış Süresi Ayar Kartları (Seçilen Rotaya Göre Öncelikli Sıralanır) */}
-          <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+          {/* Şehir Gece Kalış Dağılımı (Sade & Zarif 2 Sütunlu Kartlar) */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Bed className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Şehirlerde Gece Kalış Süreleri Dağılımı *</span>
+                <span>Şehirlerde Konaklama Dağılımı</span>
               </label>
-              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                Toplam {Number(makkahDays) + Number(madinahDays)} Gece
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                Toplam Konaklama: <strong className="font-mono text-emerald-700 dark:text-emerald-400">{Number(makkahDays) + Number(madinahDays)} Gece</strong>
               </span>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-3 transition-all duration-500 ease-out">
-              {/* Mekke Kalış Kartı */}
-              <div className={`flex-1 flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-300/90 dark:border-emerald-700 bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-slate-900 shadow-xs hover:border-emerald-500 transition-all ${
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Mekke Konaklama Kartı */}
+              <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                 routeOrder === 'makkah_first' ? 'order-1' : 'order-2'
+              } ${
+                makkahDays > 0 
+                  ? 'bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700' 
+                  : 'bg-white dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800 opacity-60'
               }`}>
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain opacity-80 shrink-0 dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
-                    <h4 className="text-xs sm:text-sm font-black text-emerald-950 dark:text-emerald-200 font-display flex items-center gap-1.5">
-                      <span>Mekke Kalış Süresi</span>
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0">
+                    <img src={mekkeIcon} alt="Mekke" className="h-5 w-5 object-contain dark:brightness-0 dark:invert opacity-90" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">Mekke-i Mükerreme</h4>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 shrink-0">
                         {routeOrder === 'makkah_first' ? '1. Durak' : '2. Durak'}
                       </span>
-                    </h4>
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-6">
-                    {makkahDays === 0 ? 'Konaklama Yok' : `${makkahDays} Gece Mekke Oteli`}
+                    </div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                      {makkahDays === 0 ? 'Konaklama Yok' : `${makkahDays} Gece Otel`}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-3xs">
+                {/* Sade Stepper */}
+                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 shadow-3xs">
                   <button
                     type="button"
                     onClick={() => setMakkahDays(Math.max(0, makkahDays - 1))}
-                    className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill"
+                    className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center cursor-pointer active:scale-95 transition-all"
                     title="1 Gece Azalt"
                   >
-                    <Minus className="h-3.5 w-3.5 stroke-[3]" />
+                    <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <div className="min-w-[34px] text-center">
-                    <span className="font-mono font-black text-base text-emerald-950 dark:text-emerald-200 block leading-none">
+                  <div className="min-w-[36px] text-center">
+                    <span className="font-mono font-black text-sm text-slate-900 dark:text-white block leading-none">
                       {makkahDays}
                     </span>
-                    <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Gece</span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Gece</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setMakkahDays(Math.min(30, makkahDays + 1))}
-                    className="h-7 w-7 rounded-lg bg-emerald-700 hover:bg-emerald-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs shadow-emerald-800/30"
+                    className="h-7 w-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 transition-all shadow-xs shadow-emerald-700/20"
                     title="1 Gece Artır"
                   >
-                    <Plus className="h-3.5 w-3.5 stroke-[3]" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
 
-              {/* Medine Kalış Kartı */}
-              <div className={`flex-1 flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border-2 border-amber-300/90 dark:border-amber-700 bg-gradient-to-br from-amber-50 via-orange-50/50 to-white dark:from-amber-950/40 dark:via-orange-950/20 dark:to-slate-900 shadow-xs hover:border-amber-500 transition-all ${
+              {/* Medine Konaklama Kartı */}
+              <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                 routeOrder === 'madinah_first' ? 'order-1' : 'order-2'
+              } ${
+                madinahDays > 0 
+                  ? 'bg-slate-50/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700' 
+                  : 'bg-white dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800 opacity-60'
               }`}>
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain opacity-80 shrink-0 dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
-                    <h4 className="text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200 font-display flex items-center gap-1.5">
-                      <span>Medine Kalış Süresi</span>
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0">
+                    <img src={medineIcon} alt="Medine" className="h-5 w-5 object-contain dark:brightness-0 dark:invert opacity-90" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">Medine-i Münevvere</h4>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
                         {routeOrder === 'madinah_first' ? '1. Durak' : '2. Durak'}
                       </span>
-                    </h4>
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-6">
-                    {madinahDays === 0 ? 'Konaklama Yok' : `${madinahDays} Gece Medine Oteli`}
+                    </div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                      {madinahDays === 0 ? 'Konaklama Yok' : `${madinahDays} Gece Otel`}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-amber-200 dark:border-amber-700 shadow-3xs">
+                {/* Sade Stepper */}
+                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 shadow-3xs">
                   <button
                     type="button"
                     onClick={() => setMadinahDays(Math.max(0, madinahDays - 1))}
-                    className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill"
+                    className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center cursor-pointer active:scale-95 transition-all"
                     title="1 Gece Azalt"
                   >
-                    <Minus className="h-3.5 w-3.5 stroke-[3]" />
+                    <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <div className="min-w-[34px] text-center">
-                    <span className="font-mono font-black text-base text-amber-950 dark:text-amber-200 block leading-none">
+                  <div className="min-w-[36px] text-center">
+                    <span className="font-mono font-black text-sm text-slate-900 dark:text-white block leading-none">
                       {madinahDays}
                     </span>
-                    <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Gece</span>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Gece</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setMadinahDays(Math.min(30, madinahDays + 1))}
-                    className="h-7 w-7 rounded-lg bg-amber-700 hover:bg-amber-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs shadow-amber-800/30"
+                    className="h-7 w-7 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 transition-all shadow-xs shadow-amber-700/20"
                     title="1 Gece Artır"
                   >
-                    <Plus className="h-3.5 w-3.5 stroke-[3]" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Otonom Hesaplanmış Program Akış Özeti - Taşmayan & Responsive Şık Şerit */}
+          {/* Otonom Program Akışı Zaman Çizelgesi (Zarif Minimalist Şerit) */}
           {routeSchedule && (
-            <div className="p-3 bg-gradient-to-r from-slate-50 via-emerald-50/40 to-slate-50 dark:from-slate-800/80 dark:via-emerald-950/20 dark:to-slate-800/80 rounded-2xl border border-slate-200/90 dark:border-slate-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 text-xs select-none animate-fade-scale">
-              <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 shrink-0">
-                  <span>Program Akışı:</span>
-                </span>
-                
-                {/* 1. Durak Rozeti */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-3xs font-bold text-slate-800 dark:text-slate-200 text-[11px]">
-                  <img 
-                    src={routeSchedule.firstCity === 'Mekke' ? mekkeIcon : medineIcon} 
-                    alt={routeSchedule.firstCity} 
-                    className="h-3.5 w-3.5 object-contain shrink-0 dark:brightness-0 dark:invert dark:opacity-90 transition-all" 
-                  />
+            <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 flex-wrap text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                <span className="font-bold text-slate-900 dark:text-white">Program Akışı:</span>
+                <span className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <img src={routeSchedule.firstCity === 'Mekke' ? mekkeIcon : medineIcon} alt="" className="h-3 w-3 dark:brightness-0 dark:invert" />
                   <span>1. {routeSchedule.firstCity} ({formatDateTR(routeSchedule.firstStart)} - {formatDateTR(routeSchedule.firstEnd)} • {routeSchedule.firstDays} Gece)</span>
-                </div>
-
-                <span className="text-slate-400 dark:text-slate-500 font-black shrink-0">➔</span>
-
-                {/* 2. Durak Rozeti */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-3xs font-bold text-slate-800 dark:text-slate-200 text-[11px]">
-                  <img 
-                    src={routeSchedule.secondCity === 'Mekke' ? mekkeIcon : medineIcon} 
-                    alt={routeSchedule.secondCity} 
-                    className="h-3.5 w-3.5 object-contain shrink-0 dark:brightness-0 dark:invert dark:opacity-90 transition-all" 
-                  />
+                </span>
+                <ArrowRight className="h-3 w-3 text-slate-400 shrink-0" />
+                <span className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <img src={routeSchedule.secondCity === 'Mekke' ? mekkeIcon : medineIcon} alt="" className="h-3 w-3 dark:brightness-0 dark:invert" />
                   <span>2. {routeSchedule.secondCity} ({formatDateTR(routeSchedule.secondStart)} - {formatDateTR(routeSchedule.secondEnd)} • {routeSchedule.secondDays} Gece)</span>
-                </div>
+                </span>
               </div>
-
-              <div className="shrink-0 font-bold text-emerald-900 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 shadow-3xs flex items-center gap-1.5 self-start md:self-auto">
-                <Moon className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
-                <span>Toplam {routeSchedule.totalNights + 1} Gün • {routeSchedule.totalNights} Gece</span>
+              <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                Toplam {makkahDays + madinahDays} Gece
               </div>
             </div>
           )}
         </div>
 
-        {/* Step 2: Umre Paketi & Otel Seçimi (Veri Merkezi Formatında Paket Butonları ve Otel Seçenekleri) */}
-        <div id="step-2" className={`pearl-card rounded-2xl p-5 sm:p-6 space-y-5 shadow-2xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
-          !selectedPkgId ? 'border-amber-300 dark:border-amber-700 ring-2 ring-amber-400/20' : 'border-slate-200/90 dark:border-slate-800'
+        {/* Step 2: Umre Paketi & Otel Seçimi */}
+        <div id="step-2" className={`pearl-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
+          !selectedPkgId ? 'border-amber-300/80 dark:border-amber-700/80 ring-2 ring-amber-400/15' : 'border-slate-200/80 dark:border-slate-800'
         }`}>
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          {/* Header */}
+          <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
             <div className="flex items-center gap-2.5">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
+              <div className="h-6 w-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-black text-xs">
+                2
+              </div>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
                 <Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Umre Paketi & Otel Seçimi</span>
               </h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div>
               {selectedPkgId ? (
-                <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-100/90 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 animate-scale-in">
-                  <Check className="h-3 w-3 stroke-[3]" />
+                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/80 inline-flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                   <span>{activePackage?.name || 'Paket Seçildi'}</span>
                 </span>
               ) : (
-                <span className="text-[11px] text-rose-700 dark:text-rose-400 font-black bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800 animate-pulse">
+                <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-900/60">
                   * Seçim Zorunlu
                 </span>
               )}
             </div>
           </div>
 
-          {/* 1. Paket Seçim Butonları (Apple-Pill Full-Width Ribbon - Veri Giriş Merkezi ile Birebir Aynı) */}
+          {/* 1. Paket Seçim Segmenti (Pill / Kapsül Buton Tasarımı) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <span>Paket Tercihi *</span>
+                <Award className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Paket Sınıfı</span>
               </label>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic">
-                Paket değişince tercihleriniz korunarak anlık fiyat farkı hesaplanır
-              </span>
+              <span className="text-[11px] text-slate-400 font-medium">Tercihler korunarak anlık hesaplanır</span>
             </div>
 
-            <div className="w-full flex items-center justify-center">
-              <div className="w-full p-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-full border border-slate-200/90 dark:border-slate-700/90 shadow-sm backdrop-blur-md flex items-center gap-2 select-none">
-                {sortedPackages.map((pkg) => {
-                  const isSelected = selectedPkgId === pkg.id;
-                  return (
-                    <button
-                      key={pkg.id}
-                      type="button"
-                      onClick={() => setSelectedPkgId(pkg.id)}
-                      className={`flex-1 flex items-center justify-center py-2.5 sm:py-3 px-3 sm:px-6 rounded-full text-xs sm:text-sm font-black spring-pill transition-all cursor-pointer select-none ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md shadow-emerald-800/30 border border-emerald-600/40 scale-101 ring-2 ring-emerald-600/20'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-700/80'
-                      }`}
-                    >
-                      <span className="whitespace-nowrap truncate">{pkg.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Dış Kapsül (Pill Container) */}
+            <div className="p-1.5 bg-slate-100 dark:bg-slate-800/90 rounded-full border border-slate-200 dark:border-slate-700/80 shadow-inner grid grid-cols-3 gap-1.5 select-none relative">
+              {sortedPackages.map((pkg) => {
+                const isSelected = selectedPkgId === pkg.id;
+                return (
+                  <button
+                    key={pkg.id}
+                    type="button"
+                    onClick={() => setSelectedPkgId(pkg.id)}
+                    className={`relative py-2.5 sm:py-3 px-3 sm:px-4 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 ease-out cursor-pointer flex items-center justify-center gap-2 select-none active:scale-95 ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-700/25 pill-active-glow scale-[1.01] font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/40'
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 stroke-[3] text-emerald-100 shrink-0 animate-scale-in" />
+                    )}
+                    <span className="truncate">{pkg.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 2. Seçilen Paketin Otelleri & Ayrı Ayrı Mekke / Medine Yemek Tercihleri */}
-          <div className="space-y-4 pt-1 border-t border-slate-100 dark:border-slate-800">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* 2. Şehir Otelleri & Yemek Tercihleri (2 Dengeli Sütun - Akıcı Geçiş Animasyonlu) */}
+          <div key={selectedPkgId} className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 animate-tab-content">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* Mekke Otel(ler)i & Mekke Yemek Tercihi Bölümü */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-teal-50/20 to-white dark:from-emerald-950/40 dark:via-teal-950/20 dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-800/80 space-y-3">
+              {/* Mekke Otel Kartı */}
+              <div className="p-4 rounded-2xl bg-slate-50/60 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
-                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
-                    <span>Mekke Otel Seçimi</span>
+                  <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain dark:brightness-0 dark:invert transition-all" />
+                    <span>Mekke Oteli</span>
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-700">
+                  <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60">
                     Mekke-i Mükerreme
                   </span>
                 </div>
 
-                {/* Mekke Otel Alternatifleri */}
+                {/* Mekke Oteller Listesi */}
                 <div className="space-y-2">
                   {(activePackage?.makkahHotels && activePackage.makkahHotels.length > 0) ? (
                     activePackage.makkahHotels.map((h) => {
@@ -2192,8 +2161,8 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                           onClick={() => setSelectedMakkahHotelId(h.id)}
                           className={`p-3 rounded-xl border transition-all cursor-pointer select-none flex items-start justify-between gap-2.5 ${
                             isHotelSel
-                              ? 'bg-white dark:bg-slate-800 border-emerald-600 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
-                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-emerald-300'
+                              ? 'bg-white dark:bg-slate-800 border-emerald-600 dark:border-emerald-500 shadow-xs ring-1 ring-emerald-500/20'
+                              : 'bg-white/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                           }`}
                         >
                           <div className="space-y-1 min-w-0">
@@ -2201,20 +2170,20 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                               {h.name}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
-                              <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-semibold">
-                                <MapPin className="h-3 w-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-semibold">
+                                <MapPin className="h-3 w-3 shrink-0" />
                                 <span>{h.distance || 'Harem Yakını'}</span>
                               </span>
                               {h.mealType && (
-                                <span className="text-slate-400 dark:text-slate-500">• {h.mealType}</span>
+                                <span className="text-slate-400">• {h.mealType}</span>
                               )}
                             </div>
                           </div>
 
-                          <div className={`h-5 w-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          <div className={`h-4 w-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
                             isHotelSel ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
                           }`}>
-                            {isHotelSel && <Check className="h-3 w-3 stroke-[3]" />}
+                            {isHotelSel && <Check className="h-2.5 w-2.5 stroke-[3]" />}
                           </div>
                         </div>
                       );
@@ -2229,26 +2198,21 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                   )}
                 </div>
 
-                {/* 🕋 Mekke Yemek Switch'i */}
-                <div className="pt-2 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between gap-2">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Utensils className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
-                      <span>Mekke Yemek Hizmeti:</span>
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">
-                      {includeMakkahMeals ? 'Sabah-Akşam Yemek Dahil' : 'Yemeksiz (Sadece Konaklama)'}
-                    </span>
-                  </div>
+                {/* Mekke Yemek Tercihi (Zarif Switch) */}
+                <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Utensils className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                    <span>Yemek Hizmeti:</span>
+                  </span>
 
-                  <div className="flex items-center gap-1 p-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-full shadow-3xs shrink-0">
+                  <div className="flex items-center p-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl gap-0.5 shrink-0 shadow-3xs">
                     <button
                       type="button"
                       onClick={() => setIncludeMakkahMeals(true)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer spring-pill flex items-center gap-1 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                         includeMakkahMeals
-                          ? 'bg-emerald-700 text-white shadow-xs'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       <Check className="h-3 w-3 stroke-[3]" />
@@ -2257,10 +2221,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                     <button
                       type="button"
                       onClick={() => setIncludeMakkahMeals(false)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer spring-pill ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         !includeMakkahMeals
-                          ? 'bg-rose-600 text-white shadow-xs'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-rose-500 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Yemeksiz
@@ -2269,19 +2233,19 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                 </div>
               </div>
 
-              {/* Medine Otel(ler)i & Medine Yemek Tercihi Bölümü */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/50 via-yellow-50/20 to-white dark:from-amber-950/40 dark:via-yellow-950/20 dark:to-slate-900 border border-amber-200/80 dark:border-amber-800/80 space-y-3">
+              {/* Medine Otel Kartı */}
+              <div className="p-4 rounded-2xl bg-slate-50/60 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
-                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
-                    <span>Medine Otel Seçimi</span>
+                  <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain dark:brightness-0 dark:invert transition-all" />
+                    <span>Medine Oteli</span>
                   </span>
-                  <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                  <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-800/60">
                     Medine-i Münevvere
                   </span>
                 </div>
 
-                {/* Medine Otel Alternatifleri */}
+                {/* Medine Oteller Listesi */}
                 <div className="space-y-2">
                   {(activePackage?.madinahHotels && activePackage.madinahHotels.length > 0) ? (
                     activePackage.madinahHotels.map((h) => {
@@ -2292,8 +2256,8 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                           onClick={() => setSelectedMadinahHotelId(h.id)}
                           className={`p-3 rounded-xl border transition-all cursor-pointer select-none flex items-start justify-between gap-2.5 ${
                             isHotelSel
-                              ? 'bg-white dark:bg-slate-800 border-amber-600 dark:border-amber-500 ring-2 ring-amber-500/20 shadow-xs'
-                              : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-amber-300'
+                              ? 'bg-white dark:bg-slate-800 border-amber-600 dark:border-amber-500 shadow-xs ring-1 ring-amber-500/20'
+                              : 'bg-white/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                           }`}
                         >
                           <div className="space-y-1 min-w-0">
@@ -2301,20 +2265,20 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                               {h.name}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
-                              <span className="flex items-center gap-1 text-amber-800 dark:text-amber-300 font-semibold">
-                                <MapPin className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                                <span>{h.distance || 'Mescid-i Nebevi Yakını'}</span>
+                              <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold">
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span>{h.distance || 'Mescid Yakını'}</span>
                               </span>
                               {h.mealType && (
-                                <span className="text-slate-400 dark:text-slate-500">• {h.mealType}</span>
+                                <span className="text-slate-400">• {h.mealType}</span>
                               )}
                             </div>
                           </div>
 
-                          <div className={`h-5 w-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          <div className={`h-4 w-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
                             isHotelSel ? 'bg-amber-600 border-amber-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
                           }`}>
-                            {isHotelSel && <Check className="h-3 w-3 stroke-[3]" />}
+                            {isHotelSel && <Check className="h-2.5 w-2.5 stroke-[3]" />}
                           </div>
                         </div>
                       );
@@ -2329,26 +2293,21 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                   )}
                 </div>
 
-                {/* 🕌 Medine Yemek Switch'i */}
-                <div className="pt-2 border-t border-amber-200/60 dark:border-amber-800/60 flex items-center justify-between gap-2">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Utensils className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />
-                      <span>Medine Yemek Hizmeti:</span>
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">
-                      {includeMadinahMeals ? 'Sabah-Akşam Yemek Dahil' : 'Yemeksiz (Sadece Konaklama)'}
-                    </span>
-                  </div>
+                {/* Medine Yemek Tercihi (Zarif Switch) */}
+                <div className="pt-2 border-t border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Utensils className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                    <span>Yemek Hizmeti:</span>
+                  </span>
 
-                  <div className="flex items-center gap-1 p-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-full shadow-3xs shrink-0">
+                  <div className="flex items-center p-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl gap-0.5 shrink-0 shadow-3xs">
                     <button
                       type="button"
                       onClick={() => setIncludeMadinahMeals(true)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer spring-pill flex items-center gap-1 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                         includeMadinahMeals
-                          ? 'bg-amber-700 text-white shadow-xs'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       <Check className="h-3 w-3 stroke-[3]" />
@@ -2357,10 +2316,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                     <button
                       type="button"
                       onClick={() => setIncludeMadinahMeals(false)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer spring-pill ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         !includeMadinahMeals
-                          ? 'bg-rose-600 text-white shadow-xs'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-rose-500 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Yemeksiz
@@ -2373,16 +2332,14 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
 
             {/* Fiyat Tarifesi Belirlenmemiş Uyarısı */}
             {(currentQuotation?.isUnpriced || currentQuotation?.hasValidTariff === false) && (
-              <div className="mt-3 p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 dark:from-amber-950/60 dark:via-orange-950/40 dark:to-slate-900 border-2 border-amber-300 dark:border-amber-700 shadow-3xs flex items-start gap-3 animate-fade-scale text-amber-950 dark:text-amber-200">
-                <div className="p-2 rounded-xl bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300 shrink-0 mt-0.5">
-                  <Info className="h-4 w-4" />
-                </div>
+              <div className="mt-2 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800/80 flex items-start gap-3 text-amber-950 dark:text-amber-200">
+                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-0.5 text-xs">
-                  <h4 className="font-black text-amber-900 dark:text-amber-300 font-display">
-                    ⚠️ Genel Merkez Fiyat Belirlememiştir
+                  <h4 className="font-bold text-amber-900 dark:text-amber-300">
+                    Genel Merkez Fiyat Belirlememiştir
                   </h4>
-                  <p className="text-amber-800 dark:text-amber-400 font-medium">
-                    {currentQuotation?.tariffWarning || 'Seçtiğiniz tarih aralığı için Genel Merkez tarafından otel fiyat tarifesi girilmemiştir. Lütfen Genel Merkez ile iletişime geçiniz.'}
+                  <p className="text-amber-800 dark:text-amber-400 text-[11px]">
+                    {currentQuotation?.tariffWarning || 'Seçtiğiniz tarih aralığı için otel fiyat tarifesi bulunamadı.'}
                   </p>
                 </div>
               </div>
@@ -2391,21 +2348,24 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         </div>
 
         {/* Step 3: Konaklama & Oda Tercihi */}
-        <div id="step-3" className={`pearl-card rounded-2xl p-5 sm:p-7 space-y-4 shadow-2xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
+        <div id="step-3" className={`pearl-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
           (!isMixedRoomMode && (!makkahOccupancy || makkahOccupancy <= 0))
-            ? 'border-amber-300 dark:border-amber-700 ring-2 ring-amber-400/20'
-            : 'border-slate-200/90 dark:border-slate-800'
+            ? 'border-amber-300/80 dark:border-amber-700/80 ring-2 ring-amber-400/15'
+            : 'border-slate-200/80 dark:border-slate-800'
         }`}>
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
+          <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
             <div className="flex items-center gap-2.5">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
+              <div className="h-6 w-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-black text-xs">
+                3
+              </div>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
                 <Bed className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Konaklama & Oda Tercihi</span>
               </h3>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-emerald-900 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-300 dark:border-emerald-800 shadow-2xs flex items-center gap-1 animate-scale-in">
-                <Check className="h-3 w-3 stroke-[3]" />
+            <div>
+              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/80 inline-flex items-center gap-1.5 animate-scale-in">
+                <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                 <span>{isMixedRoomMode ? 'Karma Çoklu Oda Seçili' : `${makkahOccupancy} Kişilik Oda Seçili`}</span>
               </span>
             </div>
@@ -2493,13 +2453,16 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         {(() => {
           const isStep4Done = ['jedMek', 'mekMed', 'medAir'].every(r => transfersSelection[r]?.vehicleType);
           return (
-            <div id="step-4" className={`pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
-              !isStep4Done ? 'border-amber-300 dark:border-amber-700 ring-2 ring-amber-400/20' : 'border-slate-200/90 dark:border-slate-800'
+            <div id="step-4" className={`pearl-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xs border transition-all duration-300 bg-white dark:bg-slate-900 scroll-mt-6 ${
+              !isStep4Done ? 'border-amber-300/80 dark:border-amber-700/80 ring-2 ring-amber-400/15' : 'border-slate-200/80 dark:border-slate-800'
             }`}>
-              <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
+              <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
                 <div className="flex items-center gap-2.5">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
-                    <Bus className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  <div className="h-6 w-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-black text-xs">
+                    4
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
+                    <Bus className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Transfer & Ulaşım Güzergahları</span>
                   </h3>
                 </div>
@@ -2543,7 +2506,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                     }}
                     className="px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-900 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-bold transition-all cursor-pointer spring-pill"
                   >
-                    Standart (Binek)
+                    Standart Araçlar
                   </button>
                 </div>
               </div>
@@ -2551,8 +2514,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
               <div className="space-y-3">
                 {TRANSFER_ROUTES.map((route) => {
                   const sel = transfersSelection[route.id] || { vehicleType: 'small', passengerCount: 2 };
-                  const smallCost = activePackage?.transfers?.[route.smallKey] || 0;
-                  const bigCost = activePackage?.transfers?.[route.bigKey] || 0;
+                  const smallLabel = activePackage?.transfers?.[`${route.id}SmallLabel`] || 
+                    (activePackage?.id?.includes('luxe') ? 'VIP GMC Yukon / Tahoe' : 'Sedan Taksi (Camry)');
+                  const bigLabel = activePackage?.transfers?.[`${route.id}BigLabel`] || 
+                    (activePackage?.id?.includes('luxe') ? 'Mercedes VIP Sprinter' : 'HiAce Minibüs / Otobüs');
 
                   return (
                     <div 
@@ -2566,7 +2531,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 min-w-0">
                         
                         {/* 1. Sol: Güzergah Adı ve İkonu */}
-                        <div className="flex items-center gap-2.5 font-bold text-xs text-slate-900 dark:text-white xl:w-52 shrink-0 min-w-0">
+                        <div className="flex items-center gap-2.5 font-bold text-xs text-slate-900 dark:text-white xl:w-56 shrink-0 min-w-0">
                           <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
                             sel.vehicleType === 'none' ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-400' : 'bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 shadow-3xs'
                           }`}>
@@ -2581,31 +2546,33 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                         {/* 2. Orta & Sağ: Araç Seçim Butonları + Kişi Sayacı & Formül Kutusu */}
                         <div className="flex flex-wrap items-center gap-2.5 justify-start xl:justify-end flex-1 min-w-0">
                           {/* Araç Seçim Butonları */}
-                          <div className="flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-700/90 border border-slate-200/80 dark:border-slate-600 rounded-full select-none shrink-0">
+                          <div className="flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-700/90 border border-slate-200/80 dark:border-slate-600 rounded-full select-none shrink-0 flex-wrap sm:flex-nowrap">
                             {/* Küçük Araç Button */}
                             <button
                               type="button"
                               onClick={() => handleTransferChange(route.id, 'vehicleType', 'small')}
-                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
+                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill flex items-center gap-1.5 ${
                                 sel.vehicleType === 'small'
-                                  ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white shadow-xs shadow-sky-600/30'
+                                  ? 'bg-gradient-to-r from-sky-600 to-sky-700 text-white shadow-xs shadow-sky-600/30 font-black'
                                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-600/60'
                               }`}
                             >
-                              {activePackage?.transfers?.[`${route.id}SmallLabel`] || 'Küçük Araç'}
+                              <Car className="h-3 w-3 shrink-0" />
+                              <span>{smallLabel}</span>
                             </button>
 
                             {/* Büyük Araç Button */}
                             <button
                               type="button"
                               onClick={() => handleTransferChange(route.id, 'vehicleType', 'big')}
-                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
+                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill flex items-center gap-1.5 ${
                                 sel.vehicleType === 'big'
-                                  ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs shadow-emerald-800/30'
+                                  ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs shadow-emerald-800/30 font-black'
                                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-600/60'
                               }`}
                             >
-                              {activePackage?.transfers?.[`${route.id}BigLabel`] || 'Büyük Araç'}
+                              <Bus className="h-3 w-3 shrink-0" />
+                              <span>{bigLabel}</span>
                             </button>
 
                             {/* Yok Button */}
@@ -2614,7 +2581,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                               onClick={() => handleTransferChange(route.id, 'vehicleType', 'none')}
                               className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer spring-pill ${
                                 sel.vehicleType === 'none'
-                                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-xs shadow-rose-500/30'
+                                  ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-xs shadow-rose-500/30 font-black'
                                   : 'text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-600/60'
                               }`}
                             >
@@ -2648,10 +2615,10 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
                                 </button>
                               </div>
 
-                              {/* Araç Durumu Rozeti (Fiyatsız) */}
-                              <span className="text-[11px] font-bold text-sky-900 dark:text-sky-200 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-xl border border-sky-200 dark:border-sky-800 shadow-3xs inline-flex items-center gap-1">
-                                <Check className="h-3 w-3 stroke-[3]" />
-                                <span>{sel.vehicleType === 'small' ? 'Küçük Araç Seçildi' : 'Büyük Araç Seçildi'}</span>
+                              {/* Araç Durumu Rozeti (Gerçek İsimle) */}
+                              <span className="text-[11px] font-bold text-sky-900 dark:text-sky-200 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-xl border border-sky-200 dark:border-sky-800 shadow-3xs inline-flex items-center gap-1.5 max-w-[200px] truncate">
+                                <Check className="h-3 w-3 stroke-[3] shrink-0" />
+                                <span className="truncate">{sel.vehicleType === 'small' ? smallLabel : bigLabel}</span>
                               </span>
                             </div>
                           ) : (
@@ -2671,10 +2638,13 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         })()}
 
         {/* Step 5: Sabit & Ek Giderler Checklist (İSTEĞE BAĞLI / OPSİYONEL & KİŞİ SAYISI SEÇİLEBİLİR) */}
-        <div id="step-5" className="pearl-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 scroll-mt-6">
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
+        <div id="step-5" className="pearl-card rounded-3xl p-5 sm:p-6 space-y-5 shadow-xs border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 scroll-mt-6">
+          <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
             <div className="flex items-center gap-2.5">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
+              <div className="h-6 w-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-black text-xs">
+                5
+              </div>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
                 <Coins className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Sabit & Operasyonel Giderler Havuzu</span>
               </h3>
@@ -2748,8 +2718,8 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
         </div>
       </div>
 
-      {/* Right 4/5 Columns: Slightly Wider Fixed Full-Height Receipt Panel */}
-      <div className="lg:col-span-5 xl:col-span-4 min-w-0 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] flex flex-col justify-start">
+      {/* Right 4/5 Columns: Responsive Sticky Receipt Panel */}
+      <div className="lg:col-span-5 xl:col-span-4 min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] h-auto lg:h-[calc(100vh-2rem)] flex flex-col justify-start">
         <LiveQuoteCard
           quotation={currentQuotation}
           activePackage={activePackage}

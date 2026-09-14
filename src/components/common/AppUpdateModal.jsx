@@ -1,39 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { DownloadCloud, RefreshCw, CheckCircle2, Sparkles, X, ArrowUpRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { syncService } from '../../services/syncService';
+
+const CURRENT_APP_VERSION = '1.0.20';
 
 export default function AppUpdateModal() {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [isRemoteRelease, setIsRemoteRelease] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.electronAPI) return;
+    // 1. Desktop Electron updater events
+    let unregStatus = null;
+    let unregProgress = null;
 
-    const unregStatus = window.electronAPI.onUpdaterStatus((data) => {
-      if (data.status === 'available') {
-        setUpdateInfo(data);
-        setDismissed(false);
-      } else if (data.status === 'downloaded') {
-        setIsDownloaded(true);
-        setUpdateInfo(data);
-        setDismissed(false);
-        confetti({
-          particleCount: 50,
-          spread: 70,
-          origin: { y: 0.8 }
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      if (window.electronAPI.onUpdaterStatus) {
+        unregStatus = window.electronAPI.onUpdaterStatus((data) => {
+          if (data.status === 'available') {
+            setUpdateInfo(data);
+            setIsRemoteRelease(false);
+            setDismissed(false);
+          } else if (data.status === 'downloaded') {
+            setIsDownloaded(true);
+            setUpdateInfo(data);
+            setIsRemoteRelease(false);
+            setDismissed(false);
+            confetti({
+              particleCount: 50,
+              spread: 70,
+              origin: { y: 0.8 }
+            });
+          }
         });
+      }
+
+      if (window.electronAPI.onUpdaterProgress) {
+        unregProgress = window.electronAPI.onUpdaterProgress((progress) => {
+          setDownloadProgress(progress);
+        });
+      }
+    }
+
+    // 2. Supabase app_versions listener (Cross-platform)
+    const checkVersion = (remoteInfo) => {
+      if (!remoteInfo?.version) return;
+      const currentVer = (window.electronAPI?.appVersion || CURRENT_APP_VERSION).replace(/[^0-9.]/g, '');
+      const remoteVer = String(remoteInfo.version).replace(/[^0-9.]/g, '');
+
+      const currentParts = currentVer.split('.').map(Number);
+      const remoteParts = remoteVer.split('.').map(Number);
+      let isNewer = false;
+
+      for (let i = 0; i < Math.max(currentParts.length, remoteParts.length); i++) {
+        const c = currentParts[i] || 0;
+        const r = remoteParts[i] || 0;
+        if (r > c) { isNewer = true; break; }
+        if (r < c) { break; }
+      }
+
+      if (isNewer) {
+        setUpdateInfo({
+          version: remoteInfo.version,
+          releaseNotes: remoteInfo.release_notes || remoteInfo.releaseNotes || 'Yeni sürüm yayınlandı.',
+          downloadUrl: remoteInfo.download_url || remoteInfo.downloadUrl || '',
+          isMandatory: Boolean(remoteInfo.is_mandatory || remoteInfo.isMandatory)
+        });
+        setIsRemoteRelease(true);
+        setDismissed(false);
+      }
+    };
+
+    const unsubSync = syncService.subscribe((event) => {
+      if (event.type === 'APP_VERSION_UPDATED' && event.payload) {
+        checkVersion(event.payload);
       }
     });
 
-    const unregProgress = window.electronAPI.onUpdaterProgress((progress) => {
-      setDownloadProgress(progress);
-    });
+    try {
+      const cached = localStorage.getItem('INZAR_LATEST_VERSION_INFO');
+      if (cached) {
+        checkVersion(JSON.parse(cached));
+      }
+    } catch (e) {}
 
     return () => {
       if (unregStatus) unregStatus();
       if (unregProgress) unregProgress();
+      if (unsubSync) unsubSync();
     };
   }, []);
 
@@ -42,6 +99,8 @@ export default function AppUpdateModal() {
   const handleInstall = () => {
     if (window.electronAPI?.installUpdate) {
       window.electronAPI.installUpdate();
+    } else if (updateInfo.downloadUrl) {
+      window.open(updateInfo.downloadUrl, '_blank');
     }
   };
 
@@ -64,19 +123,21 @@ export default function AppUpdateModal() {
                 SİSTEM GÜNCELLEMESİ
               </div>
               <h4 className="text-sm font-bold text-white font-display">
-                {isDownloaded ? `Yeni Sürüm (v${updateInfo.version}) Hazır!` : `Yeni Sürüm (v${updateInfo.version}) İndiriliyor`}
+                {isDownloaded ? `Yeni Sürüm (v${updateInfo.version}) Hazır!` : `Yeni Sürüm (v${updateInfo.version}) Mevcut`}
               </h4>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setDismissed(true)}
-            className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            title="Kapat"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {!updateInfo.isMandatory && (
+            <button
+              type="button"
+              onClick={() => setDismissed(true)}
+              className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title="Kapat"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Notes */}
@@ -88,7 +149,7 @@ export default function AppUpdateModal() {
           </p>
         )}
 
-        {/* Progress Bar while downloading */}
+        {/* Progress Bar while downloading in Electron */}
         {!isDownloaded && downloadProgress && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[11px] font-mono text-emerald-200">
@@ -114,9 +175,18 @@ export default function AppUpdateModal() {
             <RefreshCw className="h-4 w-4" />
             <span>Şimdi Yeniden Başlat & Güncelle</span>
           </button>
+        ) : isRemoteRelease && updateInfo.downloadUrl ? (
+          <button
+            type="button"
+            onClick={handleInstall}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all transform hover:scale-102 active:scale-98 cursor-pointer shadow-lg shadow-emerald-500/25"
+          >
+            <ArrowUpRight className="h-4 w-4" />
+            <span>Yeni Sürümü İndir / Yükle</span>
+          </button>
         ) : (
           <div className="text-[11px] text-emerald-200/70 text-center font-medium">
-            Güncelleme arka planda tamamlandığında bildirilecektir.
+            Yeni sürüm genel merkez tarafından sisteme sunulmuştur.
           </div>
         )}
 

@@ -1,9 +1,13 @@
-const { contextBridge, ipcRenderer } = require('electron');
+let appVersion = '1.0.20';
+try {
+  const pkg = require('../package.json');
+  if (pkg?.version) appVersion = pkg.version;
+} catch (e) {}
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   isElectron: true,
-  appVersion: '1.0.18',
+  appVersion,
   checkForUpdates: () => ipcRenderer.invoke('updater:check'),
   installUpdate: () => ipcRenderer.invoke('updater:install'),
   showNativeNotification: (payload) => ipcRenderer.invoke('app:show-notification', payload),

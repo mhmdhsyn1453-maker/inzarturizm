@@ -264,11 +264,11 @@ export function calculateQuotation({
 
     if (sel.vehicleType === 'small') {
       vehicleCost = pkg.transfers?.[r.smallKey] || 0;
-      vehicleName = pkg.transfers?.[`${r.id}SmallLabel`] || 'Küçük Araç (Sedan / GMC)';
+      vehicleName = pkg.transfers?.[`${r.id}SmallLabel`] || (pkg.id?.includes('luxe') ? 'VIP GMC Yukon / Tahoe' : 'Sedan Taksi (Camry)');
       perPersonCost = (sel.passengerCount > 0) ? (vehicleCost / sel.passengerCount) : 0;
     } else if (sel.vehicleType === 'big') {
       vehicleCost = pkg.transfers?.[r.bigKey] || 0;
-      vehicleName = pkg.transfers?.[`${r.id}BigLabel`] || 'Büyük Araç (HiAce / Otobüs)';
+      vehicleName = pkg.transfers?.[`${r.id}BigLabel`] || (pkg.id?.includes('luxe') ? 'Mercedes VIP Sprinter' : 'HiAce Minibüs / Otobüs');
       perPersonCost = (sel.passengerCount > 0) ? (vehicleCost / sel.passengerCount) : 0;
     }
 

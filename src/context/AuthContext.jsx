@@ -21,12 +21,54 @@ function sanitizeInput(str) {
   }).trim();
 }
 
+export async function hashPassword(plainText) {
+  if (!plainText) return '';
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(String(plainText).trim());
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return 'sha256:' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    return String(plainText).trim();
+  }
+}
+
+export async function verifyPassword(inputPassword, storedPasswordOrHash) {
+  if (!storedPasswordOrHash || !inputPassword) return false;
+  const trimmedInput = String(inputPassword).trim();
+  const trimmedStored = String(storedPasswordOrHash).trim();
+
+  if (trimmedStored.startsWith('sha256:')) {
+    const hashed = await hashPassword(trimmedInput);
+    return hashed === trimmedStored;
+  }
+  return trimmedStored === trimmedInput;
+}
+
+export function generateSecureSessionToken() {
+  try {
+    const array = new Uint8Array(24);
+    window.crypto.getRandomValues(array);
+    return 'tkn_' + Array.from(array, b => b.toString(16).padStart(2, '0')).join('') + Date.now().toString(36);
+  } catch (e) {
+    return 'tkn_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+}
+
 export function AuthProvider({ children }) {
   const [users, setUsers] = useState(() => syncService.getUsers());
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('inzar_auth_user');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Security: strip sensitive fields if present from legacy sessions
+        delete parsed.password;
+        delete parsed.twoFactorSecret;
+        delete parsed.twoFactorBackupCodes;
+        return parsed;
+      }
     } catch (e) {}
     return null;
   });
@@ -40,7 +82,13 @@ export function AuthProvider({ children }) {
         if (currentUser?.id || currentUser?.username) {
           const freshMe = freshUsers.find(u => (currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username));
           if (freshMe) {
-            setCurrentUser(prev => ({ ...prev, ...freshMe }));
+            setCurrentUser(prev => {
+              const merged = { ...prev, ...freshMe };
+              delete merged.password;
+              delete merged.twoFactorSecret;
+              delete merged.twoFactorBackupCodes;
+              return merged;
+            });
           }
         }
       }
@@ -50,7 +98,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('inzar_auth_user', JSON.stringify(currentUser));
+      const safeSession = { ...currentUser };
+      delete safeSession.password;
+      delete safeSession.twoFactorSecret;
+      delete safeSession.twoFactorBackupCodes;
+      localStorage.setItem('inzar_auth_user', JSON.stringify(safeSession));
     } else {
       localStorage.removeItem('inzar_auth_user');
     }
@@ -61,13 +113,27 @@ export function AuthProvider({ children }) {
     const trimmedPass = password.trim();
 
     // 1. Try local memory/localStorage matching first
-    let user = users.find(u => {
+    let user = null;
+    for (const u of users) {
       const uMatch = u.username.toLowerCase() === trimmedInput || 
                      (u.email && u.email.toLowerCase() === trimmedInput) ||
                      (u.email && u.email.toLowerCase().startsWith(trimmedInput + '@'));
-      const pMatch = String(u.password || '').trim() === trimmedPass;
-      return uMatch && pMatch;
-    });
+      if (uMatch) {
+        const isMatch = await verifyPassword(trimmedPass, u.password);
+        if (isMatch) {
+          user = { ...u };
+          // Auto-upgrade legacy plaintext password to secure SHA-256 hash
+          if (user.password && !user.password.startsWith('sha256:')) {
+            const secureHash = await hashPassword(trimmedPass);
+            user.password = secureHash;
+            const updatedUsers = users.map(item => item.id === user.id ? { ...item, password: secureHash } : item);
+            setUsers(updatedUsers);
+            syncService.saveUsers(updatedUsers);
+          }
+          break;
+        }
+      }
+    }
 
     // 2. If not matched locally, query Supabase profiles table directly
     if (!user && isSupabaseConfigured && supabase) {
@@ -79,11 +145,22 @@ export function AuthProvider({ children }) {
           .maybeSingle();
 
         if (data && !error) {
-          if (String(data.password || '').trim() === trimmedPass) {
+          const isMatch = await verifyPassword(trimmedPass, data.password);
+          if (isMatch) {
+            let passwordToStore = data.password;
+            if (!passwordToStore || !passwordToStore.startsWith('sha256:')) {
+              passwordToStore = await hashPassword(trimmedPass);
+              // Update hash in Supabase profiles
+              supabase.from('profiles').update({ 
+                password: passwordToStore,
+                updated_at: new Date().toISOString()
+              }).eq('id', data.id).then();
+            }
+
             user = {
               id: data.id,
               username: data.username,
-              password: data.password,
+              password: passwordToStore,
               name: data.name,
               role: (data.role || 'STAFF').toUpperCase(),
               city: data.city || 'İstanbul',
@@ -129,7 +206,6 @@ export function AuthProvider({ children }) {
     const sessionUser = {
       id: user.id,
       username: user.username,
-      password: user.password,
       name: user.name,
       role: (user.role || 'STAFF').toUpperCase(),
       city: user.city || 'İstanbul',
@@ -139,10 +215,8 @@ export function AuthProvider({ children }) {
       avatar: user.avatar || '',
       avatarImage: user.avatarImage || null,
       twoFactorEnabled: Boolean(user.twoFactorEnabled),
-      twoFactorSecret: user.twoFactorSecret || null,
-      twoFactorBackupCodes: user.twoFactorBackupCodes || [],
       lastLogin: new Date().toISOString(),
-      sessionToken: 'tkn_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+      sessionToken: generateSecureSessionToken()
     };
 
     if (commit) {
@@ -201,7 +275,6 @@ export function AuthProvider({ children }) {
     const sessionUser = {
       id: tempUser.id,
       username: tempUser.username,
-      password: tempUser.password,
       name: tempUser.name,
       role: (tempUser.role || 'STAFF').toUpperCase(),
       city: tempUser.city || 'İstanbul',
@@ -211,10 +284,8 @@ export function AuthProvider({ children }) {
       avatar: tempUser.avatar || '',
       avatarImage: tempUser.avatarImage || null,
       twoFactorEnabled: true,
-      twoFactorSecret: tempUser.twoFactorSecret,
-      twoFactorBackupCodes: tempUser.twoFactorBackupCodes || [],
       lastLogin: new Date().toISOString(),
-      sessionToken: 'tkn_' + Math.random().toString(36).substring(2) + Date.now().toString(36)
+      sessionToken: generateSecureSessionToken()
     };
 
     if (commit) {
@@ -246,15 +317,17 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   };
 
-  const addStaff = (newStaff) => {
+  const addStaff = async (newStaff) => {
     const roleUpper = (newStaff.role || 'STAFF').toUpperCase();
     const cleanUsername = sanitizeInput(newStaff.username).toLowerCase();
     const email = sanitizeInput(newStaff.email || `${cleanUsername}@inzarturizm.com`).toLowerCase();
+    const rawPassword = newStaff.password ? newStaff.password.trim() : '123';
+    const finalPassword = rawPassword.startsWith('sha256:') ? rawPassword : await hashPassword(rawPassword);
 
     const created = {
       id: 'staff_' + Date.now(),
       username: cleanUsername,
-      password: newStaff.password ? newStaff.password.trim() : '123',
+      password: finalPassword,
       name: sanitizeInput(newStaff.name),
       role: roleUpper,
       city: sanitizeInput(newStaff.city || 'İstanbul'),
@@ -279,17 +352,22 @@ export function AuthProvider({ children }) {
     return created;
   };
 
-  const updateStaff = (staffId, updatedFields) => {
+  const updateStaff = async (staffId, updatedFields) => {
+    let fieldsToApply = { ...updatedFields };
+    if (fieldsToApply.password && !fieldsToApply.password.startsWith('sha256:')) {
+      fieldsToApply.password = await hashPassword(fieldsToApply.password);
+    }
+
     const target = users.find(u => u.id === staffId);
     const updated = users.map(u => {
       if (u.id === staffId) {
         return {
           ...u,
-          ...updatedFields,
-          username: updatedFields.username ? sanitizeInput(updatedFields.username).toLowerCase() : u.username,
-          email: updatedFields.email ? sanitizeInput(updatedFields.email).toLowerCase() : u.email,
-          name: updatedFields.name ? sanitizeInput(updatedFields.name) : u.name,
-          role: updatedFields.role ? updatedFields.role.toUpperCase() : u.role
+          ...fieldsToApply,
+          username: fieldsToApply.username ? sanitizeInput(fieldsToApply.username).toLowerCase() : u.username,
+          email: fieldsToApply.email ? sanitizeInput(fieldsToApply.email).toLowerCase() : u.email,
+          name: fieldsToApply.name ? sanitizeInput(fieldsToApply.name) : u.name,
+          role: fieldsToApply.role ? fieldsToApply.role.toUpperCase() : u.role
         };
       }
       return u;

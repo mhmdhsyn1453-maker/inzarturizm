@@ -106,11 +106,17 @@ export const DEFAULT_PACKAGES = [
     },
     transfers: {
       jedMekSmall: 200,
+      jedMekSmallLabel: 'Sedan Taksi (Camry)',
       mekMedSmall: 500,
+      mekMedSmallLabel: 'Sedan Taksi (Camry)',
       medAirSmall: 100,
+      medAirSmallLabel: 'Sedan Taksi (Camry)',
       jedMekBig: 800,
+      jedMekBigLabel: 'HiAce Minibüs (10 Kişilik)',
       mekMedBig: 800,
+      mekMedBigLabel: 'HiAce Minibüs / Otobüs',
       medAirBig: 800,
+      medAirBigLabel: 'HiAce Minibüs / Otobüs',
     },
     fixedExpenses: {
       flightTicketSAR: 1500,
@@ -204,11 +210,17 @@ export const DEFAULT_PACKAGES = [
     },
     transfers: {
       jedMekSmall: 200,
+      jedMekSmallLabel: 'Sedan Taksi (Camry)',
       mekMedSmall: 500,
+      mekMedSmallLabel: 'Sedan Taksi (Camry)',
       medAirSmall: 100,
+      medAirSmallLabel: 'Sedan Taksi (Camry)',
       jedMekBig: 800,
+      jedMekBigLabel: 'HiAce Minibüs (10 Kişilik)',
       mekMedBig: 800,
+      mekMedBigLabel: 'HiAce Minibüs / Otobüs',
       medAirBig: 800,
+      medAirBigLabel: 'HiAce Minibüs / Otobüs',
     },
     fixedExpenses: {
       flightTicketSAR: 1500,
@@ -302,11 +314,17 @@ export const DEFAULT_PACKAGES = [
     },
     transfers: {
       jedMekSmall: 300,
+      jedMekSmallLabel: 'VIP GMC Yukon / Tahoe',
       mekMedSmall: 600,
+      mekMedSmallLabel: 'VIP GMC Yukon / Tahoe',
       medAirSmall: 200,
+      medAirSmallLabel: 'VIP GMC Yukon / Tahoe',
       jedMekBig: 800,
+      jedMekBigLabel: 'Mercedes VIP Sprinter',
       mekMedBig: 800,
+      mekMedBigLabel: 'Mercedes VIP Sprinter',
       medAirBig: 800,
+      medAirBigLabel: 'Mercedes VIP Sprinter',
     },
     fixedExpenses: {
       flightTicketSAR: 1500,
@@ -346,7 +364,7 @@ export const DEFAULT_USERS = [
   { 
     id: 'a0000000-0000-0000-0000-000000000001', 
     username: 'merkez', 
-    password: 'Inzar2026!', 
+    password: 'sha256:cd4032eb22af47f1c17a7faf16f1f0fd7bed0d95885b0026c79a4db69c2e13bb', 
     name: 'Genel Merkez Yöneticisi', 
     role: 'ADMIN', 
     city: 'İstanbul', 
@@ -359,7 +377,7 @@ export const DEFAULT_USERS = [
   { 
     id: 'a0000000-0000-0000-0000-000000000002', 
     username: 'mustafakilic', 
-    password: 'Mustafa123!', 
+    password: 'sha256:3213e72397b8976972285fd80029bcd2197d4350d67e91fdc97a353ea26d06ea', 
     name: 'Mustafa Kılıç', 
     role: 'ADMIN', 
     city: 'İstanbul', 
@@ -372,7 +390,7 @@ export const DEFAULT_USERS = [
   { 
     id: 'a0000000-0000-0000-0000-000000000009', 
     username: 'merkez_yardimcisi', 
-    password: 'Inzar2026!', 
+    password: 'sha256:cd4032eb22af47f1c17a7faf16f1f0fd7bed0d95885b0026c79a4db69c2e13bb', 
     name: 'Genel Merkez Yardımcısı', 
     role: 'HQ_ASSISTANT', 
     city: 'İstanbul', 
@@ -385,7 +403,7 @@ export const DEFAULT_USERS = [
   { 
     id: 'a0000000-0000-0000-0000-000000000003', 
     username: 'huseyin', 
-    password: 'Huseyin123!', 
+    password: 'sha256:a0914fd37960d2eec155c1bcdba9636e1006e955d1e6bff3bc940783e94a5d7d', 
     name: 'M.Hüseyin AKBALIK', 
     role: 'STAFF', 
     city: 'Gaziantep', 
@@ -398,7 +416,7 @@ export const DEFAULT_USERS = [
   { 
     id: 'a0000000-0000-0000-0000-000000000004', 
     username: 'mehmetdemir', 
-    password: 'Mehmet123!', 
+    password: 'sha256:8f7c78112edbdff3b07e6825baf0b8720bdd4ab4631254c5402f06b173354cf8', 
     name: 'Mehmet Demir', 
     role: 'STAFF', 
     city: 'Diyarbakır', 
@@ -411,7 +429,7 @@ export const DEFAULT_USERS = [
   { 
     id: 'a0000000-0000-0000-0000-000000000005', 
     username: 'aysekaya', 
-    password: 'Ayse123!', 
+    password: 'sha256:15a1cafac47cba86ba65d062ed762898107d9475ddcc4a78f245345c52788df6', 
     name: 'Ayşe Kaya', 
     role: 'STAFF', 
     city: 'Ankara', 

@@ -48,13 +48,15 @@ export default function LiveQuoteCard({
     ? (quotation.mixedRoomsSummary?.groupGrandTotalSAR || (quotation.finalPriceSAR * effectivePax)) 
     : (quotation.finalPriceSAR * effectivePax);
 
-  // Transfer araç tipi etiketleri
-  const getVehicleShort = (vType) => {
-    if (!vType || vType === 'none') return 'Yok';
-    if (vType === 'bus') return 'Otobüs';
-    if (vType === 'hiace') return 'Hiace';
-    if (vType === 'gmc') return 'GMC';
-    if (vType === 'small') return 'Binek';
+  // Transfer araç tipi etiketleri (Dinamik Araç İsmi)
+  const getVehicleShort = (item) => {
+    if (!item || !item.vehicleType || item.vehicleType === 'none') return 'Yok';
+    if (item.vehicleName && item.vehicleName !== 'Dahil Değil') {
+      return item.vehicleName;
+    }
+    if (item.vehicleType === 'bus') return 'Otobüs';
+    if (item.vehicleType === 'big') return 'Büyük Araç';
+    if (item.vehicleType === 'small') return 'Küçük Araç';
     return 'Dahil';
   };
 
@@ -65,8 +67,8 @@ export default function LiveQuoteCard({
 
   return (
     <div className="h-full w-full flex flex-col font-sans select-none">
-      {/* Market Fişi Kartı - Eşit Dağılım, Sıfır Scroll, Derli Toplu & Ferah */}
-      <div className="pearl-card rounded-3xl p-5 shadow-xl border-2 border-emerald-300/80 dark:border-emerald-600/50 bg-white dark:bg-slate-900 relative h-full flex flex-col justify-between overflow-hidden">
+      {/* Market Fişi Kartı - Eşit Dağılım, Esnek & Kesintisiz Görünüm */}
+      <div className="pearl-card rounded-3xl p-3.5 sm:p-4 shadow-xl border-2 border-emerald-300/80 dark:border-emerald-600/50 bg-white dark:bg-slate-900 relative h-full flex flex-col justify-between overflow-hidden">
         
         {/* ÜST BÖLÜM: Fiş Başlığı & Döviz Seçici */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 shrink-0">
@@ -115,15 +117,17 @@ export default function LiveQuoteCard({
               </p>
             </div>
           ) : isMixed ? (
-            <div className="bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/70 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/50 p-3 rounded-2xl border border-emerald-300 dark:border-emerald-700/60 shadow-3xs space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-emerald-950 dark:text-emerald-300 font-display border-b border-emerald-200/70 dark:border-emerald-800/60 pb-1">
-                <span>Oda Tiplerine Göre Kişi Başı Ücret</span>
-                <span className="font-mono text-[10px] bg-emerald-700 text-white px-2 py-0.5 rounded-full font-bold">
-                  Çoklu Fiyat
+            /* Çoklu Oda: SADECE Seçili Odaların Kişi Başı Ücretleri (Ortalama Fiyat Kesinlikle YOK) */
+            <div className="py-1 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-950 dark:text-emerald-300 font-display">
+                  Oda Tiplerine Göre Kişi Başı
+                </span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  {effectivePax} Kişi • {quotation.mixedRoomsSummary?.totalRooms || 0} Oda
                 </span>
               </div>
 
-              {/* Sadece Adedi > 0 Olan Seçili Oda Tiplerinin Kişi Başı Fiyat Kutuları */}
               {(() => {
                 const activeRoomTypes = [
                   { key: 'single', label: '1 Kişilik', count: quotation.mixedRooms?.single || 0, data: quotation.mixedRoomsBreakdown?.single },
@@ -141,13 +145,17 @@ export default function LiveQuoteCard({
                 }
 
                 return (
-                  <div className={`grid gap-2 font-mono ${
-                    activeRoomTypes.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+                  <div className={`grid gap-1.5 font-mono ${
+                    activeRoomTypes.length === 1 ? 'grid-cols-1' :
+                    activeRoomTypes.length === 2 ? 'grid-cols-2' :
+                    activeRoomTypes.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'
                   }`}>
                     {activeRoomTypes.map((r) => (
-                      <div key={r.key} className="bg-white dark:bg-slate-800 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-3xs flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{r.label}:</span>
-                        <span className="text-sm font-black text-emerald-950 dark:text-emerald-300">
+                      <div key={r.key} className="bg-slate-50/90 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700/90 shadow-3xs flex flex-col items-center text-center">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-tight">
+                          {r.label} <span className="text-emerald-700 dark:text-emerald-400 font-black">({r.count} Oda)</span>
+                        </span>
+                        <span className="text-sm font-black text-emerald-950 dark:text-emerald-300 tracking-tight leading-tight mt-0.5">
                           {activeCurrency === 'USD' && `$${(r.data?.priceUSD || 0).toLocaleString('tr-TR')}`}
                           {activeCurrency === 'TRY' && `${(r.data?.priceTRY || 0).toLocaleString('tr-TR')} ₺`}
                           {activeCurrency === 'EUR' && `€${(r.data?.priceEUR || 0).toLocaleString('tr-TR')}`}
@@ -160,6 +168,7 @@ export default function LiveQuoteCard({
               })()}
             </div>
           ) : (
+            /* Standart Tekil Oda: Büyük Net Kişi Başı Fiyat */
             <div className="space-y-1 py-1">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-emerald-950 dark:text-emerald-300">
@@ -171,6 +180,7 @@ export default function LiveQuoteCard({
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">/ Kişi Başı</span>
               </div>
 
+              {/* Kur Karşılıkları */}
               <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-slate-600 dark:text-slate-300 font-semibold">
                 {activeCurrency !== 'USD' && (
                   <span className="bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -187,6 +197,11 @@ export default function LiveQuoteCard({
                     ~{(quotation.finalPriceEUR || 0).toLocaleString('tr-TR')} €
                   </span>
                 )}
+                {activeCurrency !== 'SAR' && (
+                  <span className="bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    ~{(quotation.finalPriceSAR || 0).toLocaleString('tr-TR')} SAR
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -195,8 +210,8 @@ export default function LiveQuoteCard({
         {/* Kesikli Çizgi */}
         <div className="border-b-2 border-dashed border-slate-200 dark:border-slate-800 my-1 shrink-0" />
 
-        {/* ORTA BÖLÜM: Fiş Kalemleri (Pil Formunda Şık Kutucuklar) */}
-        <div className="flex-1 flex flex-col justify-around py-1 space-y-1.5 text-xs">
+        {/* ORTA BÖLÜM: Fiş Kalemleri (Esnek, İnce Scroll Korumalı) */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col justify-between py-1 space-y-1 text-xs pr-0.5">
           
           {/* Seyahat Tarihleri & Rota Pil Kutusu */}
           <div className="bg-slate-50/80 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-2 shadow-3xs">
@@ -286,27 +301,27 @@ export default function LiveQuoteCard({
           <div className="bg-slate-50/80 dark:bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/60 flex items-center gap-2 flex-wrap shadow-3xs">
             <Bus className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
             <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Araç / Transfer:</span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold border ${
                 quotation.transferBreakdown?.[0]?.vehicleType && quotation.transferBreakdown?.[0]?.vehicleType !== 'none'
                   ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 border-sky-200 dark:border-sky-800'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
               }`}>
-                Cidde-Mekke ({getVehicleShort(quotation.transferBreakdown?.[0]?.vehicleType)})
+                Cidde-Mekke ({getVehicleShort(quotation.transferBreakdown?.[0])})
               </span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+              <span className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold border ${
                 quotation.transferBreakdown?.[1]?.vehicleType && quotation.transferBreakdown?.[1]?.vehicleType !== 'none'
                   ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 border-sky-200 dark:border-sky-800'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
               }`}>
-                Mekke-Medine ({getVehicleShort(quotation.transferBreakdown?.[1]?.vehicleType)})
+                Mekke-Medine ({getVehicleShort(quotation.transferBreakdown?.[1])})
               </span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+              <span className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold border ${
                 quotation.transferBreakdown?.[2]?.vehicleType && quotation.transferBreakdown?.[2]?.vehicleType !== 'none'
                   ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-300 border-sky-200 dark:border-sky-800'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
               }`}>
-                Medine-HL ({getVehicleShort(quotation.transferBreakdown?.[2]?.vehicleType)})
+                Medine-HL ({getVehicleShort(quotation.transferBreakdown?.[2])})
               </span>
             </div>
           </div>
@@ -321,7 +336,7 @@ export default function LiveQuoteCard({
                 return (
                   <span 
                     key={idx} 
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
+                    className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold border ${
                       isPartial 
                         ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-800' 
                         : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
@@ -336,96 +351,44 @@ export default function LiveQuoteCard({
             )}
           </div>
 
-          {/* Çoklu Oda Dağılımı */}
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-            {isMixed ? (
-              <>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <Users className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
-                  <span>Çoklu Oda Dağılımı:</span>
-                  <span className="font-mono text-emerald-950 dark:text-emerald-300 font-black text-xs bg-emerald-100/90 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md">
-                    {quotation.mixedRoomsSummary?.totalRooms || 0} Oda • {quotation.mixedRoomsSummary?.totalPax || effectivePax} Kişi
-                  </span>
-                </div>
-
-                {/* 1 | 2 | 3 | 4 Bölünmüş Net Kutucuklar */}
-                <div className="grid grid-cols-4 gap-2 font-mono text-center">
-                  <div className={`p-1.5 rounded-xl border transition-all ${
-                    quotation.mixedRooms?.single > 0 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-950 dark:text-emerald-300 font-black shadow-3xs' 
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                  }`}>
-                    <div className="text-[10px] font-bold">1'li</div>
-                    <div className="text-xs font-black">{quotation.mixedRooms?.single || 0} Oda</div>
-                  </div>
-
-                  <div className={`p-1.5 rounded-xl border transition-all ${
-                    quotation.mixedRooms?.double > 0 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-950 dark:text-emerald-300 font-black shadow-3xs' 
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                  }`}>
-                    <div className="text-[10px] font-bold">2'li</div>
-                    <div className="text-xs font-black">{quotation.mixedRooms?.double || 0} Oda</div>
-                  </div>
-
-                  <div className={`p-1.5 rounded-xl border transition-all ${
-                    quotation.mixedRooms?.triple > 0 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-950 dark:text-emerald-300 font-black shadow-3xs' 
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                  }`}>
-                    <div className="text-[10px] font-bold">3'lü</div>
-                    <div className="text-xs font-black">{quotation.mixedRooms?.triple || 0} Oda</div>
-                  </div>
-
-                  <div className={`p-1.5 rounded-xl border transition-all ${
-                    quotation.mixedRooms?.quad > 0 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-950 dark:text-emerald-300 font-black shadow-3xs' 
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                  }`}>
-                    <div className="text-[10px] font-bold">4'lü</div>
-                    <div className="text-xs font-black">{quotation.mixedRooms?.quad || 0} Oda</div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Standart Tekil Oda Sayacı */
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Grup Kişi Sayısı:
-                  </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                    ({quotation.makkahRoomOccupancy} Kişilik Oda)
-                  </span>
-                </div>
-
-                {onChangePaxCount && (
-                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => onChangePaxCount(Math.max(1, paxCount - 1))}
-                      className="h-5 w-5 rounded-md bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-3xs border border-slate-200 dark:border-slate-600"
-                      title="1 Kişi Azalt"
-                    >
-                      <Minus className="h-2.5 w-2.5" />
-                    </button>
-                    <span className="font-mono font-black text-xs text-slate-900 dark:text-white min-w-[24px] text-center select-none">
-                      {paxCount}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onChangePaxCount(Math.min(200, paxCount + 1))}
-                      className="h-5 w-5 rounded-md bg-emerald-700 hover:bg-emerald-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs"
-                      title="1 Kişi Artır"
-                    >
-                      <Plus className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
-                )}
+          {/* Standart Tekil Oda Sayacı (Sadece Tekil Oda Modunda) */}
+          {!isMixed && (
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Grup Kişi Sayısı:
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                  ({quotation.makkahRoomOccupancy} Kişilik Oda)
+                </span>
               </div>
-            )}
-          </div>
+
+              {onChangePaxCount && (
+                <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => onChangePaxCount(Math.max(1, paxCount - 1))}
+                    className="h-5 w-5 rounded-md bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-3xs border border-slate-200 dark:border-slate-600"
+                    title="1 Kişi Azalt"
+                  >
+                    <Minus className="h-2.5 w-2.5" />
+                  </button>
+                  <span className="font-mono font-black text-xs text-slate-900 dark:text-white min-w-[24px] text-center select-none">
+                    {paxCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onChangePaxCount(Math.min(200, paxCount + 1))}
+                    className="h-5 w-5 rounded-md bg-emerald-700 hover:bg-emerald-600 active:scale-90 text-white font-bold flex items-center justify-center cursor-pointer transition-all spring-pill shadow-xs"
+                    title="1 Kişi Artır"
+                  >
+                    <Plus className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
 

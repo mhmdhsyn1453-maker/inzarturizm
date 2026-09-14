@@ -46,11 +46,21 @@ export function DataProvider({ children }) {
 
     if (result.success && result.rates) {
       setCurrencies(prev => {
+        const hasSignificantChange = !prev || 
+          Math.abs((prev.USD_TRY || 0) - (result.rates.USD_TRY || 0)) > 0.005 ||
+          Math.abs((prev.EUR_TRY || 0) - (result.rates.EUR_TRY || 0)) > 0.005 ||
+          Math.abs((prev.SAR_USD || 0) - (result.rates.SAR_USD || 0)) > 0.005;
+
         const merged = {
           ...prev,
           ...result.rates,
         };
-        syncService.saveCurrencies(merged, currentUser, `Canlı piyasa kurları çekildi (USD: ${result.rates.USD_TRY} TL, EUR: ${result.rates.EUR_TRY} TL)`);
+        syncService.saveCurrencies(
+          merged, 
+          currentUser, 
+          `Canlı piyasa kurları çekildi (USD: ${result.rates.USD_TRY} TL, EUR: ${result.rates.EUR_TRY} TL)`,
+          hasSignificantChange || showToast
+        );
         return merged;
       });
 

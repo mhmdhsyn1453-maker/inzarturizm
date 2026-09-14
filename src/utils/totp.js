@@ -87,12 +87,10 @@ export async function verifyTOTPToken(secret, userToken, period = 30, windowTole
   for (let w = -windowTolerance; w <= windowTolerance; w++) {
     const checkTime = now + w * stepMs;
     const expected = await generateTOTPToken(secret, checkTime, period);
-    console.log(`[TOTP] Window ${w}: expected=${expected}, got=${cleanToken}, match=${expected === cleanToken}`);
     if (expected === cleanToken) {
       return true;
     }
   }
-  console.warn('[TOTP] Verification failed for all windows. Secret:', secret?.substring(0, 4) + '...');
   return false;
 }
 

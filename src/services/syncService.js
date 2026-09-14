@@ -26,11 +26,41 @@ class SyncService {
     this.clientId = 'client_' + Math.random().toString(36).substring(2, 9);
     this.recentLocalSavedQuoteIds = new Set();
     this.recentLocalSavedAnnouncementIds = new Set();
+    this.recentlyDeletedCustomerKeys = new Set(); // Track recently deleted customers to prevent realtime re-fetch race
     this.lastPackageNotifyTime = 0;
+
+    // Silinen Teklifler Kara Listesi (Hafızadan ve Senkronizasyondan Asla Geri Gelmez)
+    this.deletedQuoteIds = new Set();
+    try {
+      const savedDeleted = localStorage.getItem('inzar_deleted_quotes_v3');
+      if (savedDeleted) {
+        JSON.parse(savedDeleted).forEach(id => this.deletedQuoteIds.add(id));
+      }
+    } catch (e) {}
+
+    // Silinen Müşteriler Kara Listesi (Hafızadan ve Senkronizasyondan Asla Geri Dirilmez)
+    this.deletedCustomerIds = new Set();
+    try {
+      const savedDeletedCust = localStorage.getItem('inzar_deleted_customer_ids_v1');
+      if (savedDeletedCust) {
+        JSON.parse(savedDeletedCust).forEach(id => this.deletedCustomerIds.add(id));
+      }
+    } catch (e) {}
 
     // Smart Polling Diff Tracking (WebSocket kopsa bile kaçırmayan akıllı hafıza)
     this.knownAnnouncementIds = new Set();
-    this.hasInitializedAnnouncements = false;
+    try {
+      const savedAnnouncements = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
+      if (savedAnnouncements) {
+        JSON.parse(savedAnnouncements).forEach(a => this.knownAnnouncementIds.add(a.id));
+      }
+      const storedKnown = localStorage.getItem('inzar_known_announcements_v3');
+      if (storedKnown) {
+        JSON.parse(storedKnown).forEach(id => this.knownAnnouncementIds.add(id));
+      }
+    } catch (e) {}
+    this.hasInitializedAnnouncements = this.knownAnnouncementIds.size > 0;
+
     this.knownQuoteStatusMap = new Map();
     this.hasInitializedQuotes = false;
     try {
@@ -44,6 +74,32 @@ class SyncService {
     if (this.broadcastChannel) {
       this.broadcastChannel.onmessage = (event) => {
         if (event.data?.senderId !== this.clientId) {
+          if (event.data?.type === 'QUOTE_DELETED' && event.data?.payload?.quoteId) {
+            const qId = event.data.payload.quoteId;
+            this.deletedQuoteIds.add(qId);
+            try {
+              localStorage.setItem('inzar_deleted_quotes_v3', JSON.stringify([...this.deletedQuoteIds]));
+            } catch (e) {}
+            const current = this.getSavedQuotes();
+            const filtered = current.filter(q => q.id !== qId);
+            localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(filtered));
+            this.notifyListeners({ type: 'QUOTES_UPDATED', payload: filtered });
+            return;
+          }
+
+          if (event.data?.type === 'CUSTOMER_DELETED' && event.data?.payload?.customerId) {
+            const cId = event.data.payload.customerId;
+            this.deletedCustomerIds.add(cId);
+            try {
+              localStorage.setItem('inzar_deleted_customer_ids_v1', JSON.stringify([...this.deletedCustomerIds]));
+            } catch (e) {}
+            const current = this.getCustomers();
+            const filtered = current.filter(c => c.id !== cId);
+            localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(filtered));
+            this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: filtered });
+            return;
+          }
+
           if (event.data?.notification) {
             notificationService.notify(event.data.notification);
           }
@@ -110,12 +166,12 @@ class SyncService {
     }
   }
 
-  // 💓 6 Saniyelik Arka Plan Akıllı Kalp Atışı (Smart Polling Fallback)
+  // 💓 30 Saniyelik Arka Plan Akıllı Kalp Atışı (Smart Polling Fallback)
   startHeartbeatPoller() {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = setInterval(() => {
       this.pullLatestFromSupabase();
-    }, 6000);
+    }, 30000);
   }
 
   initSupabaseRealtime() {
@@ -191,6 +247,9 @@ class SyncService {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, () => {
           this.fetchAppSettingsFromSupabase();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_versions' }, () => {
+          this.fetchAppVersionsFromSupabase();
+        })
         .subscribe((status) => {
           console.log('[Supabase Realtime Status]:', status);
           if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -227,7 +286,8 @@ class SyncService {
       this.fetchAuditLogsFromSupabase(),
       this.fetchProfilesFromSupabase(),
       this.fetchCustomersFromSupabase(),
-      this.fetchAppSettingsFromSupabase()
+      this.fetchAppSettingsFromSupabase(),
+      this.fetchAppVersionsFromSupabase()
     ]);
   }
 
@@ -541,16 +601,19 @@ class SyncService {
           });
         }
 
-        // 🛡️ Akıllı Harmanlama (Smart Merge): Supabase teklifleri ile henüz Supabase'e ulaşmamış yerel teklifleri birleştir
-        const localQuotes = this.getSavedQuotes();
-        const remoteIds = new Set(formatted.map(q => q.id));
-        const unsyncedLocals = localQuotes.filter(lq => !remoteIds.has(lq.id));
+        // 🛡️ Akıllı Harmanlama (Smart Merge): Silinmiş teklifleri asla dahil etme ve diriltme
+        const activeFormatted = formatted.filter(q => !this.deletedQuoteIds?.has(q.id));
+        const localQuotes = this.getSavedQuotes().filter(lq => !this.deletedQuoteIds?.has(lq.id));
+        const remoteIds = new Set(activeFormatted.map(q => q.id));
+        const unsyncedLocals = localQuotes.filter(lq => !remoteIds.has(lq.id) && !this.deletedQuoteIds?.has(lq.id));
 
+        // SADECE son oluşturulmuş ve henüz Supabase'e ulaşmamış yerelleri gönder (silinmiş olanları ASLA tekrar yükleme)
         if (unsyncedLocals.length > 0) {
-          unsyncedLocals.forEach(lq => this.pushQuoteToSupabase(lq));
+          const validLocalsToPush = unsyncedLocals.filter(lq => this.recentLocalSavedQuoteIds?.has(lq.id));
+          validLocalsToPush.forEach(lq => this.pushQuoteToSupabase(lq));
         }
 
-        const mergedQuotes = [...formatted, ...unsyncedLocals].sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
+        const mergedQuotes = [...activeFormatted, ...unsyncedLocals].filter(q => !this.deletedQuoteIds?.has(q.id)).sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
 
         localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(mergedQuotes));
         this.notifyListeners({ type: 'QUOTES_UPDATED', payload: mergedQuotes });
@@ -565,7 +628,21 @@ class SyncService {
     try {
       const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
       if (!error && data) {
-        const formatted = data.map(c => ({
+        // Filter out permanently deleted or recently deleted customers
+        const filteredData = data.filter(c => {
+          const cId = c.id || '';
+          if (this.deletedCustomerIds?.has(cId)) return false;
+          const cTc = (c.tc_no || '').replace(/\D/g, '');
+          const cPhone = (c.phone || '').replace(/\D/g, '');
+          const cName = (c.full_name || '').trim().toLocaleLowerCase('tr-TR');
+          if (this.recentlyDeletedCustomerKeys.has(`id:${cId}`)) return false;
+          if (cTc && this.recentlyDeletedCustomerKeys.has(`tc:${cTc}`)) return false;
+          if (cPhone && this.recentlyDeletedCustomerKeys.has(`phone:${cPhone}`)) return false;
+          if (cName && this.recentlyDeletedCustomerKeys.has(`name:${cName}`)) return false;
+          return true;
+        });
+
+        const formatted = filteredData.map(c => ({
           id: c.id,
           tcNo: c.tc_no || '',
           firstName: c.first_name || '',
@@ -579,14 +656,21 @@ class SyncService {
           createdAt: c.created_at,
           updatedAt: c.updated_at
         }));
-        const localCustomers = this.getCustomers();
+        const localCustomers = this.getCustomers().filter(lc => !this.deletedCustomerIds?.has(lc.id));
         const remoteIds = new Set(formatted.map(c => c.id));
-        const unsyncedLocals = localCustomers.filter(lc => !remoteIds.has(lc.id));
-        if (unsyncedLocals.length > 0) {
-          unsyncedLocals.forEach(lc => this.saveCustomer(lc));
-        }
+        // Only re-add locals that are genuinely active and NOT deleted
+        const unsyncedLocals = localCustomers.filter(lc => {
+          if (remoteIds.has(lc.id)) return false;
+          if (this.deletedCustomerIds?.has(lc.id)) return false;
+          if (this.recentlyDeletedCustomerKeys.has(`id:${lc.id}`)) return false;
+          const lcTc = (lc.tcNo || '').replace(/\D/g, '');
+          if (lcTc && this.recentlyDeletedCustomerKeys.has(`tc:${lcTc}`)) return false;
+          return true;
+        });
 
-        const mergedCustomers = [...formatted, ...unsyncedLocals].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        const mergedCustomers = [...formatted, ...unsyncedLocals]
+          .filter(c => !this.deletedCustomerIds?.has(c.id))
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
         localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(mergedCustomers));
         this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: mergedCustomers });
@@ -615,12 +699,20 @@ class SyncService {
           // İlk yüklemede mevcutları hafızaya al, eski duyurular için bildirim basma
           formatted.forEach(a => this.knownAnnouncementIds.add(a.id));
           this.hasInitializedAnnouncements = true;
+          try {
+            localStorage.setItem('inzar_known_announcements_v3', JSON.stringify([...this.knownAnnouncementIds]));
+          } catch (e) {}
         } else {
-          // Sonraki heartbeat kontrollerinde hafızada olmayan her yeni duyuru için BİLDİRİM VE SES TETİKLE!
+          // Sonraki heartbeat kontrollerinde SADECE son 5 dakika içinde eklenmiş ve henüz bilinmeyen yeni duyuru için bildirim bas
           formatted.forEach(a => {
             if (!this.knownAnnouncementIds.has(a.id)) {
               this.knownAnnouncementIds.add(a.id);
-              if (!this.recentLocalSavedAnnouncementIds.has(a.id)) {
+              try {
+                localStorage.setItem('inzar_known_announcements_v3', JSON.stringify([...this.knownAnnouncementIds]));
+              } catch (e) {}
+
+              const isVeryRecent = a.createdAt && (Date.now() - new Date(a.createdAt).getTime() < 5 * 60 * 1000);
+              if (isVeryRecent && !this.recentLocalSavedAnnouncementIds.has(a.id)) {
                 notificationService.notify({
                   title: '📢 Genel Merkez Duyurusu',
                   message: a.title,
@@ -704,7 +796,11 @@ class SyncService {
         const storedTemplates = JSON.parse(localStorage.getItem('INZAR_WHATSAPP_TEMPLATES') || '{}');
         let hasTemplateUpdate = false;
 
+        const allSettings = {};
         data.forEach(item => {
+          allSettings[item.key] = item.value;
+          localStorage.setItem(`INZAR_SETTING_${item.key}`, item.value);
+
           if (item.key === 'whatsapp_template' && item.value) {
             storedTemplates.quote = item.value;
             localStorage.setItem('INZAR_WHATSAPP_TEMPLATE', item.value);
@@ -715,6 +811,9 @@ class SyncService {
             hasTemplateUpdate = true;
           }
         });
+
+        localStorage.setItem('INZAR_APP_SETTINGS', JSON.stringify(allSettings));
+        this.notifyListeners({ type: 'APP_SETTINGS_UPDATED', payload: allSettings });
 
         if (hasTemplateUpdate) {
           localStorage.setItem('INZAR_WHATSAPP_TEMPLATES', JSON.stringify(storedTemplates));
@@ -727,11 +826,113 @@ class SyncService {
     }
   }
 
+  getAppSetting(key, defaultValue = null) {
+    try {
+      const val = localStorage.getItem(`INZAR_SETTING_${key}`);
+      if (val !== null) return val;
+      const all = JSON.parse(localStorage.getItem('INZAR_APP_SETTINGS') || '{}');
+      if (all[key] !== undefined) return all[key];
+    } catch (e) {}
+    return defaultValue;
+  }
+
+  async saveAppSetting(key, value, user = null) {
+    const stringVal = typeof value === 'string' ? value : JSON.stringify(value);
+    try {
+      localStorage.setItem(`INZAR_SETTING_${key}`, stringVal);
+      const all = JSON.parse(localStorage.getItem('INZAR_APP_SETTINGS') || '{}');
+      all[key] = stringVal;
+      localStorage.setItem('INZAR_APP_SETTINGS', JSON.stringify(all));
+    } catch (e) {}
+
+    this.notifyListeners({ type: 'APP_SETTINGS_UPDATED', payload: { key, value: stringVal } });
+    this.broadcast('APP_SETTINGS_UPDATED', { key, value: stringVal });
+
+    if (this.isSupabaseReady && supabase) {
+      try {
+        await supabase.from('app_settings').upsert({
+          key,
+          value: stringVal,
+          updated_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.warn('Supabase app_settings save error:', err);
+      }
+    }
+  }
+
+  async fetchAppVersionsFromSupabase() {
+    if (!this.isSupabaseReady || !supabase) return;
+    try {
+      const { data, error } = await supabase.from('app_versions').select('*').order('published_at', { ascending: false }).limit(5);
+      if (!error && data && data.length > 0) {
+        const latest = data[0];
+        localStorage.setItem('INZAR_LATEST_VERSION_INFO', JSON.stringify(latest));
+        this.notifyListeners({ type: 'APP_VERSION_UPDATED', payload: latest });
+        this.broadcast('APP_VERSION_UPDATED', latest);
+        return latest;
+      }
+    } catch (err) {
+      console.warn('Supabase app_versions fetch error:', err);
+    }
+    return null;
+  }
+
+  async publishAppVersion(versionData, user = null) {
+    const payload = {
+      id: versionData.id || 'latest_release',
+      version: versionData.version || '1.0.20',
+      release_notes: versionData.releaseNotes || versionData.release_notes || '',
+      download_url: versionData.downloadUrl || versionData.download_url || '',
+      is_mandatory: Boolean(versionData.isMandatory || versionData.is_mandatory),
+      published_by: user?.name || 'Genel Merkez Bilgi İşlem',
+      published_at: new Date().toISOString()
+    };
+
+    localStorage.setItem('INZAR_LATEST_VERSION_INFO', JSON.stringify(payload));
+    this.broadcast('APP_VERSION_UPDATED', payload);
+    this.notifyListeners({ type: 'APP_VERSION_UPDATED', payload });
+
+    if (this.isSupabaseReady && supabase) {
+      try {
+        await supabase.from('app_versions').upsert(payload);
+        this.addAuditLog({
+          action: 'APP_VERSION_PUBLISHED',
+          user: user?.name || 'Genel Merkez',
+          details: `Yeni sistem sürümü yayınlandı: v${payload.version}`,
+          timestamp: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('Supabase publish app version error:', err);
+      }
+    }
+    return payload;
+  }
+
   handleRemoteQuoteChange(payload) {
+    if (payload?.eventType === 'DELETE') {
+      const qId = payload?.old?.id || payload?.old_record?.id;
+      if (qId) {
+        if (!this.deletedQuoteIds) this.deletedQuoteIds = new Set();
+        this.deletedQuoteIds.add(qId);
+        try {
+          localStorage.setItem('inzar_deleted_quotes_v3', JSON.stringify([...this.deletedQuoteIds]));
+        } catch (e) {}
+        this.knownQuoteStatusMap.delete(qId);
+        const current = this.getSavedQuotes();
+        const updated = current.filter(q => q.id !== qId);
+        localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updated));
+        this.notifyListeners({ type: 'QUOTES_UPDATED', payload: updated });
+      }
+      return;
+    }
+
     this.fetchQuotesFromSupabase();
 
     if (!payload || !payload.new) return;
     const q = payload.new;
+
+    if (this.deletedQuoteIds?.has(q.id)) return;
 
     // Kendi oluşturduğumuz anlık işlemse bildirim tekrarı yapma
     if (this.recentLocalSavedQuoteIds?.has(q.id)) return;
@@ -785,13 +986,22 @@ class SyncService {
   handleRemoteAnnouncementChange(payload) {
     this.fetchAnnouncementsFromSupabase();
     if (payload?.eventType === 'INSERT' && payload?.new) {
-      notificationService.notify({
-        title: '📢 Genel Merkez Duyurusu',
-        message: payload.new.title,
-        type: 'announcement',
-        sound: 'urgent',
-        data: payload.new
-      });
+      const isKnown = this.knownAnnouncementIds.has(payload.new.id);
+      const isRecentLocal = this.recentLocalSavedAnnouncementIds.has(payload.new.id);
+      this.knownAnnouncementIds.add(payload.new.id);
+      try {
+        localStorage.setItem('inzar_known_announcements_v3', JSON.stringify([...this.knownAnnouncementIds]));
+      } catch (e) {}
+
+      if (!isKnown && !isRecentLocal) {
+        notificationService.notify({
+          title: '📢 Genel Merkez Duyurusu',
+          message: payload.new.title,
+          type: 'announcement',
+          sound: 'urgent',
+          data: payload.new
+        });
+      }
     }
   }
 
@@ -991,14 +1201,16 @@ class SyncService {
     return DEFAULT_CURRENCIES;
   }
 
-  saveCurrencies(currencies, user = null, changeNote = '') {
+  saveCurrencies(currencies, user = null, changeNote = '', shouldAudit = true) {
     localStorage.setItem(STORAGE_KEYS.CURRENCIES, JSON.stringify(currencies));
-    this.addAuditLog({
-      action: 'CURRENCY_UPDATED',
-      user: user?.name || 'Genel Merkez',
-      details: changeNote || `Kurlar güncellendi (USD/SAR: ${currencies.SAR_USD}, USD/TRY: ${currencies.USD_TRY})`,
-      timestamp: new Date().toISOString()
-    });
+    if (shouldAudit) {
+      this.addAuditLog({
+        action: 'CURRENCY_UPDATED',
+        user: user?.name || 'Genel Merkez',
+        details: changeNote || `Kurlar güncellendi (USD/SAR: ${currencies.SAR_USD}, USD/TRY: ${currencies.USD_TRY})`,
+        timestamp: new Date().toISOString()
+      });
+    }
     this.broadcast('CURRENCIES_UPDATED', currencies);
 
     if (this.isSupabaseReady) {
@@ -1068,22 +1280,6 @@ class SyncService {
     }
   }
 
-  getUsers() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.USERS);
-      if (data) {
-        const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-    return DEFAULT_USERS;
-  }
-
-  saveUsers(users) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    this.broadcast('USERS_UPDATED', users);
-  }
 
   getAnnouncements() {
     try {
@@ -1192,7 +1388,9 @@ class SyncService {
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) {
-          return parsed.map(q => {
+          return parsed
+            .filter(q => !this.deletedQuoteIds?.has(q.id))
+            .map(q => {
             let hqNote = q.hqNote || q.hq_note || '';
             if (typeof hqNote === 'object' && hqNote !== null) {
               hqNote = hqNote.reason || hqNote.note || '';
@@ -1476,6 +1674,25 @@ class SyncService {
       return true;
     });
 
+    // Track deleted customer keys to prevent realtime re-fetch race condition
+    if (targetId) {
+      this.recentlyDeletedCustomerKeys.add(`id:${targetId}`);
+      this.deletedCustomerIds.add(targetId);
+      try {
+        localStorage.setItem('inzar_deleted_customer_ids_v1', JSON.stringify([...this.deletedCustomerIds]));
+      } catch (e) {}
+    }
+    if (targetTc) this.recentlyDeletedCustomerKeys.add(`tc:${targetTc}`);
+    if (targetPhone) this.recentlyDeletedCustomerKeys.add(`phone:${targetPhone}`);
+    if (targetName) this.recentlyDeletedCustomerKeys.add(`name:${targetName.toLocaleLowerCase('tr-TR')}`);
+    // Auto-cleanup after 15 seconds (enough time for Supabase delete to propagate)
+    setTimeout(() => {
+      if (targetId) this.recentlyDeletedCustomerKeys.delete(`id:${targetId}`);
+      if (targetTc) this.recentlyDeletedCustomerKeys.delete(`tc:${targetTc}`);
+      if (targetPhone) this.recentlyDeletedCustomerKeys.delete(`phone:${targetPhone}`);
+      if (targetName) this.recentlyDeletedCustomerKeys.delete(`name:${targetName.toLocaleLowerCase('tr-TR')}`);
+    }, 15000);
+
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
     this.addAuditLog({
       action: 'CUSTOMER_DELETED',
@@ -1484,6 +1701,9 @@ class SyncService {
       timestamp: new Date().toISOString()
     });
     this.broadcast('CUSTOMERS_UPDATED', updated);
+    if (targetId) {
+      this.broadcast('CUSTOMER_DELETED', { customerId: targetId });
+    }
     this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: updated });
 
     // Delete customer's past quotes if requested (so the customer doesn't reappear in history)
@@ -1780,18 +2000,37 @@ class SyncService {
   }
 
   deleteQuote(quoteId, user = null) {
+    if (!quoteId) return [];
+
+    // 1. Silinen ID'yi kara listeye al ve kalıcı yap (ASLA geri gelmez)
+    if (!this.deletedQuoteIds) this.deletedQuoteIds = new Set();
+    this.deletedQuoteIds.add(quoteId);
+    try {
+      localStorage.setItem('inzar_deleted_quotes_v3', JSON.stringify([...this.deletedQuoteIds]));
+    } catch (e) {}
+
+    // 2. Durum takip haritasından çıkar (yanlış bildirim gitmesin)
+    this.knownQuoteStatusMap.delete(quoteId);
+
+    // 3. Yerel depolamadan çıkar
     const current = this.getSavedQuotes();
     const target = current.find(q => q.id === quoteId);
     const updated = current.filter(q => q.id !== quoteId);
     localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updated));
+
     this.addAuditLog({
       action: 'QUOTE_DELETED',
       user: user?.name || 'Genel Merkez',
       details: `${target?.customerName || 'Misafir'} adına olan ${target?.packageName || ''} teklifi silindi.`,
       timestamp: new Date().toISOString()
     });
-    this.broadcast('QUOTES_UPDATED', updated);
 
+    // 4. Tüm sekmelere ve dinleyicilere yayınla
+    this.broadcast('QUOTES_UPDATED', updated);
+    this.broadcast('QUOTE_DELETED', { quoteId });
+    this.notifyListeners({ type: 'QUOTES_UPDATED', payload: updated });
+
+    // 5. Supabase veritabanından kalıcı olarak sil
     if (this.isSupabaseReady) {
       supabase.from('quotes').delete().eq('id', quoteId).then(({ error }) => {
         if (error) console.error('[Supabase deleteQuote error]:', error);

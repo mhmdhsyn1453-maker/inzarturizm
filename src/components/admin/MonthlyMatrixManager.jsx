@@ -228,6 +228,9 @@ export default function MonthlyMatrixManager() {
     showInLetter: true
   });
 
+  // EDIT FIXED EXPENSE MODAL STATE
+  const [editingExpense, setEditingExpense] = useState(null);
+
   const inlineFormRef = useRef(null);
   const expenseFormRef = useRef(null);
 
@@ -692,11 +695,65 @@ export default function MonthlyMatrixManager() {
     updatePackage(selectedPkgId, updatedPkg, `${localPkg.name} paket kâr marjı %${margin} olarak güncellendi.`);
   };
 
-  // 4. Hizmeti Sil (TÜM PAKETLERDEN KALDIRILIR)
+  // 3d. Dahili Hizmet Düzenlemeyi Başlat
+  const handleOpenEditExpense = (exp) => {
+    setEditingExpense({
+      id: exp.id,
+      name: exp.name || '',
+      desc: exp.desc || '',
+      priceSAR: exp.priceSAR !== undefined ? exp.priceSAR : 0,
+      isVisible: exp.isVisible !== false,
+      showInLetter: exp.showInLetter !== false
+    });
+  };
+
+  // 3e. Dahili Hizmet Düzenlemeyi Kaydet (Supabase & Tüm Paketler)
+  const handleSaveEditExpense = (e) => {
+    e?.preventDefault();
+    if (!editingExpense || !editingExpense.name?.trim()) {
+      showAlert({ title: 'İsim Eksik', message: 'Lütfen dahili hizmet adını giriniz.', type: 'error' });
+      return;
+    }
+
+    const priceVal = parseFloat(editingExpense.priceSAR) || 0;
+    const isVis = editingExpense.isVisible !== false;
+    const isLetterVis = editingExpense.showInLetter !== false;
+
+    const next = {};
+    Object.keys(allPkgsDraft).forEach(pkgId => {
+      const p = allPkgsDraft[pkgId];
+      next[pkgId] = {
+        ...p,
+        fixedExpensesList: (p.fixedExpensesList || []).map(item => {
+          if (item.id !== editingExpense.id) return item;
+          return {
+            ...item,
+            name: editingExpense.name.trim(),
+            desc: editingExpense.desc.trim(),
+            priceSAR: pkgId === selectedPkgId ? priceVal : item.priceSAR,
+            isVisible: isVis,
+            showInLetter: isLetterVis
+          };
+        })
+      };
+    });
+
+    setAllPkgsDraft(next);
+    updateAllPackages(Object.values(next), `Dahili hizmet güncellendi: ${editingExpense.name.trim()}`);
+    setEditingExpense(null);
+
+    showAlert({
+      title: '✓ Dahili Hizmet Güncellendi',
+      message: `"${editingExpense.name.trim()}" hizmeti güncellendi ve Supabase veritabanına kalıcı olarak kaydedildi.`,
+      type: 'success'
+    });
+  };
+
+  // 4. Hizmeti Sil (TÜM PAKETLERDEN KALDIRILIR & SUPABASE SENKRONİZE EDİLİR)
   const handleDeleteExpense = async (expId, expName) => {
     const confirmed = await showConfirm({
       title: 'Dahili Hizmeti Sil',
-      message: `"${expName}" hizmet kalemini TÜM paketlerden tamamen silmek istediğinize emin misiniz?`,
+      message: `"${expName}" hizmet kalemini TÜM paketlerden tamamen silmek istediğinize emin misiniz? Bu işlem Supabase veritabanına da kalıcı olarak işlenecektir.`,
       confirmText: 'Evet, Tümünden Sil',
       cancelText: 'Vazgeç',
       confirmVariant: 'danger'
@@ -714,6 +771,12 @@ export default function MonthlyMatrixManager() {
 
       setAllPkgsDraft(next);
       updateAllPackages(Object.values(next), `Dahili hizmet silindi: ${expName}`);
+
+      showAlert({
+        title: '✓ Hizmet Silindi',
+        message: `"${expName}" hizmeti tüm paketlerden kaldırıldı ve Supabase ile senkronize edildi.`,
+        type: 'success'
+      });
     }
   };
 
@@ -2281,15 +2344,25 @@ export default function MonthlyMatrixManager() {
                         </p>
                       </div>
 
-                      {/* Sil Butonu */}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteExpense(exp.id, exp.name)}
-                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-all cursor-pointer shrink-0 opacity-80 hover:opacity-100"
-                        title="Bu Hizmeti Listeden Sil"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {/* Düzenle & Sil Butonları */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditExpense(exp)}
+                          className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 rounded-xl transition-all cursor-pointer opacity-80 hover:opacity-100"
+                          title="Bu Hizmeti Düzenle"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteExpense(exp.id, exp.name)}
+                          className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-all cursor-pointer opacity-80 hover:opacity-100"
+                          title="Bu Hizmeti Listeden Sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Alt Kısım: Fiyat Girişi + Görünürlük Switch'leri */}
@@ -2381,6 +2454,145 @@ export default function MonthlyMatrixManager() {
           )}
         </button>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          EDIT FIXED EXPENSE MODAL (DAHİLİ HİZMET DÜZENLEME MODALI)
+         ═══════════════════════════════════════════════════════════ */}
+      {editingExpense && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+          <div className="pearl-card rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
+                  <Edit3 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                    Dahili Hizmeti Düzenle
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {localPkg.name} ve tüm paketler için dahili hizmet bilgilerini güncelleyin
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingExpense(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveEditExpense} className="p-5 space-y-4">
+              {/* Hizmet Adı */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Hizmet / Gider Adı *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingExpense.name}
+                  onChange={(e) => setEditingExpense({ ...editingExpense, name: e.target.value })}
+                  placeholder="Örn: Rehberlik / Hızlı Tren / Vize Harcı"
+                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-3 py-2 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
+                />
+              </div>
+
+              {/* Açıklama */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Kısa Açıklama
+                </label>
+                <input
+                  type="text"
+                  value={editingExpense.desc}
+                  onChange={(e) => setEditingExpense({ ...editingExpense, desc: e.target.value })}
+                  placeholder="Örn: Mekke - Medine Hızlı Tren Geçişi veya VIP Hizmet"
+                  className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs rounded-xl px-3 py-2 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
+                />
+              </div>
+
+              {/* Kişi Başı Ücret (SAR) */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Kişi Başı Ücret ({localPkg.name} - SAR) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={editingExpense.priceSAR}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => setEditingExpense({ ...editingExpense, priceSAR: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-800 font-mono font-black text-xs text-slate-900 dark:text-white rounded-xl px-3 py-2 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
+                  />
+                  <span className="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">SAR</span>
+                </div>
+              </div>
+
+              {/* Görünürlük Tercihleri */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                  Görünürlük ve Rapor Tercihleri
+                </span>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Switch 1: Teklif Formunda Göster */}
+                  <button
+                    type="button"
+                    onClick={() => setEditingExpense({ ...editingExpense, isVisible: !editingExpense.isVisible })}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
+                      editingExpense.isVisible
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+                        : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${editingExpense.isVisible ? 'bg-emerald-600' : 'bg-slate-400'}`} />
+                    <span>{editingExpense.isVisible ? 'Formda Açık' : 'Formda Gizli'}</span>
+                  </button>
+
+                  {/* Switch 2: Mektupta Göster */}
+                  <button
+                    type="button"
+                    onClick={() => setEditingExpense({ ...editingExpense, showInLetter: editingExpense.showInLetter === false ? true : false })}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
+                      editingExpense.showInLetter !== false
+                        ? 'bg-teal-100 dark:bg-teal-950/60 border-teal-400 dark:border-teal-700 text-teal-800 dark:text-teal-300'
+                        : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>{editingExpense.showInLetter !== false ? 'Mektupta Göster' : 'Mektupta Gizle'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingExpense(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Vazgeç
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>Değişiklikleri Kaydet</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

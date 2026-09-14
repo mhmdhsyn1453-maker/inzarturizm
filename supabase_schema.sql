@@ -12,6 +12,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- A. PROFILES (Kullanıcı ve Personel Profilleri - auth.users ile entegre)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'STAFF' CHECK (role IN ('ADMIN', 'STAFF', 'HQ_ASSISTANT')),
@@ -23,7 +25,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   two_factor_enabled BOOLEAN DEFAULT false,
   two_factor_secret TEXT,
   two_factor_backup_codes JSONB DEFAULT '[]'::jsonb,
+  read_announcements JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()),
   last_login TIMESTAMPTZ
 );
 
@@ -152,6 +156,17 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   timestamp TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- H. APP_VERSIONS (Sürüm Bilgileri & Güncelleme Yönetimi)
+CREATE TABLE IF NOT EXISTS public.app_versions (
+  id TEXT PRIMARY KEY,
+  version TEXT NOT NULL,
+  release_notes TEXT,
+  download_url TEXT,
+  is_mandatory BOOLEAN DEFAULT false,
+  published_by TEXT DEFAULT 'Genel Merkez Bilgi İşlem',
+  published_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- ==============================================================================
 -- 3. GERÇEK ZAMANLI (REALTIME) YAYINLARIN AKTİF EDİLMESİ
 -- ==============================================================================
@@ -164,6 +179,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.audit_logs;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.months_config;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.app_settings;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.app_versions;
 
 -- ==============================================================================
 -- 4. ROW LEVEL SECURITY (RLS - SATIR BAZLI SİBER GÜVENLİK)
@@ -177,6 +193,7 @@ ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.months_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_versions ENABLE ROW LEVEL SECURITY;
 
 -- Okuma Politikaları (Tüm oturum açmış kullanıcılar okuyabilir)
 CREATE POLICY "Profiles read allowed" ON public.profiles FOR SELECT USING (true);
@@ -188,6 +205,7 @@ CREATE POLICY "Announcements read allowed" ON public.announcements FOR SELECT US
 CREATE POLICY "Audit logs read allowed" ON public.audit_logs FOR SELECT USING (true);
 CREATE POLICY "Months read allowed" ON public.months_config FOR SELECT USING (true);
 CREATE POLICY "Settings read allowed" ON public.app_settings FOR SELECT USING (true);
+CREATE POLICY "Versions read allowed" ON public.app_versions FOR SELECT USING (true);
 
 -- Yazma Politikaları
 CREATE POLICY "Quotes insert allowed" ON public.quotes FOR INSERT WITH CHECK (true);
@@ -201,3 +219,4 @@ CREATE POLICY "Announcements update allowed" ON public.announcements FOR ALL USI
 CREATE POLICY "Profiles update allowed" ON public.profiles FOR ALL USING (true);
 CREATE POLICY "Months update allowed" ON public.months_config FOR ALL USING (true);
 CREATE POLICY "Settings update allowed" ON public.app_settings FOR ALL USING (true);
+CREATE POLICY "Versions update allowed" ON public.app_versions FOR ALL USING (true);

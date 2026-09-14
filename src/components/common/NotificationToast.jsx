@@ -62,7 +62,7 @@ export default function NotificationToast({ onNavigate }) {
     }
   };
 
-  const hasNavigationTarget = onNavigate && (hotReloadAlert.type === 'quote' || hotReloadAlert.type === 'announcement' || hotReloadAlert.type === 'tariff');
+  const hasNavigationTarget = onNavigate && (hotReloadAlert.type === 'quote' || hotReloadAlert.type === 'announcement');
 
   return (
     <div className="fixed top-6 right-6 z-[99999] animate-slide-down max-w-md w-full px-2 pointer-events-auto">
@@ -95,7 +95,7 @@ export default function NotificationToast({ onNavigate }) {
             {hasNavigationTarget && (
               <div className="pt-0.5">
                 <span className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1 transition-colors">
-                  İlgili menüye gitmek için tıklayın →
+                  Görüntülemek için tıkla →
                 </span>
               </div>
             )}
