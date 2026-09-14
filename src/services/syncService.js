@@ -208,12 +208,21 @@ class SyncService {
     }
   }
 
-  async pullLatestFromSupabase() {
+  getCurrentAuthUser() {
+    try {
+      const saved = localStorage.getItem('inzar_auth_user');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  }
+
+  async pullLatestFromSupabase(user = null) {
+    const activeUser = user || this.getCurrentAuthUser();
     await Promise.allSettled([
       this.fetchPackagesFromSupabase(),
       this.fetchCurrenciesFromSupabase(),
       this.fetchMonthsFromSupabase(),
-      this.fetchQuotesFromSupabase(),
+      this.fetchQuotesFromSupabase(activeUser),
       this.fetchAnnouncementsFromSupabase(),
       this.fetchAuditLogsFromSupabase(),
       this.fetchProfilesFromSupabase(),
@@ -386,13 +395,35 @@ class SyncService {
         localStorage.setItem(STORAGE_KEYS.MONTHS, JSON.stringify(formatted));
         this.notifyListeners({ type: 'MONTHS_UPDATED', payload: formatted });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase fetchMonthsFromSupabase error:', e);
+    }
   }
 
-  async fetchQuotesFromSupabase() {
+  async fetchQuotesFromSupabase(user = null) {
     if (!this.isSupabaseReady) return;
     try {
-      const { data, error } = await supabase.from('quotes').select('*').order('created_at', { ascending: false });
+      const activeUser = user || this.getCurrentAuthUser();
+      const role = (activeUser?.role || '').toUpperCase();
+      const isHqOrAdmin = role === 'ADMIN' || role === 'HQ_ASSISTANT';
+
+      let query = supabase.from('quotes').select('*');
+
+      // 🔒 Rol Bazlı Veritabanı Düzeyinde İzolasyon:
+      // Normal personel yalnızca kendi oluşturduğu teklifleri veritabanından çekebilir.
+      // Diğer şubelerin ve personellerin teklifleri kesinlikle istemciye indirilmez.
+      if (!isHqOrAdmin && activeUser) {
+        const conditions = [];
+        if (activeUser.id) conditions.push(`created_by_id.eq.${activeUser.id}`);
+        if (activeUser.username) conditions.push(`created_by_id.eq.${activeUser.username}`);
+        if (activeUser.name) conditions.push(`created_by_name.ilike.%${activeUser.name}%`);
+
+        if (conditions.length > 0) {
+          query = query.or(conditions.join(','));
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
       if (!error && data) {
         const formatted = data.map(q => ({
           id: q.id,
@@ -453,6 +484,7 @@ class SyncService {
           transfersSelection: q.transfers_selection,
           fixedExpensesIncluded: q.fixed_expenses_included,
           notes: q.notes,
+          pdfUrl: q.pdf_url || null,
           createdAt: q.created_at,
           updatedAt: q.updated_at
         }));
@@ -509,10 +541,23 @@ class SyncService {
           });
         }
 
-        localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(formatted));
-        this.notifyListeners({ type: 'QUOTES_UPDATED', payload: formatted });
+        // 🛡️ Akıllı Harmanlama (Smart Merge): Supabase teklifleri ile henüz Supabase'e ulaşmamış yerel teklifleri birleştir
+        const localQuotes = this.getSavedQuotes();
+        const remoteIds = new Set(formatted.map(q => q.id));
+        const unsyncedLocals = localQuotes.filter(lq => !remoteIds.has(lq.id));
+
+        if (unsyncedLocals.length > 0) {
+          unsyncedLocals.forEach(lq => this.pushQuoteToSupabase(lq));
+        }
+
+        const mergedQuotes = [...formatted, ...unsyncedLocals].sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
+
+        localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(mergedQuotes));
+        this.notifyListeners({ type: 'QUOTES_UPDATED', payload: mergedQuotes });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Supabase fetchQuotes error]:', e);
+    }
   }
 
   async fetchCustomersFromSupabase() {
@@ -534,8 +579,17 @@ class SyncService {
           createdAt: c.created_at,
           updatedAt: c.updated_at
         }));
-        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(formatted));
-        this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: formatted });
+        const localCustomers = this.getCustomers();
+        const remoteIds = new Set(formatted.map(c => c.id));
+        const unsyncedLocals = localCustomers.filter(lc => !remoteIds.has(lc.id));
+        if (unsyncedLocals.length > 0) {
+          unsyncedLocals.forEach(lc => this.saveCustomer(lc));
+        }
+
+        const mergedCustomers = [...formatted, ...unsyncedLocals].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(mergedCustomers));
+        this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: mergedCustomers });
       }
     } catch (e) {}
   }
@@ -616,6 +670,7 @@ class SyncService {
           twoFactorEnabled: Boolean(u.two_factor_enabled),
           twoFactorSecret: u.two_factor_secret || null,
           twoFactorBackupCodes: Array.isArray(u.two_factor_backup_codes) ? u.two_factor_backup_codes : [],
+          readAnnouncements: Array.isArray(u.read_announcements) ? u.read_announcements : [],
           createdAt: u.created_at,
           lastLogin: u.last_login
         }));
@@ -623,6 +678,22 @@ class SyncService {
         this.notifyListeners({ type: 'USERS_UPDATED', payload: formatted });
       }
     } catch (e) {}
+  }
+
+  async markAnnouncementsReadInDatabase(userId, announcementIds) {
+    if (!this.isSupabaseReady || !userId) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          read_announcements: announcementIds,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+      if (error) console.error('[Supabase markAnnouncementsRead error]:', error);
+    } catch (err) {
+      console.error('[Supabase markAnnouncementsRead exception]:', err);
+    }
   }
 
   async fetchAppSettingsFromSupabase() {
@@ -867,6 +938,48 @@ class SyncService {
         }
       });
     }
+  }
+
+  async deletePackage(pkgId, user = null, changeNote = '') {
+    const current = this.getPackages();
+    const target = current.find(p => p.id === pkgId);
+    const updated = current.filter(p => p.id !== pkgId);
+    localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(updated));
+
+    const note = changeNote || `${target?.name || pkgId} paketi sistemden silindi.`;
+
+    this.addAuditLog({
+      action: 'PACKAGE_DELETED',
+      user: user?.name || 'Genel Merkez',
+      details: note,
+      timestamp: new Date().toISOString()
+    });
+
+    this.broadcast('PACKAGES_UPDATED', updated, {
+      title: '🗑️ Paket Silindi',
+      message: note,
+      type: 'tariff',
+      sound: 'default'
+    });
+
+    this.sendSupabaseBroadcast('app_notification', {
+      title: '🗑️ Paket Silindi',
+      message: note,
+      type: 'tariff',
+      sound: 'default',
+      refreshType: 'packages'
+    });
+
+    if (this.isSupabaseReady) {
+      try {
+        const { error } = await supabase.from('packages').delete().eq('id', pkgId);
+        if (error) console.error('[Supabase deletePackage error]:', error);
+      } catch (e) {
+        console.error('[Supabase deletePackage exception]:', e);
+      }
+    }
+
+    return updated;
   }
 
   getCurrencies() {
@@ -1134,7 +1247,7 @@ class SyncService {
         updatedAt: new Date().toISOString(),
         revisionCount: 0
       };
-      updated = [quoteToSave, ...current];
+      updated = [quoteToSave, ...current.filter(q => q.id !== quoteToSave.id)];
 
       this.addAuditLog({
         action: 'QUOTE_CREATED',
@@ -1143,6 +1256,9 @@ class SyncService {
         timestamp: new Date().toISOString()
       });
     }
+
+    // 🛡️ 1. ZORUNLU YEREL DEPOLAMA (Karanlık/Açık mod fark etmeksizin ASLA kaybolmaz)
+    localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updated));
 
     if (!this.recentLocalSavedQuoteIds) this.recentLocalSavedQuoteIds = new Set();
     this.recentLocalSavedQuoteIds.add(quoteToSave.id);
@@ -1170,66 +1286,10 @@ class SyncService {
       data: quoteToSave
     });
 
-    // Save to Supabase Realtime Table
-    if (this.isSupabaseReady) {
-      supabase.from('quotes').upsert({
-        id: quoteToSave.id,
-        customer_name: quoteToSave.customerName,
-        first_name: quoteToSave.customerFirstName || (quoteToSave.customerName ? quoteToSave.customerName.split(' ')[0] : null),
-        last_name: quoteToSave.customerLastName || (quoteToSave.customerName ? quoteToSave.customerName.split(' ').slice(1).join(' ') : null),
-        customer_phone: quoteToSave.customerPhone || null,
-        tc_no: quoteToSave.customerTcNo || quoteToSave.tcNo || null,
-        package_id: quoteToSave.packageId || 'standart',
-        package_name: quoteToSave.packageName,
-        selected_month: quoteToSave.selectedMonth || 'jan',
-        selected_month_label: quoteToSave.selectedMonthLabel || '',
-        start_date: quoteToSave.startDate || null,
-        end_date: quoteToSave.endDate || null,
-        route_order: quoteToSave.routeOrder || 'makkah_first',
-        route_schedule: quoteToSave.routeSchedule || null,
-        selected_makkah_hotel_id: quoteToSave.selectedMakkahHotelId || null,
-        selected_madinah_hotel_id: quoteToSave.selectedMadinahHotelId || null,
-        include_meals: quoteToSave.includeMeals !== undefined ? quoteToSave.includeMeals : true,
-        include_makkah_meals: quoteToSave.includeMakkahMeals !== undefined ? quoteToSave.includeMakkahMeals : true,
-        include_madinah_meals: quoteToSave.includeMadinahMeals !== undefined ? quoteToSave.includeMadinahMeals : true,
-        is_mixed_room_mode: Boolean(quoteToSave.isMixedRoomMode),
-        mixed_rooms: quoteToSave.mixedRooms || null,
-        mixed_rooms_breakdown: quoteToSave.mixedRoomsBreakdown || null,
-        mixed_rooms_summary: quoteToSave.mixedRoomsSummary || null,
-        makkah_days: quoteToSave.makkahDays || 10,
-        madinah_days: quoteToSave.madinahDays || 4,
-        pax_count: quoteToSave.paxCount || 1,
-        room_matrix: quoteToSave.roomMatrix || [],
-        selected_room_occupancy: quoteToSave.selectedRoomOccupancy || 2,
-        final_price_usd: quoteToSave.finalPriceUSD || 0,
-        final_price_try: quoteToSave.finalPriceTRY || 0,
-        final_price_eur: quoteToSave.finalPriceEUR || 0,
-        profit_margin_percent: quoteToSave.profitMarginPercent !== undefined ? quoteToSave.profitMarginPercent : (quoteToSave.packageProfitMargin || 15),
-        package_profit_margin: quoteToSave.packageProfitMargin || 15,
-        apply_profit_margin: quoteToSave.applyProfitMargin !== undefined ? quoteToSave.applyProfitMargin : true,
-        currency: quoteToSave.currency || 'USD',
-        status: quoteToSave.status || 'pending',
-        valid_until: quoteToSave.validUntil || (quoteToSave.createdAt ? new Date(new Date(quoteToSave.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
-        customer_approved_at: quoteToSave.customerApprovedAt || null,
-        customer_approved_by: quoteToSave.customerApprovedBy || null,
-        hq_approved_at: quoteToSave.hqApprovedAt || null,
-        hq_approved_by: quoteToSave.hqApprovedBy || null,
-        hq_note: (typeof quoteToSave.hqNote === 'string' && !quoteToSave.hqNote.startsWith('{"id":')) ? quoteToSave.hqNote : null,
-        created_by_id: quoteToSave.createdById || null,
-        created_by_name: quoteToSave.createdByName || 'Personel',
-        branch: quoteToSave.branch || 'Merkez',
-        revision_count: quoteToSave.revisionCount || 0,
-        transfers_selection: quoteToSave.transfersSelection || {},
-        fixed_expenses_included: quoteToSave.fixedExpensesIncluded || {},
-        notes: quoteToSave.notes || null,
-        created_at: quoteToSave.createdAt,
-        updated_at: quoteToSave.updatedAt
-      }).then(({ error }) => {
-        if (error) console.error('Supabase quote upsert error:', error);
-      });
-    }
+    // 🛡️ 2. Supabase Realtime Tablosuna Kaydet/Güncelle
+    this.pushQuoteToSupabase(quoteToSave);
 
-    // Otomatik Müşteri Kaydı (Customers Tablosuna ve Yerel Havuza)
+    // 🛡️ 3. Otomatik Müşteri Kaydı (Customers Tablosuna ve Yerel Havuza)
     if (quoteToSave.customerFirstName || quoteToSave.customerLastName || quoteToSave.customerName) {
       this.saveCustomer({
         tcNo: quoteToSave.customerTcNo || quoteToSave.tcNo || '',
@@ -1245,6 +1305,74 @@ class SyncService {
     }
 
     return updated;
+  }
+
+  async pushQuoteToSupabase(quoteToSave) {
+    if (!this.isSupabaseReady) return;
+    try {
+      const nowISO = new Date().toISOString();
+      const payload = {
+        id: quoteToSave.id,
+        customer_name: quoteToSave.customerName || `${quoteToSave.customerFirstName || ''} ${quoteToSave.customerLastName || ''}`.trim() || 'Misafir',
+        first_name: quoteToSave.customerFirstName || (quoteToSave.customerName ? quoteToSave.customerName.split(' ')[0] : null),
+        last_name: quoteToSave.customerLastName || (quoteToSave.customerName ? quoteToSave.customerName.split(' ').slice(1).join(' ') : null),
+        customer_phone: quoteToSave.customerPhone || null,
+        tc_no: quoteToSave.customerTcNo || quoteToSave.tcNo || null,
+        package_id: quoteToSave.packageId || 'standart',
+        package_name: quoteToSave.packageName || 'Standart Paket',
+        selected_month: quoteToSave.selectedMonth || 'jan',
+        selected_month_label: quoteToSave.selectedMonthLabel || '',
+        start_date: quoteToSave.startDate || null,
+        end_date: quoteToSave.endDate || null,
+        route_order: quoteToSave.routeOrder || 'makkah_first',
+        route_schedule: quoteToSave.routeSchedule || null,
+        selected_makkah_hotel_id: quoteToSave.selectedMakkahHotelId || null,
+        selected_madinah_hotel_id: quoteToSave.selectedMadinahHotelId || null,
+        include_meals: quoteToSave.includeMeals !== undefined ? quoteToSave.includeMeals : true,
+        include_makkah_meals: quoteToSave.includeMakkahMeals !== undefined ? quoteToSave.includeMakkahMeals : true,
+        include_madinah_meals: quoteToSave.includeMadinahMeals !== undefined ? quoteToSave.includeMadinahMeals : true,
+        is_mixed_room_mode: Boolean(quoteToSave.isMixedRoomMode),
+        mixed_rooms: quoteToSave.mixedRooms || null,
+        mixed_rooms_breakdown: quoteToSave.mixedRoomsBreakdown || null,
+        mixed_rooms_summary: quoteToSave.mixedRoomsSummary || null,
+        makkah_days: Number(quoteToSave.makkahDays) || 10,
+        madinah_days: Number(quoteToSave.madinahDays) || 4,
+        pax_count: Number(quoteToSave.paxCount) || 1,
+        room_matrix: Array.isArray(quoteToSave.roomMatrix) ? quoteToSave.roomMatrix : [],
+        selected_room_occupancy: Number(quoteToSave.selectedRoomOccupancy) || 2,
+        final_price_usd: Number(quoteToSave.finalPriceUSD) || 0,
+        final_price_try: Number(quoteToSave.finalPriceTRY) || 0,
+        final_price_eur: Number(quoteToSave.finalPriceEUR) || 0,
+        profit_margin_percent: quoteToSave.profitMarginPercent !== undefined ? Number(quoteToSave.profitMarginPercent) : 15,
+        package_profit_margin: quoteToSave.packageProfitMargin !== undefined ? Number(quoteToSave.packageProfitMargin) : 15,
+        apply_profit_margin: quoteToSave.applyProfitMargin !== undefined ? Boolean(quoteToSave.applyProfitMargin) : true,
+        currency: quoteToSave.currency || 'USD',
+        status: quoteToSave.status || 'pending',
+        valid_until: quoteToSave.validUntil || (quoteToSave.createdAt ? new Date(new Date(quoteToSave.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
+        customer_approved_at: quoteToSave.customerApprovedAt || null,
+        customer_approved_by: quoteToSave.customerApprovedBy || null,
+        hq_approved_at: quoteToSave.hqApprovedAt || null,
+        hq_approved_by: quoteToSave.hqApprovedBy || null,
+        hq_note: (typeof quoteToSave.hqNote === 'string' && !quoteToSave.hqNote.startsWith('{"id":')) ? quoteToSave.hqNote : null,
+        created_by_id: quoteToSave.createdById || null,
+        created_by_name: quoteToSave.createdByName || 'Personel',
+        branch: quoteToSave.branch || 'Merkez',
+        revision_count: quoteToSave.revisionCount || 0,
+        transfers_selection: quoteToSave.transfersSelection || {},
+        fixed_expenses_included: quoteToSave.fixedExpensesIncluded || {},
+        notes: quoteToSave.notes || null,
+        pdf_url: quoteToSave.pdfUrl || quoteToSave.pdf_url || null,
+        created_at: quoteToSave.createdAt || nowISO,
+        updated_at: quoteToSave.updatedAt || nowISO
+      };
+
+      const { error } = await supabase.from('quotes').upsert(payload);
+      if (error) {
+        console.error('[Supabase quote upsert error]:', error);
+      }
+    } catch (err) {
+      console.error('[Supabase quote push exception]:', err);
+    }
   }
 
   getCustomers() {
@@ -1316,26 +1444,230 @@ class SyncService {
     return updated;
   }
 
-  deleteCustomer(customerId, user = null) {
+  async deleteCustomer(targetInfo, user = null, deleteQuotes = true) {
     const current = this.getCustomers();
-    const target = current.find(c => c.id === customerId);
-    const updated = current.filter(c => c.id !== customerId);
+    
+    // targetInfo can be a string customerId or an object { id, tcNo, phone, fullName }
+    let targetId = typeof targetInfo === 'string' ? targetInfo : targetInfo?.id;
+    let targetTc = typeof targetInfo === 'object' ? (targetInfo?.tcNo || '').replace(/\D/g, '') : '';
+    let targetPhone = typeof targetInfo === 'object' ? (targetInfo?.phone || '').replace(/\D/g, '') : '';
+    let targetName = typeof targetInfo === 'object' ? (targetInfo?.fullName || `${targetInfo?.firstName || ''} ${targetInfo?.lastName || ''}`).trim() : '';
+
+    // If targetId is provided, enrich from current list if missing
+    if (targetId && (!targetTc || !targetPhone || !targetName)) {
+      const found = current.find(c => c.id === targetId);
+      if (found) {
+        if (!targetTc) targetTc = (found.tcNo || '').replace(/\D/g, '');
+        if (!targetPhone) targetPhone = (found.phone || '').replace(/\D/g, '');
+        if (!targetName) targetName = (found.fullName || `${found.firstName || ''} ${found.lastName || ''}`).trim();
+      }
+    }
+
+    // Match all duplicate/same customer records in local pool
+    const updated = current.filter(c => {
+      if (targetId && c.id === targetId) return false;
+      const cTc = (c.tcNo || '').replace(/\D/g, '');
+      const cPhone = (c.phone || '').replace(/\D/g, '');
+      const cName = (c.fullName || `${c.firstName || ''} ${c.lastName || ''}`).trim().toLocaleLowerCase('tr-TR');
+
+      if (targetTc && cTc && targetTc === cTc) return false;
+      if (targetPhone && cPhone && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone))) return false;
+      if (targetName && cName && targetName.toLocaleLowerCase('tr-TR') === cName) return false;
+      return true;
+    });
+
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
     this.addAuditLog({
       action: 'CUSTOMER_DELETED',
       user: user?.name || 'Personel',
-      details: `${target?.fullName || target?.firstName || customerId} misafir kaydı sistemden silindi.`,
+      details: `${targetName || targetId} misafir kaydı veritabanından kalıcı olarak silindi.`,
       timestamp: new Date().toISOString()
     });
     this.broadcast('CUSTOMERS_UPDATED', updated);
+    this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: updated });
+
+    // Delete customer's past quotes if requested (so the customer doesn't reappear in history)
+    if (deleteQuotes) {
+      const currentQuotes = this.getSavedQuotes();
+      const updatedQuotes = currentQuotes.filter(q => {
+        const qTc = (q.tcNo || q.customerTcNo || '').replace(/\D/g, '');
+        const qPhone = (q.customerPhone || '').replace(/\D/g, '');
+        const qName = (q.customerName || `${q.firstName || ''} ${q.lastName || ''}`).trim().toLocaleLowerCase('tr-TR');
+
+        if (targetTc && qTc && targetTc === qTc) return false;
+        if (targetPhone && qPhone && (targetPhone.endsWith(qPhone) || qPhone.endsWith(targetPhone))) return false;
+        if (targetName && qName && targetName.toLocaleLowerCase('tr-TR') === qName) return false;
+        return true;
+      });
+
+      localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updatedQuotes));
+      this.broadcast('QUOTES_UPDATED', updatedQuotes);
+      this.notifyListeners({ type: 'QUOTES_UPDATED', payload: updatedQuotes });
+
+      if (this.isSupabaseReady) {
+        try {
+          if (targetTc) {
+            await supabase.from('quotes').delete().eq('tc_no', targetTc);
+          }
+          if (targetPhone) {
+            await supabase.from('quotes').delete().eq('customer_phone', targetPhone);
+          }
+          if (targetName) {
+            await supabase.from('quotes').delete().ilike('customer_name', targetName);
+          }
+        } catch (e) {
+          console.warn('Supabase customer quotes delete error:', e);
+        }
+      }
+    }
 
     if (this.isSupabaseReady) {
-      supabase.from('customers').delete().eq('id', customerId).then(({ error }) => {
-        if (error) console.error('Supabase customer delete error:', error);
-      });
+      try {
+        if (targetId) {
+          await supabase.from('customers').delete().eq('id', targetId);
+        }
+        if (targetTc) {
+          await supabase.from('customers').delete().eq('tc_no', targetTc);
+        }
+        if (targetPhone) {
+          await supabase.from('customers').delete().eq('phone', targetPhone);
+        }
+        if (targetName) {
+          await supabase.from('customers').delete().ilike('full_name', targetName);
+        }
+      } catch (err) {
+        console.error('Supabase customer delete error:', err);
+      }
     }
 
     return updated;
+  }
+
+  async searchCustomersLive({ name = '', tcNo = '', phone = '' }) {
+    const cleanTc = (tcNo || '').replace(/\D/g, '').trim();
+    const rawPhone = (phone || '').replace(/\D/g, '').trim();
+    const searchName = (name || '').trim();
+
+    // 1. Yerel havuzda ara
+    const localCustomers = this.getCustomers();
+    let matchedCustomer = localCustomers.find(c => {
+      const cTc = (c.tcNo || '').replace(/\D/g, '').trim();
+      const cPhone = (c.phone || '').replace(/\D/g, '').trim();
+      const cName = (c.fullName || `${c.firstName || ''} ${c.lastName || ''}`).toLocaleLowerCase('tr-TR').trim();
+      if (cleanTc && cTc && cleanTc === cTc) return true;
+      if (rawPhone && cPhone && (rawPhone.endsWith(cPhone) || cPhone.endsWith(rawPhone))) return true;
+      if (searchName && cName.includes(searchName.toLocaleLowerCase('tr-TR'))) return true;
+      return false;
+    });
+
+    let matchedQuotes = [];
+    const localQuotes = this.getSavedQuotes();
+    matchedQuotes = localQuotes.filter(q => {
+      const qTc = (q.customerTcNo || q.tcNo || '').replace(/\D/g, '').trim();
+      const qPhone = (q.customerPhone || '').replace(/\D/g, '').trim();
+      const qName = (q.customerName || '').toLocaleLowerCase('tr-TR').trim();
+      if (cleanTc && qTc && cleanTc === qTc) return true;
+      if (rawPhone && qPhone && (rawPhone.endsWith(qPhone) || qPhone.endsWith(rawPhone))) return true;
+      if (searchName && qName.includes(searchName.toLocaleLowerCase('tr-TR'))) return true;
+      return false;
+    });
+
+    // 2. Canlı Supabase Sorgulaması (Yerelde bulunamadıysa veya eksik geçmiş varsa canlı veritabanından çek)
+    if (this.isSupabaseReady) {
+      try {
+        const orConds = [];
+        if (cleanTc) orConds.push(`tc_no.eq.${cleanTc}`);
+        if (rawPhone) {
+          orConds.push(`phone.eq.${rawPhone}`);
+          if (rawPhone.length >= 7) {
+            orConds.push(`phone.ilike.%${rawPhone.slice(-7)}%`);
+          }
+        }
+        if (searchName && searchName.length >= 2) {
+          orConds.push(`full_name.ilike.%${searchName}%`);
+        }
+
+        if (orConds.length > 0) {
+          const { data: dbCusts, error: custErr } = await supabase
+            .from('customers')
+            .select('*')
+            .or(orConds.join(','))
+            .limit(10);
+
+          if (!custErr && Array.isArray(dbCusts) && dbCusts.length > 0) {
+            const bestDbCust = dbCusts[0];
+            const formatted = {
+              id: bestDbCust.id,
+              tcNo: bestDbCust.tc_no || '',
+              firstName: bestDbCust.first_name || '',
+              lastName: bestDbCust.last_name || '',
+              fullName: bestDbCust.full_name || `${bestDbCust.first_name || ''} ${bestDbCust.last_name || ''}`.trim(),
+              phone: bestDbCust.phone || '',
+              createdById: bestDbCust.created_by_id,
+              createdByName: bestDbCust.created_by_name,
+              branch: bestDbCust.branch || 'Merkez',
+              notes: bestDbCust.notes || '',
+              createdAt: bestDbCust.created_at,
+              updatedAt: bestDbCust.updated_at
+            };
+
+            if (!matchedCustomer) {
+              matchedCustomer = formatted;
+            }
+            this.saveCustomer(formatted);
+          }
+
+          // Canlı Geçmiş Teklifler Sorgusu
+          const quoteOrConds = [];
+          if (cleanTc) quoteOrConds.push(`tc_no.eq.${cleanTc}`);
+          if (rawPhone) quoteOrConds.push(`customer_phone.ilike.%${rawPhone.slice(-7)}%`);
+          if (searchName && searchName.length >= 3) quoteOrConds.push(`customer_name.ilike.%${searchName}%`);
+
+          if (quoteOrConds.length > 0) {
+            const { data: dbQuotes, error: qErr } = await supabase
+              .from('quotes')
+              .select('*')
+              .or(quoteOrConds.join(','))
+              .order('created_at', { ascending: false })
+              .limit(20);
+
+            if (!qErr && Array.isArray(dbQuotes) && dbQuotes.length > 0) {
+              const formattedDbQuotes = dbQuotes.map(q => ({
+                id: q.id,
+                customerName: q.customer_name,
+                customerFirstName: q.first_name || (q.customer_name ? q.customer_name.split(' ')[0] : ''),
+                customerLastName: q.last_name || (q.customer_name ? q.customer_name.split(' ').slice(1).join(' ') : ''),
+                customerPhone: q.customer_phone,
+                customerTcNo: q.tc_no || '',
+                tcNo: q.tc_no || '',
+                packageName: q.package_name,
+                finalPriceUSD: Number(q.final_price_usd) || 0,
+                status: q.status,
+                pdfUrl: q.pdf_url || null,
+                createdAt: q.created_at,
+                createdByName: q.created_by_name,
+                branch: q.branch
+              }));
+
+              const existingIds = new Set(matchedQuotes.map(mq => mq.id));
+              formattedDbQuotes.forEach(fq => {
+                if (!existingIds.has(fq.id)) {
+                  matchedQuotes.push(fq);
+                  existingIds.add(fq.id);
+                }
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[searchCustomersLive error]:', err);
+      }
+    }
+
+    return {
+      customer: matchedCustomer || null,
+      quotes: matchedQuotes || []
+    };
   }
 
   updateQuoteStatus(quoteId, newStatus, user = null, note = '') {
@@ -1439,7 +1771,9 @@ class SyncService {
         if (cleanNote) updatePayload.hq_note = cleanNote;
       }
 
-      supabase.from('quotes').update(updatePayload).eq('id', quoteId).then();
+      supabase.from('quotes').update(updatePayload).eq('id', quoteId).then(({ error }) => {
+        if (error) console.error('[Supabase updateQuoteStatus error]:', error);
+      });
     }
 
     return updated;
@@ -1459,7 +1793,9 @@ class SyncService {
     this.broadcast('QUOTES_UPDATED', updated);
 
     if (this.isSupabaseReady) {
-      supabase.from('quotes').delete().eq('id', quoteId).then();
+      supabase.from('quotes').delete().eq('id', quoteId).then(({ error }) => {
+        if (error) console.error('[Supabase deleteQuote error]:', error);
+      });
     }
 
     return updated;
@@ -1522,11 +1858,13 @@ class SyncService {
             city: u.city || 'İstanbul',
             branch: u.branch || 'Merkez',
             phone: u.phone || '',
+            email: u.email || `${u.username}@inzarturizm.com`,
             avatar_image: u.avatarImage || u.avatar || '',
             is_active: u.isActive !== false,
             two_factor_enabled: Boolean(u.twoFactorEnabled),
             two_factor_secret: u.twoFactorSecret || null,
-            two_factor_backup_codes: Array.isArray(u.twoFactorBackupCodes) ? u.twoFactorBackupCodes : []
+            two_factor_backup_codes: Array.isArray(u.twoFactorBackupCodes) ? u.twoFactorBackupCodes : [],
+            updated_at: new Date().toISOString()
           }, { onConflict: 'username' });
         } catch (err) {
           console.error('Supabase profile save error:', err);
@@ -1557,6 +1895,40 @@ class SyncService {
       }
     }
     return updated;
+  }
+
+  async markAnnouncementsReadInDatabase(userId, announcementIds) {
+    if (!userId) return;
+    try {
+      // 1. Yerel kullanıcı profilini güncelle
+      const users = this.getUsers();
+      const userIndex = users.findIndex(u => u.id === userId || u.username === userId);
+      if (userIndex >= 0) {
+        const existing = Array.isArray(users[userIndex].readAnnouncements) ? users[userIndex].readAnnouncements : [];
+        const merged = Array.from(new Set([...existing, ...announcementIds]));
+        users[userIndex].readAnnouncements = merged;
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+        this.notifyListeners({ type: 'USERS_UPDATED', payload: users });
+      }
+
+      // 2. Supabase profiles tablosunda read_announcements kolonunu güncelle
+      if (this.isSupabaseReady) {
+        const isUUID = typeof userId === 'string' && userId.includes('-');
+        let query = supabase.from('profiles').update({
+          read_announcements: announcementIds,
+          updated_at: new Date().toISOString()
+        });
+
+        if (isUUID) {
+          query = query.eq('id', userId);
+        } else {
+          query = query.eq('username', userId);
+        }
+        await query;
+      }
+    } catch (err) {
+      console.error('Failed to sync read announcements to Supabase:', err);
+    }
   }
 
   getWhatsAppTemplate(type = 'quote') {
@@ -1735,6 +2107,12 @@ Hayırlı günler dileriz.
       details: `WhatsApp ${type} şablonu fabrika ayarlarına sıfırlandı.`,
       timestamp: new Date().toISOString()
     });
+
+    if (this.isSupabaseReady) {
+      supabase.from('app_settings').delete().in('key', [`whatsapp_template_${type}`, `whatsapp_default_${type}`]).then(({ error }) => {
+        if (error) console.error('Supabase reset template delete error:', error);
+      });
+    }
 
     return this.getWhatsAppTemplate(type);
   }

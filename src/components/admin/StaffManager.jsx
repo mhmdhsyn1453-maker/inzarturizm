@@ -355,17 +355,15 @@ export default function StaffManager() {
             </div>
           </div>
 
-          <div className="pearl-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
+          <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm">
             <form onSubmit={handleCreateSubmit} className="space-y-6">
-              
-
 
               {/* Avatar Upload in Create Form */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   <div 
                     onClick={() => createForm.avatar && handleOpenLightbox({ name: createForm.name || 'Yeni Kullanıcı', avatar: createForm.avatar, role: createForm.role, city: createForm.city, branch: createForm.branch })}
-                    className={`h-16 w-16 rounded-2xl bg-white border-2 border-emerald-500/40 flex items-center justify-center overflow-hidden shadow-xs shrink-0 ${createForm.avatar ? 'cursor-pointer hover:scale-105 transition-all' : ''}`}
+                    className={`h-16 w-16 rounded-2xl bg-white dark:bg-slate-800 border-2 border-emerald-500/40 flex items-center justify-center overflow-hidden shadow-xs shrink-0 ${createForm.avatar ? 'cursor-pointer hover:scale-105 transition-all' : ''}`}
                     title={createForm.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
                   >
                     {createForm.avatar ? (
@@ -373,12 +371,12 @@ export default function StaffManager() {
                     ) : createForm.role === 'ADMIN' ? (
                       <Crown className="h-7 w-7 text-amber-500" />
                     ) : (
-                      <User className="h-7 w-7 text-emerald-700" />
+                      <User className="h-7 w-7 text-emerald-700 dark:text-emerald-400" />
                     )}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Profil Fotoğrafı (İsteğe Bağlı)</h4>
-                    <p className="text-[11px] text-slate-500">Seçtiğiniz fotoğrafı dilediğiniz gibi kırpıp yakınlaştırabilirsiniz.</p>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Profil Fotoğrafı (İsteğe Bağlı)</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Seçtiğiniz fotoğrafı dilediğiniz gibi kırpıp yakınlaştırabilirsiniz.</p>
                   </div>
                 </div>
 
@@ -393,16 +391,16 @@ export default function StaffManager() {
                   <button
                     type="button"
                     onClick={() => fileInputCreateRef.current?.click()}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-3xs"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer shadow-3xs"
                   >
-                    <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                    <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Fotoğraf Seç & Kırp</span>
                   </button>
                   {createForm.avatar && (
                     <button
                       type="button"
                       onClick={() => setCreateForm(prev => ({ ...prev, avatar: '' }))}
-                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold cursor-pointer"
+                      className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold cursor-pointer"
                       title="Fotoğrafı Kaldır"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -414,59 +412,59 @@ export default function StaffManager() {
               {/* Basic Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Ad Soyad *</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Ad Soyad *</label>
                   <input
                     type="text"
                     required
                     placeholder="Örn: Salih Çelik"
                     value={createForm.name}
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Kullanıcı Adı (Giriş İçin) *</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kullanıcı Adı (Giriş İçin) *</label>
                   <input
                     type="text"
                     required
                     placeholder="Örn: salih"
                     value={createForm.username}
                     onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Giriş Şifresi *</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Giriş Şifresi *</label>
                   <input
                     type="password"
                     required
                     placeholder="Şifre belirleyin..."
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 {/* Yetki / Rol Seçimi */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-700 mb-2">Kullanıcı Rolü & Yetkisi *</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Kullanıcı Rolü & Yetkisi *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setCreateForm({ ...createForm, role: 'STAFF' })}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                         createForm.role === 'STAFF'
-                          ? 'bg-sky-50 border-sky-500 ring-2 ring-sky-500/20 text-sky-950 shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 ring-2 ring-sky-500/20 text-sky-950 dark:text-sky-200 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 font-bold text-xs">
-                        <User className="h-4 w-4 text-sky-600" />
+                        <User className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                         <span>Temsilci / Personel</span>
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1">Teklif hazırlar, müşteri dönüşlerini kaydeder.</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Teklif hazırlar, müşteri dönüşlerini kaydeder.</p>
                     </button>
 
                     <button
@@ -474,15 +472,15 @@ export default function StaffManager() {
                       onClick={() => setCreateForm({ ...createForm, role: 'HQ_ASSISTANT' })}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                         createForm.role === 'HQ_ASSISTANT'
-                          ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 dark:text-indigo-200 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 font-bold text-xs">
-                        <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                        <ShieldCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         <span>Genel Merkez Yardımcısı</span>
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1">Teklifleri inceler, Merkez Onayı / Reddi verir.</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Teklifleri inceler, Merkez Onayı / Reddi verir.</p>
                     </button>
 
                     <button
@@ -490,58 +488,58 @@ export default function StaffManager() {
                       onClick={() => setCreateForm({ ...createForm, role: 'ADMIN' })}
                       className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                         createForm.role === 'ADMIN'
-                          ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-500/20 text-amber-950 shadow-xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 ring-2 ring-amber-500/20 text-amber-950 dark:text-amber-200 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 font-bold text-xs">
-                        <Crown className="h-4 w-4 text-amber-600" />
+                        <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         <span>Genel Merkez Yöneticisi</span>
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-1">Sistem, personel ve fiyatlara tam erişim.</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Sistem, personel ve fiyatlara tam erişim.</p>
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Şehir / İl</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Şehir / İl</label>
                   <input
                     type="text"
                     placeholder="Örn: İstanbul / Bursa / Konya"
                     value={createForm.city}
                     onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Şube / Birim</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Şube / Birim</label>
                   <input
                     type="text"
                     placeholder="Örn: Üsküdar Şubesi"
                     value={createForm.branch}
                     onChange={(e) => setCreateForm({ ...createForm, branch: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Telefon Numarası</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Telefon Numarası</label>
                   <input
                     type="tel"
                     placeholder="+90 5XX XXX XX XX"
                     value={createForm.phone}
                     onChange={(e) => setCreateForm({ ...createForm, phone: formatPhoneNumber(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
-                  className="rounded-2xl px-5 py-3 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="rounded-2xl px-5 py-3 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Vazgeç
                 </button>
@@ -643,37 +641,37 @@ export default function StaffManager() {
 
           {/* Performance Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="pearl-card rounded-3xl p-5 border border-slate-200/90 shadow-2xs space-y-1">
-              <div className="text-xs font-semibold text-slate-500 flex items-center justify-between">
+            <div className="pearl-card rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-1">
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>Personelin Verdiği Teklifler</span>
-                <FileText className="h-4 w-4 text-emerald-600" />
+                <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <div className="text-2xl font-black font-mono text-slate-900">
+              <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
                 {staffQuotes.length} <span className="text-xs font-sans text-slate-400 font-medium">Adet</span>
               </div>
-              <div className="text-[11px] text-slate-400">Bu kullanıcı tarafından oluşturulan teklif sayısı</div>
+              <div className="text-[11px] text-slate-400 dark:text-slate-500">Bu kullanıcı tarafından oluşturulan teklif sayısı</div>
             </div>
 
-            <div className="pearl-card rounded-3xl p-5 border border-emerald-200 bg-emerald-50/40 shadow-2xs space-y-1">
-              <div className="text-xs font-semibold text-emerald-800 flex items-center justify-between">
+            <div className="pearl-card rounded-3xl p-5 border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/40 dark:bg-emerald-950/30 shadow-2xs space-y-1">
+              <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 flex items-center justify-between">
                 <span>Onaylanan / Satışa Dönen</span>
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <div className="text-2xl font-black font-mono text-emerald-900">
-                {staffApproved.length} <span className="text-xs font-sans text-emerald-700 font-medium">Kabul Edildi</span>
+              <div className="text-2xl font-black font-mono text-emerald-900 dark:text-emerald-300">
+                {staffApproved.length} <span className="text-xs font-sans text-emerald-700 dark:text-emerald-400 font-medium">Kabul Edildi</span>
               </div>
-              <div className="text-[11px] text-emerald-600 font-medium">Müşterinin onayladığı kesinleşen teklifler</div>
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Müşterinin onayladığı kesinleşen teklifler</div>
             </div>
 
-            <div className="pearl-card rounded-3xl p-5 border border-amber-200 bg-amber-50/40 shadow-2xs space-y-1">
-              <div className="text-xs font-semibold text-amber-900 flex items-center justify-between">
+            <div className="pearl-card rounded-3xl p-5 border border-amber-200 dark:border-amber-800/80 bg-amber-50/40 dark:bg-amber-950/30 shadow-2xs space-y-1">
+              <div className="text-xs font-semibold text-amber-900 dark:text-amber-400 flex items-center justify-between">
                 <span>Oluşturulan Teklif Hacmi</span>
-                <DollarSign className="h-4 w-4 text-amber-600" />
+                <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
-              <div className="text-2xl font-black font-mono text-amber-950">
-                ${staffVolumeUSD.toLocaleString()} <span className="text-xs font-sans text-amber-800 font-medium">USD</span>
+              <div className="text-2xl font-black font-mono text-amber-950 dark:text-amber-300">
+                ${staffVolumeUSD.toLocaleString()} <span className="text-xs font-sans text-amber-800 dark:text-amber-400 font-medium">USD</span>
               </div>
-              <div className="text-[11px] text-amber-700 font-medium">Tüm tekliflerin parasal büyüklüğü</div>
+              <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">Tüm tekliflerin parasal büyüklüğü</div>
             </div>
           </div>
 
@@ -681,39 +679,39 @@ export default function StaffManager() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* Left 6: Edit Form */}
-            <div className="lg:col-span-6 pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
-              <h3 className="text-base font-bold text-slate-900 font-display border-b border-slate-100 pb-3">
+            <div className="lg:col-span-6 pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white font-display border-b border-slate-100 dark:border-slate-800 pb-3">
                 Kullanıcı Bilgilerini & Şifresini Düzenle
               </h3>
 
               <form onSubmit={handleSaveEdit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Ad Soyad</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ad Soyad</label>
                     <input
                       type="text"
                       required
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Kullanıcı Adı</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Kullanıcı Adı</label>
                     <input
                       type="text"
                       required
                       value={editForm.username}
                       onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Yetki Rolü</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Yetki Rolü</label>
                     <CustomSelect
                       value={editForm.role}
                       onChange={(val) => setEditForm({ ...editForm, role: val })}
@@ -726,56 +724,56 @@ export default function StaffManager() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Şehir / İl</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Şehir / İl</label>
                     <input
                       type="text"
                       value={editForm.city}
                       onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Şube / Birim</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Şube / Birim</label>
                     <input
                       type="text"
                       value={editForm.branch}
                       onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Telefon</label>
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Telefon</label>
                     <input
                       type="tel"
                       value={editForm.phone}
                       onChange={(e) => setEditForm({ ...editForm, phone: formatPhoneNumber(e.target.value) })}
                       placeholder="+90 5XX XXX XX XX"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 {/* Avatar upload in edit form */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3">
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div 
                       onClick={() => editForm.avatar && handleOpenLightbox({ name: editForm.name, avatar: editForm.avatar, role: editForm.role, city: editForm.city, branch: editForm.branch })}
-                      className={`h-12 w-12 rounded-xl bg-white border border-emerald-400 flex items-center justify-center overflow-hidden shrink-0 shadow-3xs ${editForm.avatar ? 'cursor-pointer hover:scale-105 transition-all' : ''}`}
+                      className={`h-12 w-12 rounded-xl bg-white dark:bg-slate-800 border border-emerald-400 flex items-center justify-center overflow-hidden shrink-0 shadow-3xs ${editForm.avatar ? 'cursor-pointer hover:scale-105 transition-all' : ''}`}
                       title={editForm.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
                     >
                       {editForm.avatar ? (
                         <img src={editForm.avatar} alt={editForm.name} className="h-full w-full object-cover" />
                       ) : (
-                        <User className="h-6 w-6 text-emerald-700" />
+                        <User className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
                       )}
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-slate-900">Profil Fotoğrafı</div>
-                      <div className="text-[10px] text-slate-500">Değiştirmek için fotoğraf seçip kırpın.</div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">Profil Fotoğrafı</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Değiştirmek için fotoğraf seçip kırpın.</div>
                     </div>
                   </div>
 
@@ -790,16 +788,16 @@ export default function StaffManager() {
                     <button
                       type="button"
                       onClick={() => fileInputEditRef.current?.click()}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-3xs"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer shadow-3xs"
                     >
-                      <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                      <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>Seç & Kırp</span>
                     </button>
                     {editForm.avatar && (
                       <button
                         type="button"
                         onClick={() => setEditForm(prev => ({ ...prev, avatar: '' }))}
-                        className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 cursor-pointer"
+                        className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 cursor-pointer"
                         title="Fotoğrafı Kaldır"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -808,29 +806,29 @@ export default function StaffManager() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5 text-emerald-700" />
+                    <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Lock className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
                       <span>Kullanıcının Mevcut Aktif Şifresi (Genel Merkez Görünümü)</span>
                     </label>
                     <button
                       type="button"
                       onClick={(e) => togglePasswordVisibility(selectedStaff.id, e)}
-                      className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-white border border-slate-200 px-2.5 py-1 rounded-xl shadow-3xs cursor-pointer"
+                      className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-3xs cursor-pointer"
                     >
                       {visiblePasswords[selectedStaff.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       <span>{visiblePasswords[selectedStaff.id] ? 'Gizle' : 'Şifreyi Gör'}</span>
                     </button>
                   </div>
-                  <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3.5 py-2">
-                    <span className="font-mono text-sm font-bold text-slate-900 tracking-wider">
+                  <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2">
+                    <span className="font-mono text-sm font-bold text-slate-900 dark:text-white tracking-wider">
                       {visiblePasswords[selectedStaff.id] ? (selectedStaff.password || 'Inzar2026!') : '••••••••••••'}
                     </span>
                     <button
                       type="button"
                       onClick={(e) => copyPasswordToClipboard(selectedStaff.password || 'Inzar2026!', e)}
-                      className="p-1.5 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer"
                       title="Şifreyi Kopyala"
                     >
                       <Copy className="h-4 w-4" />
@@ -838,9 +836,9 @@ export default function StaffManager() {
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1.5">
-                  <label className="block text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
-                    <Key className="h-3.5 w-3.5 text-amber-600" />
+                <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 space-y-1.5">
+                  <label className="block text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                    <Key className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                     <span>Şifreyi Değiştir / Yenile (İsteğe Bağlı)</span>
                   </label>
                   <input
@@ -848,30 +846,30 @@ export default function StaffManager() {
                     placeholder="Yeni bir şifre girin..."
                     value={editForm.password}
                     onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:outline-none"
+                    className="w-full bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:border-emerald-600 focus:outline-none"
                   />
                 </div>
 
                 {/* 2FA Status & Reset Card in Detail View */}
                 <div className={`p-4 rounded-2xl border space-y-2.5 ${
                   selectedStaff.twoFactorEnabled 
-                    ? 'bg-emerald-50/70 border-emerald-300/80 text-emerald-950' 
-                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-700 text-emerald-950 dark:text-emerald-300' 
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
                 }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className={`h-4 w-4 ${selectedStaff.twoFactorEnabled ? 'text-emerald-700' : 'text-slate-400'}`} />
-                      <span className="text-xs font-bold text-slate-900">Google Authenticator (2FA) Durumu</span>
+                      <ShieldCheck className={`h-4 w-4 ${selectedStaff.twoFactorEnabled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">Google Authenticator (2FA) Durumu</span>
                     </div>
                     <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
                       selectedStaff.twoFactorEnabled 
-                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
-                        : 'bg-slate-200 text-slate-600 border-slate-300'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700' 
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                     }`}>
                       {selectedStaff.twoFactorEnabled ? '2FA Aktif 🛡️' : '2FA Kapalı'}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                     {selectedStaff.twoFactorEnabled 
                       ? 'Bu kullanıcı hesabında iki aşamalı doğrulama aktiftir. Telefon kaybı veya değişiminde aşağıdaki butonla sıfırlayabilirsiniz.'
                       : 'Kullanıcı 2FA korumasını profil sayfasından dilediği zaman aktif edebilir.'}
@@ -880,7 +878,7 @@ export default function StaffManager() {
                     <button
                       type="button"
                       onClick={(e) => handleResetTwoFactor(selectedStaff, e)}
-                      className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-all cursor-pointer shadow-3xs"
+                      className="px-3.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 text-xs font-bold border border-rose-200 dark:border-rose-800 transition-all cursor-pointer shadow-3xs"
                     >
                       2FA Korumasını Sıfırla (Kaldır)
                     </button>
@@ -898,41 +896,41 @@ export default function StaffManager() {
             </div>
 
             {/* Right 6: Staff Quotes List */}
-            <div className="lg:col-span-6 pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-bold text-slate-900 font-display">
+            <div className="lg:col-span-6 pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
                   Personelin Verdiği Teklifler ({staffQuotes.length})
                 </h3>
-                <span className="text-xs text-slate-400 font-medium">Son Hareketler</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Son Hareketler</span>
               </div>
 
               {staffQuotes.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 space-y-2">
-                  <FileText className="h-10 w-10 mx-auto text-slate-300" />
+                <div className="py-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
+                  <FileText className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600" />
                   <p className="text-xs">Bu personelin henüz kayıtlı teklifi bulunmuyor.</p>
                 </div>
               ) : (
                 <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                   {staffQuotes.map((q) => (
-                    <div key={q.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
+                    <div key={q.id} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-xs font-bold text-slate-900">{q.customerName || 'Misafir'}</h4>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">{q.customerName || 'Misafir'}</h4>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                             q.status === 'approved' || q.status === 'approved_revised'
-                              ? 'bg-emerald-100 text-emerald-900'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300'
                               : q.status === 'revised'
-                              ? 'bg-amber-100 text-amber-900'
-                              : 'bg-slate-200 text-slate-700'
+                              ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                           }`}>
                             {q.statusLabel || q.status}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5">
-                          {q.packageName} • {q.paxCount} Kişi • {q.durationDays} Gün • <strong className="text-slate-900">${q.finalPriceUSD}</strong>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          {q.packageName} • {q.paxCount} Kişi • {q.durationDays} Gün • <strong className="text-slate-900 dark:text-white">${q.finalPriceUSD}</strong>
                         </div>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono text-right">
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono text-right">
                         {new Date(q.createdAt).toLocaleDateString('tr-TR')}
                       </div>
                     </div>
@@ -976,11 +974,11 @@ export default function StaffManager() {
           </div>
 
           {/* List Card */}
-          <div className="pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="pearl-card rounded-3xl p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 font-display">Kayıtlı Kullanıcılar</h3>
-                <p className="text-xs text-slate-500">Sistemde kayıtlı toplam <strong>{users.length}</strong> kullanıcı bulunmaktadır.</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">Kayıtlı Kullanıcılar</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Sistemde kayıtlı toplam <strong>{users.length}</strong> kullanıcı bulunmaktadır.</p>
               </div>
 
               {/* Search Box */}
@@ -991,15 +989,15 @@ export default function StaffManager() {
                   placeholder="İsim, kullanıcı adı veya şube ara..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl pl-10 pr-4 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                 />
               </div>
             </div>
 
             {filteredUsers.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 space-y-2">
-                <Users className="h-10 w-10 mx-auto text-slate-300" />
-                <p className="text-xs font-bold text-slate-600">Arama kriterlerine uygun kullanıcı bulunamadı.</p>
+              <div className="py-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
+                <Users className="h-10 w-10 mx-auto text-slate-300 dark:text-slate-600" />
+                <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Arama kriterlerine uygun kullanıcı bulunamadı.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -1012,7 +1010,7 @@ export default function StaffManager() {
                     <div
                       key={user.id}
                       onClick={() => handleOpenDetail(user)}
-                      className="pearl-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-lg hover:border-emerald-400 bg-white/95 backdrop-blur-sm cursor-pointer group relative overflow-hidden transition-all duration-300 hover:scale-[1.008]"
+                      className="pearl-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-lg hover:border-emerald-400 dark:hover:border-emerald-500 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm cursor-pointer group relative overflow-hidden transition-all duration-300 hover:scale-[1.008]"
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         
@@ -1024,45 +1022,45 @@ export default function StaffManager() {
                               user.avatarImage || user.avatar ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-emerald-500' : ''
                             } ${
                               isAdminRole 
-                                ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-900 border border-amber-300' 
+                                ? 'bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/60 dark:to-amber-900/40 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700' 
                                 : isHqAssistant
-                                ? 'bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-900 border border-indigo-300'
-                                : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-900 border border-emerald-300'
+                                ? 'bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-950/60 dark:to-indigo-900/40 text-indigo-900 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700'
+                                : 'bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950/60 dark:to-emerald-900/40 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
                             }`}
                             title={user.avatarImage || user.avatar ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
                           >
                             {user.avatarImage || user.avatar ? (
                               <img src={user.avatarImage || user.avatar} alt={user.name} className="h-full w-full object-cover" />
                             ) : isAdminRole ? (
-                              <Crown className="h-6 w-6 text-amber-600" />
+                              <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                             ) : isHqAssistant ? (
-                              <ShieldCheck className="h-6 w-6 text-indigo-600" />
+                              <ShieldCheck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                             ) : (
-                              <User className="h-6 w-6 text-emerald-700" />
+                              <User className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
                             )}
                           </div>
 
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-900 transition-colors">
+                              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-emerald-900 dark:group-hover:text-emerald-400 transition-colors">
                                 {user.name}
                               </h4>
                               {user.id === currentUser.id && (
-                                <span className="text-[9px] font-extrabold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">Siz</span>
+                                <span className="text-[9px] font-extrabold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">Siz</span>
                               )}
                               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold shadow-3xs ${
                                 isAdminRole
-                                  ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                                  ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
                                   : isHqAssistant
-                                  ? 'bg-indigo-100 text-indigo-950 border border-indigo-300'
-                                  : 'bg-emerald-100 text-emerald-950 border border-emerald-300'
+                                  ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700'
+                                  : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
                               }`}>
-                                {isAdminRole ? <Crown className="h-2.5 w-2.5 text-amber-700" /> : isHqAssistant ? <ShieldCheck className="h-2.5 w-2.5 text-indigo-700" /> : <User className="h-2.5 w-2.5 text-emerald-700" />}
+                                {isAdminRole ? <Crown className="h-2.5 w-2.5 text-amber-700 dark:text-amber-400" /> : isHqAssistant ? <ShieldCheck className="h-2.5 w-2.5 text-indigo-700 dark:text-indigo-400" /> : <User className="h-2.5 w-2.5 text-emerald-700 dark:text-emerald-400" />}
                                 <span>{isAdminRole ? 'Genel Merkez' : isHqAssistant ? 'Genel Merkez Yardımcısı' : 'Temsilci / Personel'}</span>
                               </span>
                             </div>
 
-                            <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono flex items-center gap-1.5">
                               <span>@{user.username}</span>
                             </div>
                           </div>
@@ -1071,34 +1069,34 @@ export default function StaffManager() {
                         {/* Orta Kısım: Şube, İletişim, Şifre ve Durum Rozetleri */}
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                           {/* Şube Rozeti */}
-                          <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 font-bold text-slate-800 flex items-center gap-1.5 shadow-3xs">
-                            <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 shadow-3xs">
+                            <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span>{user.city || 'İstanbul'}</span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-slate-600 font-medium">{user.branch || 'Genel Merkez'}</span>
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <span className="text-slate-600 dark:text-slate-400 font-medium">{user.branch || 'Genel Merkez'}</span>
                           </div>
 
                           {/* İletişim */}
                           {user.phone && (
-                            <div className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-700 flex items-center gap-1.5 shadow-3xs font-mono text-xs font-semibold">
-                              <Phone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <div className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 shadow-3xs font-mono text-xs font-semibold">
+                              <Phone className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                               <span>{user.phone}</span>
                             </div>
                           )}
 
                           {/* Şifre Rozeti */}
                           <div 
-                            className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-3xs" 
+                            className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl px-2.5 py-1 shadow-3xs" 
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Lock className="h-3 w-3 text-slate-400" />
-                            <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
+                            <Lock className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                            <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wider">
                               {visiblePasswords[user.id] ? (user.password || 'Inzar2026!') : '••••••••'}
                             </span>
                             <button
                               type="button"
                               onClick={(e) => togglePasswordVisibility(user.id, e)}
-                              className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                              className="p-1 text-slate-400 dark:text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer"
                               title={visiblePasswords[user.id] ? "Şifreyi Gizle" : "Şifreyi Göster"}
                             >
                               {visiblePasswords[user.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -1106,7 +1104,7 @@ export default function StaffManager() {
                             <button
                               type="button"
                               onClick={(e) => copyPasswordToClipboard(user.password || 'Inzar2026!', e)}
-                              className="p-1 text-slate-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                              className="p-1 text-slate-400 dark:text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer"
                               title="Şifreyi Kopyala"
                             >
                               <Copy className="h-3.5 w-3.5" />
@@ -1116,8 +1114,8 @@ export default function StaffManager() {
                           {/* Durum Rozeti */}
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold shadow-3xs ${
                             user.isActive !== false
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                           }`}>
                             {user.isActive !== false ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
                             <span>{user.isActive !== false ? 'Aktif' : 'Duraklatıldı'}</span>
@@ -1126,16 +1124,16 @@ export default function StaffManager() {
                           {/* 2FA Güvenlik Rozeti */}
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold shadow-3xs border ${
                             user.twoFactorEnabled
-                              ? 'bg-emerald-100/80 text-emerald-900 border-emerald-300'
-                              : 'bg-slate-100 text-slate-500 border-slate-200'
+                              ? 'bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                           }`}>
-                            <ShieldCheck className={`h-3 w-3 ${user.twoFactorEnabled ? 'text-emerald-700' : 'text-slate-400'}`} />
+                            <ShieldCheck className={`h-3 w-3 ${user.twoFactorEnabled ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
                             <span>{user.twoFactorEnabled ? '2FA Aktif' : '2FA Kapalı'}</span>
                           </span>
                         </div>
 
                         {/* Sağ Kısım: Detay & Düzenle Butonu */}
-                        <div className="flex items-center justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                        <div className="flex items-center justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
                           <button
                             type="button"
                             onClick={(e) => {

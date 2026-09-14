@@ -125,7 +125,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
 
   return (
     <aside 
-      className={`sidebar-gpu sticky top-0 h-screen bg-white/95 border-r border-slate-200/90 z-30 select-none overflow-hidden ${
+      className={`sidebar-gpu sticky top-0 h-screen bg-white/95 dark:bg-slate-900/95 border-r border-slate-200/90 dark:border-slate-800 z-30 select-none overflow-hidden ${
         collapsed ? 'w-[74px]' : 'w-72'
       }`}
     >
@@ -134,12 +134,12 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         
         {/* Top Header / Logo Section */}
         <div>
-          <div className="p-3.5 border-b border-slate-100/90 flex items-center justify-between">
+          <div className="p-3.5 border-b border-slate-100/90 dark:border-slate-800 flex items-center justify-between">
             {/* Logo Container */}
             <div className="flex items-center gap-3 overflow-hidden">
               <div 
                 onClick={() => setCollapsed(!collapsed)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm border border-slate-200/90 transform hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 p-1.5 shadow-sm border border-slate-200/90 dark:border-slate-700 transform hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
                 title={collapsed ? 'Genişletmek için tıklayın' : undefined}
               >
                 <img
@@ -154,12 +154,12 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   collapsed ? 'opacity-0 -translate-x-3 pointer-events-none' : 'opacity-100 translate-x-0'
                 }`}
               >
-                <h1 className="text-base font-black font-display tracking-tight text-slate-900 leading-none">
+                <h1 className="text-base font-black font-display tracking-tight text-slate-900 dark:text-white leading-none">
                   İNZAR <span className="emerald-gradient-text">TURİZM</span>
                 </h1>
-                <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
                   <span>UTH&TP</span>
-                  <span className="text-[8.5px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">v1.0.18</span>
+                  <span className="text-[8.5px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/70 px-1 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">v1.0.18</span>
                 </p>
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
-              className="flex items-center justify-center h-8 w-8 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 active:scale-90 transition-all duration-200 cursor-pointer shrink-0"
+              className="flex items-center justify-center h-8 w-8 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 transition-all duration-200 cursor-pointer shrink-0"
               title={collapsed ? 'Genişlet' : 'Daralt'}
             >
               {collapsed ? (
@@ -195,23 +195,23 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   title={collapsed ? item.label : undefined}
                   className={`sidebar-item-fluid relative w-full flex items-center rounded-2xl p-2.5 text-left font-medium group cursor-pointer overflow-hidden ${
                     isActive
-                      ? 'bg-emerald-50/90 text-emerald-950 font-bold border border-emerald-300/80 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                      ? 'bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100 font-bold border border-emerald-300/80 dark:border-emerald-600/50 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-slate-100 border border-transparent'
                   }`}
                 >
                   {/* Active Indicator Left Bar */}
                   {isActive && (
-                    <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-emerald-600" />
+                    <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-emerald-600 dark:bg-emerald-500" />
                   )}
 
                   <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
                     isActive 
                       ? 'bg-gradient-to-tr from-emerald-600 to-emerald-500 text-white shadow-md shadow-emerald-700/30 scale-105' 
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800 group-hover:scale-105'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200/80 dark:group-hover:bg-slate-700 group-hover:text-slate-800 dark:group-hover:text-slate-200 group-hover:scale-105'
                   }`}>
                     <Icon className="h-4 w-4" />
                     {item.badgeCount > 0 && collapsed && (
-                      <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-600 text-white font-black text-[9px] ring-2 ring-white animate-pulse shadow-sm">
+                      <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-600 text-white font-black text-[9px] ring-2 ring-white dark:ring-slate-900 animate-pulse shadow-sm">
                         {item.badgeCount}
                       </span>
                     )}
@@ -230,7 +230,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-slate-400 block truncate font-normal">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate font-normal">
                       {item.desc}
                     </span>
                   </div>
@@ -241,12 +241,12 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         </div>
 
         {/* Bottom Date & Profile & Logout Box */}
-        <div className="p-3 border-t border-slate-100/90 space-y-2">
+        <div className="p-3 border-t border-slate-100/90 dark:border-slate-800 space-y-2">
           {/* Subtle Date */}
-          <div className={`px-2 py-0.5 text-[11px] text-slate-400 font-medium sidebar-text-gpu whitespace-nowrap overflow-hidden flex items-center gap-1.5 ${
+          <div className={`px-2 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium sidebar-text-gpu whitespace-nowrap overflow-hidden flex items-center gap-1.5 ${
             collapsed ? 'opacity-0 -translate-x-3 pointer-events-none h-0' : 'opacity-100 translate-x-0'
           }`}>
-            <Calendar className="h-3 w-3 text-slate-400 shrink-0" />
+            <Calendar className="h-3 w-3 text-slate-400 dark:text-slate-500 shrink-0" />
             <span>{new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
           </div>
 
@@ -254,23 +254,23 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             type="button"
             onClick={() => setActiveTab('profile')}
             title="Profilimi Görüntüle"
-            className="sidebar-item-fluid w-full flex items-center rounded-2xl bg-slate-50/90 hover:bg-emerald-50/80 p-2 border border-slate-200/80 hover:border-emerald-300 shadow-2xs transition-all duration-200 cursor-pointer text-left overflow-hidden"
+            className="sidebar-item-fluid w-full flex items-center rounded-2xl bg-slate-50/90 dark:bg-slate-800/80 hover:bg-emerald-50/80 dark:hover:bg-slate-800 p-2 border border-slate-200/80 dark:border-slate-700/80 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-2xs transition-all duration-200 cursor-pointer text-left overflow-hidden"
           >
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-xs shadow-xs overflow-hidden ${
               isAdmin
-                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
                 : isHqAssistant
-                ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
-                : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700'
+                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
             }`}>
               {currentUser?.avatarImage ? (
                 <img src={currentUser.avatarImage} alt="Profil" className="h-full w-full object-cover pointer-events-none" />
               ) : isAdmin ? (
-                <ShieldCheck className="h-5 w-5 text-amber-700" />
+                <ShieldCheck className="h-5 w-5 text-amber-700 dark:text-amber-400" />
               ) : isHqAssistant ? (
-                <ShieldCheck className="h-5 w-5 text-indigo-700" />
+                <ShieldCheck className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
               ) : (
-                <User className="h-5 w-5 text-emerald-700" />
+                <User className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
               )}
             </div>
 
@@ -279,10 +279,10 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 collapsed ? 'opacity-0 -translate-x-3 pointer-events-none' : 'opacity-100 translate-x-0'
               }`}
             >
-              <div className="text-xs font-bold text-slate-900 truncate">
+              <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                 {currentUser?.name}
               </div>
-              <div className="text-[10px] font-semibold text-emerald-700 truncate">
+              <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 truncate">
                 {isAdmin ? 'Genel Merkez Yöneticisi' : isHqAssistant ? 'Genel Merkez Yardımcısı' : (currentUser?.city || 'Personel')}
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           <button
             type="button"
             onClick={handleLogoutClick}
-            className="sidebar-item-fluid w-full flex items-center rounded-xl p-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 border border-transparent hover:border-rose-200 transition-all duration-200 cursor-pointer active:scale-98 overflow-hidden"
+            className="sidebar-item-fluid w-full flex items-center rounded-xl p-2.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:text-rose-700 dark:hover:text-rose-300 border border-transparent hover:border-rose-200 dark:hover:border-rose-900 transition-all duration-200 cursor-pointer active:scale-98 overflow-hidden"
             title="Güvenli Çıkış Yap"
           >
             <LogOut className="h-4 w-4 shrink-0" />

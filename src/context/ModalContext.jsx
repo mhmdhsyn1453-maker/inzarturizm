@@ -196,13 +196,13 @@ export function ModalProvider({ children }) {
 
       {/* GLOBAL CUSTOM INZAR MODAL */}
       {modalState.isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-[480px] rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200/90 animate-fade-scale text-center flex flex-col items-center">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-[480px] rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-200/90 dark:border-slate-800 animate-fade-scale text-center flex flex-col items-center">
             
             {/* Close Button */}
             <button
               onClick={closeModal}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -210,39 +210,39 @@ export function ModalProvider({ children }) {
             {/* Icon Header */}
             <div className="mb-4">
               {modalState.type === 'logout' ? (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-sm">
                   <LogOut className="h-8 w-8" />
                 </div>
               ) : modalState.type === 'delete' ? (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-sm">
                   <Trash2 className="h-8 w-8" />
                 </div>
               ) : modalState.confirmVariant === 'danger' ? (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-sm">
                   <ShieldAlert className="h-8 w-8" />
                 </div>
               ) : modalState.confirmVariant === 'amber' ? (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400 shadow-sm">
                   <AlertTriangle className="h-8 w-8" />
                 </div>
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/60 text-emerald-600 dark:text-emerald-400 shadow-sm">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
               )}
             </div>
 
             {/* Title & Message */}
-            <h3 className="text-xl font-black font-display tracking-tight text-slate-900 mb-2">
+            <h3 className="text-xl font-black font-display tracking-tight text-slate-900 dark:text-white mb-2">
               {modalState.title}
             </h3>
             
-            <p className="text-xs font-semibold text-slate-600 mb-2 leading-relaxed">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2 leading-relaxed">
               {modalState.message}
             </p>
 
             {modalState.details && (
-              <p className="text-[11px] text-slate-500 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 mb-5 w-full font-medium">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 mb-5 w-full font-medium">
                 {modalState.details}
               </p>
             )}
@@ -253,7 +253,7 @@ export function ModalProvider({ children }) {
                 <button
                   type="button"
                   onClick={modalState.onCancel}
-                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3 text-xs font-bold text-slate-700 transition-all cursor-pointer"
+                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 py-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
                 >
                   {modalState.cancelText}
                 </button>
@@ -280,51 +280,51 @@ export function ModalProvider({ children }) {
 
       {/* GLOBAL REJECT MODAL (Tüm Ekrana Yayılan Tam Blur ve Tam Ortada Kart) */}
       {rejectState.isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-[500px] rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200/90 animate-fade-scale text-left flex flex-col space-y-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-[500px] rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl border border-slate-200/90 dark:border-slate-800 animate-fade-scale text-left flex flex-col space-y-4">
             
             {/* Close Button */}
             <button
               onClick={rejectState.onCancel}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
 
             {/* Header with Icon */}
-            <div className="flex items-center gap-3.5 pb-3 border-b border-slate-100">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 shadow-sm">
+            <div className="flex items-center gap-3.5 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 shadow-sm">
                 <ShieldAlert className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="text-lg font-black font-display tracking-tight text-slate-900">
+                <h3 className="text-lg font-black font-display tracking-tight text-slate-900 dark:text-white">
                   Teklifi Reddet / Revize İste
                 </h3>
-                <p className="text-xs font-semibold text-slate-500">
-                  <strong className="text-slate-800">{rejectState.customerName}</strong> misafirinin teklifini reddetme gerekçesini belirtin.
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <strong className="text-slate-800 dark:text-slate-200">{rejectState.customerName}</strong> misafirinin teklifini reddetme gerekçesini belirtin.
                 </p>
               </div>
             </div>
 
             {/* Textarea Only */}
             <div className="space-y-2 pt-1">
-              <label className="block text-xs font-bold text-slate-700">Açıklama / Karar Notu *</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Açıklama / Karar Notu *</label>
               <textarea
                 rows={4}
                 autoFocus
                 value={rejectState.reason}
                 onChange={(e) => setRejectState(prev => ({ ...prev, reason: e.target.value }))}
                 placeholder="Lütfen teklifin reddedilme veya revize edilme gerekçesini detaylıca yazınız..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-rose-500 focus:outline-none shadow-3xs"
+                className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:border-rose-500 focus:outline-none shadow-3xs"
               />
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={rejectState.onCancel}
-                className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3 text-xs font-bold text-slate-700 transition-all cursor-pointer text-center"
+                className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 py-3 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer text-center"
               >
                 Vazgeç
               </button>
@@ -343,33 +343,33 @@ export function ModalProvider({ children }) {
       )}
       {/* GLOBAL PDF SAVE LOCATION MINI MODAL (Kayıt Yeri Sorma ve Bir Daha Gösterme) */}
       {pdfSaveState.isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in font-sans">
-          <div className="relative w-full max-w-[460px] rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-200/90 animate-fade-scale text-left flex flex-col space-y-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in font-sans">
+          <div className="relative w-full max-w-[460px] rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-7 shadow-2xl border border-slate-200/90 dark:border-slate-800 animate-fade-scale text-left flex flex-col space-y-4">
             
             {/* Close Button */}
             <button
               onClick={pdfSaveState.onCancel}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
 
             {/* Header */}
-            <div className="flex items-center gap-3.5 pb-2 border-b border-slate-100">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-xs">
+            <div className="flex items-center gap-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-400 shadow-xs">
                 <FolderDown className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-base font-black font-display tracking-tight text-slate-900">
+                <h3 className="text-base font-black font-display tracking-tight text-slate-900 dark:text-white">
                   PDF Kayıt Konumu Tercihi
                 </h3>
-                <p className="text-xs text-slate-500 font-medium truncate max-w-[300px]">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-[300px]">
                   {pdfSaveState.fileName}
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 font-medium">
+            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
               Resmi teklif mektubu PDF belgesini nasıl indirmek istersiniz?
             </p>
 
@@ -379,18 +379,18 @@ export function ModalProvider({ children }) {
               <button
                 type="button"
                 onClick={() => pdfSaveState.onSelect('picker', pdfSaveState.dontAskAgain)}
-                className="w-full p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/60 transition-all text-left group cursor-pointer flex items-center justify-between shadow-2xs hover:scale-[1.01]"
+                className="w-full p-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-all text-left group cursor-pointer flex items-center justify-between shadow-2xs hover:scale-[1.01]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 group-hover:border-emerald-300 text-emerald-700 flex items-center justify-center shadow-3xs shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group-hover:border-emerald-300 dark:group-hover:border-emerald-600 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shadow-3xs shrink-0">
                     <FolderDown className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-xs font-black text-slate-900 group-hover:text-emerald-950 flex items-center gap-1.5">
+                    <div className="text-xs font-black text-slate-900 dark:text-white group-hover:text-emerald-950 dark:group-hover:text-emerald-300 flex items-center gap-1.5">
                       <span>Farklı Kaydet (Konum & Klasör Seç)</span>
-                      <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">Önerilen</span>
+                      <span className="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold">Önerilen</span>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       Dosya yöneticisi açılır, kaydedilecek klasörü siz seçersiniz.
                     </div>
                   </div>
@@ -401,17 +401,17 @@ export function ModalProvider({ children }) {
               <button
                 type="button"
                 onClick={() => pdfSaveState.onSelect('direct', pdfSaveState.dontAskAgain)}
-                className="w-full p-3.5 rounded-2xl border border-slate-200 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-100/70 transition-all text-left group cursor-pointer flex items-center justify-between shadow-3xs"
+                className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100/70 dark:hover:bg-slate-800/90 transition-all text-left group cursor-pointer flex items-center justify-between shadow-3xs"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center shadow-3xs shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center shadow-3xs shrink-0">
                     <Download className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-800">
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       Hızlı İndir (İndirilenler Klasörü)
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       Soru sormadan doğrudan tarayıcının İndirilenler klasörüne kaydeder.
                     </div>
                   </div>
@@ -422,13 +422,13 @@ export function ModalProvider({ children }) {
             {/* "Bu tercihimi hatırla, bir daha sorma" Checkbox */}
             <div className="pt-2">
               <label 
-                className="inline-flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer select-none"
+                className="inline-flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none"
                 onClick={() => setPdfSaveState(prev => ({ ...prev, dontAskAgain: !prev.dontAskAgain }))}
               >
                 <div className={`h-4.5 w-4.5 rounded-md border flex items-center justify-center transition-colors ${
                   pdfSaveState.dontAskAgain 
                     ? 'bg-emerald-600 border-emerald-600 text-white shadow-3xs' 
-                    : 'border-slate-300 bg-white'
+                    : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
                 }`}>
                   {pdfSaveState.dontAskAgain && <Check className="h-3 w-3 stroke-[3]" />}
                 </div>
@@ -437,11 +437,11 @@ export function ModalProvider({ children }) {
             </div>
 
             {/* Footer Buttons */}
-            <div className="pt-2 flex justify-end border-t border-slate-100">
+            <div className="pt-2 flex justify-end border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={pdfSaveState.onCancel}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
               >
                 Vazgeç
               </button>

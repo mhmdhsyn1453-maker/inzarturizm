@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import lottie from 'lottie-web';
 import fingerprintAnimation from '../../assets/fingerprint_verification.json';
 import inzarLogo from '../../assets/inzarturizmlogo.png';
@@ -13,7 +14,9 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
-  Fingerprint
+  Fingerprint,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 // 💎 1. High-Precision Swiss/Optic Crystal Lens Interactive Eye
@@ -321,7 +324,7 @@ function FingerprintLottiePlayer({ onDone }) {
 
   return (
     <div className="relative mx-auto flex items-center justify-center mb-6 sm:mb-8">
-      <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-gradient-to-br from-white via-slate-50 to-emerald-50/80 p-3 shadow-2xl ring-8 ring-emerald-500/15 border-2 border-emerald-400 flex items-center justify-center overflow-hidden">
+      <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-gradient-to-br from-white via-slate-50 to-emerald-50/80 dark:from-slate-800 dark:via-slate-900 dark:to-emerald-950/60 p-3 shadow-2xl ring-8 ring-emerald-500/15 dark:ring-emerald-500/25 border-2 border-emerald-400 flex items-center justify-center overflow-hidden">
         <div ref={containerRef} className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center scale-125" />
       </div>
     </div>
@@ -330,6 +333,7 @@ function FingerprintLottiePlayer({ onDone }) {
 
 export default function LoginScreen() {
   const { login, verify2FAAndLogin, users } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   // Remember Me state
   const [username, setUsername] = useState(() => {
@@ -523,36 +527,39 @@ export default function LoginScreen() {
     setTimeout(() => setIsShaking(false), 500);
   };
 
-  const handleQuickLogin = (u, p) => {
-    if (lockoutTimer > 0 || isFlipped) return;
-    setUsername(u);
-    setPassword(p);
-    setErrorMsg('');
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const result = login(u, p, false);
-      setIsLoading(false);
-      if (result.success) {
-        setFailedAttempts(0);
-        startBiometricVerification(result.user, u, p);
-      } else {
-        triggerError(result.message);
-      }
-    }, 150);
-  };
-
   return (
     <div
       onMouseMove={handleMouseMove}
-      className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-white"
+      className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-300"
     >
 
-      {/* 1. LAYER: Minimalist Soft Slate Ambient Lighting on Pure White */}
+      {/* Floating Theme Toggle (Top Right) */}
+      <div className="absolute top-5 right-5 z-50">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-md text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs font-bold"
+          title={isDark ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
+        >
+          {isDark ? (
+            <>
+              <Sun className="h-4 w-4 text-amber-400 animate-spin-slow" />
+              <span className="hidden sm:inline">Aydınlık Mod</span>
+            </>
+          ) : (
+            <>
+              <Moon className="h-4 w-4 text-emerald-600" />
+              <span className="hidden sm:inline">Karanlık Mod</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* 1. LAYER: Minimalist Soft Slate Ambient Lighting on Pure White / Dark Obsidian */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 -left-20 h-[550px] w-[550px] rounded-full bg-slate-100/70 blur-[130px] animate-breathe-1" />
-        <div className="absolute -bottom-20 -right-20 h-[600px] w-[600px] rounded-full bg-slate-100/60 blur-[140px] animate-breathe-2" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[650px] w-[650px] rounded-full bg-slate-50/80 blur-[100px]" />
+        <div className="absolute top-1/4 -left-20 h-[550px] w-[550px] rounded-full bg-slate-100/70 dark:bg-slate-900/50 blur-[130px] animate-breathe-1" />
+        <div className="absolute -bottom-20 -right-20 h-[600px] w-[600px] rounded-full bg-slate-100/60 dark:bg-slate-900/40 blur-[140px] animate-breathe-2" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[650px] w-[650px] rounded-full bg-slate-50/80 dark:bg-emerald-950/20 blur-[100px]" />
       </div>
 
       {/* 2. LAYER: Magnetic Ambient Particle Canvas */}
@@ -589,7 +596,7 @@ export default function LoginScreen() {
           {/* ══════════════════════════════════════════════════════════════
               🔹 FRONT FACE: PRESTIGIOUS LOGIN FORM
              ══════════════════════════════════════════════════════════════ */}
-          <div className="absolute inset-0 w-full h-full rounded-full pt-8 pb-10 px-10 sm:px-14 bg-white border-2 border-white/90 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 [backface-visibility:hidden]">
+          <div className="absolute inset-0 w-full h-full rounded-full pt-8 pb-10 px-10 sm:px-14 bg-white dark:bg-slate-900/95 border-2 border-white/90 dark:border-slate-800 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.6)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 dark:ring-emerald-500/20 [backface-visibility:hidden]">
 
             {/* Logo Section (Pure, Large & Elegant) */}
             <div className="mb-6 sm:mb-7 flex flex-col items-center">
@@ -597,25 +604,25 @@ export default function LoginScreen() {
                 <img
                   src={inzarLogo}
                   alt="İnzar Turizm"
-                  className="h-36 sm:h-44 w-auto max-w-[320px] sm:max-w-[380px] object-contain pointer-events-none"
+                  className="h-36 sm:h-44 w-auto max-w-[320px] sm:max-w-[380px] object-contain pointer-events-none drop-shadow-sm"
                 />
               </div>
 
               {/* Single-Line Title with Emerald Gradient */}
-              <h2 className="text-sm sm:text-base font-extrabold font-display tracking-tight text-slate-900 mt-4">
+              <h2 className="text-sm sm:text-base font-extrabold font-display tracking-tight text-slate-900 dark:text-white mt-4">
                 TARİFE & TEKLİF <span className="emerald-gradient-text">YÖNETİM SİSTEMİ</span>
               </h2>
             </div>
 
             {/* Lockout / Error Alert */}
             {lockoutTimer > 0 ? (
-              <div className="mb-3 flex items-center gap-1.5 rounded-full bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-900 border border-amber-300 shadow-sm animate-slide-down max-w-[340px]">
-                <Clock className="h-4 w-4 shrink-0 text-amber-700" />
+              <div className="mb-3 flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/50 px-4 py-1.5 text-xs font-semibold text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-sm animate-slide-down max-w-[340px]">
+                <Clock className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
                 <span>Güvenlik kilidi: {lockoutTimer}s</span>
               </div>
             ) : errorMsg ? (
-              <div className="mb-3 flex items-center gap-1.5 rounded-full bg-rose-50 px-4 py-1.5 text-xs font-semibold text-rose-700 border border-rose-200 shadow-sm animate-slide-down max-w-[340px]">
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+              <div className="mb-3 flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-950/50 px-4 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 shadow-sm animate-slide-down max-w-[340px]">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
                 <span className="truncate">{errorMsg}</span>
               </div>
             ) : null}
@@ -626,13 +633,13 @@ export default function LoginScreen() {
             {is2FAPrompt ? (
               <form onSubmit={handle2FASubmit} className="w-full max-w-[340px] sm:max-w-[380px] mx-auto space-y-4 flex flex-col items-center animate-scale-in">
                 <div className="flex flex-col items-center text-center space-y-1">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm mb-1">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shadow-sm mb-1">
                     <ShieldCheck className="h-7 w-7" />
                   </div>
-                  <h3 className="text-base font-extrabold text-slate-900 font-display">
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white font-display">
                     {isBackupMode ? 'Kurtarma Kodu ile Giriş' : 'Google Authenticator Doğrulaması'}
                   </h3>
-                  <p className="text-xs text-slate-500 max-w-[280px]">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[280px]">
                     {isBackupMode
                       ? '5 adet tek kullanımlık kurtarma kodunuzdan birini giriniz.'
                       : `Sayın ${twoFactorUser?.name || 'Kullanıcı'}, uygulamanızdaki 6 haneli kodu giriniz.`}
@@ -650,7 +657,7 @@ export default function LoginScreen() {
                     value={twoFactorCode}
                     onChange={(e) => setTwoFactorCode(isBackupMode ? e.target.value.toUpperCase() : e.target.value.replace(/\D/g, ''))}
                     placeholder={isBackupMode ? 'Örn: A7K9-2P4M' : '000000'}
-                    className={`w-full text-center font-mono font-black rounded-full bg-slate-50/90 py-3.5 px-4 text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all ${isBackupMode ? 'text-base tracking-wider uppercase' : 'text-2xl tracking-[0.4em]'
+                    className={`w-full text-center font-mono font-black rounded-full bg-slate-50/90 dark:bg-slate-800/90 py-3.5 px-4 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-emerald-500/12 transition-all ${isBackupMode ? 'text-base tracking-wider uppercase' : 'text-2xl tracking-[0.4em]'
                       }`}
                   />
                 </div>
@@ -680,7 +687,7 @@ export default function LoginScreen() {
                       setTwoFactorCode('');
                       setErrorMsg('');
                     }}
-                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline transition-colors cursor-pointer"
+                    className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-emerald-300 underline transition-colors cursor-pointer"
                   >
                     {isBackupMode ? '← Google Authenticator Kodunu Kullan' : 'Telefonuma Ulaşamıyorum (Kurtarma Kodu Kullan)'}
                   </button>
@@ -688,7 +695,7 @@ export default function LoginScreen() {
                   <button
                     type="button"
                     onClick={handleCancel2FA}
-                    className="text-xs text-slate-400 hover:text-slate-700 transition-colors cursor-pointer mt-1"
+                    className="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer mt-1"
                   >
                     ← Başka Hesapla Giriş Yap
                   </button>
@@ -700,7 +707,7 @@ export default function LoginScreen() {
 
                 {/* Porcelain Username Input */}
                 <div className="relative group w-full">
-                  <User className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 absolute left-4.5 top-3.5 transition-colors duration-200" />
+                  <User className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 dark:group-focus-within:text-emerald-400 absolute left-4.5 top-3.5 transition-colors duration-200" />
                   <input
                     type="text"
                     required
@@ -708,14 +715,14 @@ export default function LoginScreen() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Kullanıcı Adı (ör. merkez, mustafa)"
-                    className="w-full rounded-full bg-slate-50/90 pl-11 pr-5 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-semibold disabled:opacity-50"
+                    className="w-full rounded-full bg-slate-50/90 dark:bg-slate-800/80 pl-11 pr-5 py-3 text-sm text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-emerald-500/12 transition-all font-semibold disabled:opacity-50"
                   />
                 </div>
 
                 {/* Porcelain Password Input + Swiss Crystal Lens Eye */}
                 <div className="w-full flex flex-col items-center">
                   <div className="relative group w-full">
-                    <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 absolute left-4.5 top-3.5 transition-colors duration-200" />
+                    <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-emerald-700 dark:group-focus-within:text-emerald-400 absolute left-4.5 top-3.5 transition-colors duration-200" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
@@ -730,7 +737,7 @@ export default function LoginScreen() {
                       onKeyDown={handlePasswordKeyEvents}
                       onKeyUp={handlePasswordKeyEvents}
                       placeholder="Giriş Şifresi"
-                      className="w-full rounded-full bg-slate-50/90 pl-11 pr-20 py-3 text-sm text-slate-900 border border-slate-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/12 transition-all font-mono font-bold disabled:opacity-50"
+                      className="w-full rounded-full bg-slate-50/90 dark:bg-slate-800/80 pl-11 pr-20 py-3 text-sm text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_3px_rgba(0,0,0,0.03)] focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-emerald-500/12 transition-all font-mono font-bold disabled:opacity-50"
                     />
 
                     {/* Right-side Action: CapsLock Indicator + Swiss Crystal Lens Eye */}
@@ -756,7 +763,7 @@ export default function LoginScreen() {
                   {isCapsLockOn && (
                     <div
                       style={{ width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      className="gap-1.5 text-xs text-amber-700/85 font-medium animate-slide-down pt-1.5 select-none"
+                      className="gap-1.5 text-xs text-amber-700/85 dark:text-amber-400 font-medium animate-slide-down pt-1.5 select-none"
                     >
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                       <span>Büyük Harf (CapsLock) Açık</span>
@@ -769,10 +776,10 @@ export default function LoginScreen() {
                   <button
                     type="button"
                     onClick={toggleRememberMe}
-                    className="group inline-flex items-center gap-2.5 py-1 px-3.5 rounded-full hover:bg-slate-100/60 transition-all cursor-pointer select-none"
+                    className="group inline-flex items-center gap-2.5 py-1 px-3.5 rounded-full hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-all cursor-pointer select-none"
                   >
                     <div
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${rememberMe ? 'bg-emerald-600' : 'bg-slate-300'
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${rememberMe ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
                         }`}
                     >
                       <span
@@ -780,7 +787,7 @@ export default function LoginScreen() {
                           }`}
                       />
                     </div>
-                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
                       Beni Hatırla
                     </span>
                   </button>
@@ -802,32 +809,32 @@ export default function LoginScreen() {
 
             {/* Bottom NEXUS Platforms Badge */}
             <div
-              className="mt-4 text-[11px] text-slate-400 font-normal flex items-center justify-center select-none tracking-wide"
+              className="mt-4 text-[11px] text-slate-400 dark:text-slate-500 font-normal flex items-center justify-center select-none tracking-wide"
               style={{ fontFamily: "'Mark Pro', 'Plus Jakarta Sans', sans-serif" }}
             >
-              <span>By <strong style={{ fontWeight: 700, color: '#334155' }}>NEXUS</strong> Platforms</span>
+              <span>By <strong className="text-slate-700 dark:text-slate-300 font-bold">NEXUS</strong> Platforms</span>
             </div>
           </div>
 
           {/* ══════════════════════════════════════════════════════════════
               🔹 BACK FACE: 3D REVERSE BIOMETRIC FINGERPRINT VIEW
              ══════════════════════════════════════════════════════════════ */}
-          <div className="absolute inset-0 w-full h-full rounded-full py-12 px-10 sm:px-16 bg-white border-2 border-white/90 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <div className="absolute inset-0 w-full h-full rounded-full py-12 px-10 sm:px-16 bg-white dark:bg-slate-900/95 border-2 border-white/90 dark:border-slate-800 shadow-[0_30px_70px_-15px_rgba(15,23,42,0.12)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.6)] flex flex-col items-center justify-center text-center ring-4 ring-emerald-500/10 dark:ring-emerald-500/20 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             {isFlipped && (
               <div className="w-full flex flex-col items-center justify-center animate-fade-scale">
                 <FingerprintLottiePlayer onDone={handleLottieDone} />
 
                 {/* Badge with distinct breathing room */}
                 <div className="mb-6">
-                  <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold border shadow-xs transition-all ${isVerified ? 'bg-emerald-100 text-emerald-900 border-emerald-300 scale-105' : 'bg-slate-100/90 text-slate-700 border-slate-200'}`}>
+                  <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold border shadow-xs transition-all ${isVerified ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 scale-105' : 'bg-slate-100/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
                     {isVerified ? (
                       <>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         <span>Dijital Parmak İzi Doğrulandı</span>
                       </>
                     ) : (
                       <>
-                        <Fingerprint className="h-4 w-4 text-emerald-600 animate-pulse" />
+                        <Fingerprint className="h-4 w-4 text-emerald-600 dark:text-emerald-400 animate-pulse" />
                         <span>Dijital Parmak İzi Taranıyor...</span>
                       </>
                     )}
@@ -836,10 +843,10 @@ export default function LoginScreen() {
 
                 {/* User Greeting Title & Subtitle with spacious margins */}
                 <div className="w-full max-w-[380px] px-4">
-                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-display tracking-tight mb-3">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-display tracking-tight mb-3">
                     Hoş Geldiniz, <span className="emerald-gradient-text">{scannedUser?.name}</span>
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium tracking-wide">
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium tracking-wide">
                     {isVerified ? 'Giriş Başarılı! Yönlendiriliyorsunuz...' : 'Güvenli oturum açılıyor, lütfen bekleyiniz...'}
                   </p>
                 </div>

@@ -212,23 +212,23 @@ export default function ImageCropModal({
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="pearl-card bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200/90 space-y-5 animate-scale-up"
+        className="pearl-card bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200/90 dark:border-slate-800 space-y-5 animate-scale-up"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-2xl bg-emerald-100 text-emerald-800 shadow-3xs">
+            <div className="p-2 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 shadow-3xs">
               <Crop className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-slate-900">{title}</h3>
-              <p className="text-[11px] text-slate-500">Fotoğrafı sürükleyerek ortalayın ve yakınlaştırın.</p>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{title}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Fotoğrafı sürükleyerek ortalayın ve yakınlaştırın.</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => onCloseRef.current && onCloseRef.current()}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             title="Kapat (Esc)"
           >
             <X className="h-4 w-4" />
@@ -268,21 +268,21 @@ export default function ImageCropModal({
         </div>
 
         {/* Zoom & Rotate Controls */}
-        <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/90 shadow-3xs">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+        <div className="space-y-3 bg-slate-50 dark:bg-slate-800/70 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700 shadow-3xs">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
             <span className="flex items-center gap-1.5">
-              <ZoomIn className="h-3.5 w-3.5 text-emerald-700" /> Yakınlaştırma (Zoom)
+              <ZoomIn className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" /> Yakınlaştırma (Zoom)
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-[10px] text-slate-500 hover:text-emerald-700 font-semibold flex items-center gap-0.5 cursor-pointer"
+                className="text-[10px] text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold flex items-center gap-0.5 cursor-pointer"
                 title="Sıfırla"
               >
                 <RefreshCw className="h-2.5 w-2.5" /> Sıfırla
               </button>
-              <span className="font-mono text-emerald-800 font-bold bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-3xs">
+              <span className="font-mono text-emerald-800 dark:text-emerald-300 font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-3xs">
                 {Math.round(zoom * 100)}%
               </span>
             </div>
@@ -292,7 +292,7 @@ export default function ImageCropModal({
             <button
               type="button"
               onClick={() => setZoom((z) => Math.max(1, +(z - 0.2).toFixed(2)))}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer shadow-3xs active:scale-95"
+              className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer shadow-3xs active:scale-95"
               title="Uzaklaştır"
             >
               <ZoomOut className="h-4 w-4" />
@@ -304,12 +304,12 @@ export default function ImageCropModal({
               step="0.02"
               value={zoom}
               onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="flex-1 accent-emerald-700 cursor-pointer h-2 bg-slate-200 rounded-lg"
+              className="flex-1 accent-emerald-700 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
             />
             <button
               type="button"
               onClick={() => setZoom((z) => Math.min(3, +(z + 0.2).toFixed(2)))}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer shadow-3xs active:scale-95"
+              className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer shadow-3xs active:scale-95"
               title="Yakınlaştır"
             >
               <ZoomIn className="h-4 w-4" />
@@ -317,10 +317,10 @@ export default function ImageCropModal({
             <button
               type="button"
               onClick={handleRotate}
-              className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer shadow-3xs active:scale-95"
+              className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer shadow-3xs active:scale-95"
               title="90° Sağa Döndür"
             >
-              <RotateCw className="h-4 w-4 text-amber-600" />
+              <RotateCw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             </button>
           </div>
         </div>
@@ -330,7 +330,7 @@ export default function ImageCropModal({
           <button
             type="button"
             onClick={() => onCloseRef.current && onCloseRef.current()}
-            className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
           >
             Vazgeç
           </button>

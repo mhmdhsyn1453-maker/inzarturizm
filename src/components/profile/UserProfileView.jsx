@@ -289,7 +289,7 @@ export default function UserProfileView() {
   return (
     <div className="space-y-6 pb-20">
       {/* Top Banner */}
-      <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl">
+      <div className="pearl-card rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-emerald-900 via-emerald-850 to-emerald-950 text-white shadow-xl dark:border dark:border-emerald-700/40">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="relative group">
@@ -332,56 +332,56 @@ export default function UserProfileView() {
 
       {/* Performance Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="pearl-card rounded-3xl p-5 border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+        <div className="pearl-card rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Verilen Toplam Teklif</span>
-            <FileText className="h-4 w-4 text-emerald-600" />
+            <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-black font-mono text-slate-900">
-            {userQuotes.length} <span className="text-xs font-sans text-slate-400 font-medium">Adet</span>
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
+            {userQuotes.length} <span className="text-xs font-sans text-slate-400 dark:text-slate-500 font-medium">Adet</span>
           </div>
-          <div className="text-[11px] text-slate-400">Tarafınızdan oluşturulan teklifler</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500">Tarafınızdan oluşturulan teklifler</div>
         </div>
 
-        <div className="pearl-card rounded-3xl p-5 border border-emerald-200 bg-emerald-50/40 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
+        <div className="pearl-card rounded-3xl p-5 border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/30 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-emerald-800 dark:text-emerald-300">
             <span>Onaylanan Teklifler</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-black font-mono text-emerald-950">
-            {approvedQuotes.length} <span className="text-xs font-sans text-emerald-700 font-medium">Adet</span>
+          <div className="text-2xl font-black font-mono text-emerald-950 dark:text-emerald-100">
+            {approvedQuotes.length} <span className="text-xs font-sans text-emerald-700 dark:text-emerald-400 font-medium">Adet</span>
           </div>
-          <div className="text-[11px] text-emerald-700">Merkezce onaylanan teklifler</div>
+          <div className="text-[11px] text-emerald-700 dark:text-emerald-400">Merkezce onaylanan teklifler</div>
         </div>
 
-        <div className="pearl-card rounded-3xl p-5 border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+        <div className="pearl-card rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Toplam Potansiyel Ciro</span>
-            <DollarSign className="h-4 w-4 text-emerald-600" />
+            <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-black font-mono text-slate-900">
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
             ${totalVolumeUSD.toLocaleString('tr-TR')}
           </div>
-          <div className="text-[11px] text-slate-400">Teklif verilen toplam hacim</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500">Teklif verilen toplam hacim</div>
         </div>
       </div>
 
       {/* Profile Edit Form */}
-      <div className="pearl-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
-        <div className="border-b border-slate-100 pb-4">
-          <h3 className="text-lg font-bold text-slate-900 font-display">Profil & Hesap Bilgileri</h3>
-          <p className="text-xs text-slate-500">Kişisel bilgilerinizi, profil fotoğrafınızı ve şifrenizi güncelleyebilirsiniz.</p>
+      <div className="pearl-card rounded-3xl p-6 sm:p-8 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-6">
+        <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white font-display">Profil & Hesap Bilgileri</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Kişisel bilgilerinizi, profil fotoğrafınızı ve şifrenizi güncelleyebilirsiniz.</p>
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
           
           {/* Profil Fotoğrafı Yükleme Bölümü */}
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div 
                   onClick={() => form.avatarImage && setLightboxOpen(true)}
-                  className={`flex h-20 w-20 items-center justify-center rounded-full bg-white border-2 border-emerald-500/40 shadow-md overflow-hidden ring-4 ring-emerald-500/10 ${
+                  className={`flex h-20 w-20 items-center justify-center rounded-full bg-white dark:bg-slate-800 border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-md overflow-hidden ring-4 ring-emerald-500/10 dark:ring-emerald-500/20 ${
                     form.avatarImage ? 'cursor-pointer hover:scale-105 hover:ring-emerald-500 transition-all' : ''
                   }`}
                   title={form.avatarImage ? 'Fotoğrafı büyütmek için tıklayın' : undefined}
@@ -389,16 +389,16 @@ export default function UserProfileView() {
                   {form.avatarImage ? (
                     <img src={form.avatarImage} alt="Profil Önizleme" className="h-full w-full object-cover" />
                   ) : isAdmin ? (
-                    <Crown className="h-10 w-10 text-amber-500" />
+                    <Crown className="h-10 w-10 text-amber-500 dark:text-amber-400" />
                   ) : (
-                    <User className="h-10 w-10 text-emerald-700" />
+                    <User className="h-10 w-10 text-emerald-700 dark:text-emerald-400" />
                   )}
                 </div>
               </div>
 
               <div>
-                <h4 className="text-xs font-bold text-slate-900">Profil Fotoğrafı</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white">Profil Fotoğrafı</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   Fotoğrafa tıklayarak tam boy inceleyebilir veya yeni fotoğraf yükleyebilirsiniz.
                 </p>
               </div>
@@ -417,9 +417,9 @@ export default function UserProfileView() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-bold text-slate-800 hover:text-emerald-900 shadow-2xs transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-emerald-900 dark:hover:text-emerald-300 shadow-2xs transition-all cursor-pointer"
               >
-                <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Fotoğraf Seç & Yükle</span>
               </button>
 
@@ -427,10 +427,10 @@ export default function UserProfileView() {
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="flex items-center gap-1 px-3 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs font-bold text-rose-700 transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-2 rounded-2xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300 transition-all cursor-pointer"
                   title="Fotoğrafı Kaldır ve Varsayılana Dön"
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                  <Trash2 className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
                   <span>Kaldır</span>
                 </button>
               )}
@@ -439,71 +439,71 @@ export default function UserProfileView() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Ad Soyad</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Ad Soyad</label>
               <div className="relative">
-                <User className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
+                <User className="h-4 w-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   required
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Kullanıcı Adı (Giriş İçin)</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kullanıcı Adı (Giriş İçin)</label>
               <div className="relative">
-                <span className="text-slate-400 text-xs font-bold absolute left-3.5 top-3">@</span>
+                <span className="text-slate-400 dark:text-slate-500 text-xs font-bold absolute left-3.5 top-3">@</span>
                 <input
                   type="text"
                   required
                   value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Şehir / İl</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Şehir / İl</label>
               <div className="relative">
-                <MapPin className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
+                <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
                   placeholder="Örn: İstanbul"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Şube / Birim</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Şube / Birim</label>
               <div className="relative">
-                <Building2 className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
+                <Building2 className="h-4 w-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   value={form.branch}
                   onChange={(e) => setForm({ ...form, branch: e.target.value })}
                   placeholder="Örn: Fatih Şubesi"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-700 mb-1">Telefon Numarası</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Telefon Numarası</label>
               <div className="relative">
-                <Phone className="h-4 w-4 text-slate-400 absolute left-3.5 top-3" />
+                <Phone className="h-4 w-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: formatPhoneNumber(e.target.value) })}
                   placeholder="+90 5XX XXX XX XX"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none font-mono"
                 />
               </div>
             </div>
@@ -512,18 +512,18 @@ export default function UserProfileView() {
           {/* ══════════════════════════════════════════════════════════════
               🔒 ADVANCED PASSWORD CHANGE & STRENGTH METER (3-STAGE)
              ══════════════════════════════════════════════════════════════ */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/30 border border-slate-200/90 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/20 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
-                  <Key className="h-4 w-4 text-amber-700" />
+                <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/80">
+                  <Key className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Güvenlik & Şifre Değiştirme</h4>
-                  <p className="text-[11px] text-slate-500">Şifrenizi değiştirmek için mevcut şifrenizi ve yeni şifrenizi giriniz.</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Güvenlik & Şifre Değiştirme</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Şifrenizi değiştirmek için mevcut şifrenizi ve yeni şifrenizi giriniz.</p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300">
+              <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-800">
                 256-Bit Güvenlik
               </span>
             </div>
@@ -531,19 +531,19 @@ export default function UserProfileView() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* 1. Eski Şifre */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">Mevcut (Eski) Şifreniz</label>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Mevcut (Eski) Şifreniz</label>
                 <div className="relative">
                   <input
                     type={showOldPass ? 'text' : 'password'}
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
                     placeholder="Mevcut şifreniz..."
-                    className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowOldPass(!showOldPass)}
-                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                    className="absolute right-2.5 top-2.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
                   >
                     {showOldPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -552,19 +552,19 @@ export default function UserProfileView() {
 
               {/* 2. Yeni Şifre */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">Yeni Şifre</label>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Yeni Şifre</label>
                 <div className="relative">
                   <input
                     type={showNewPass ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Yeni şifreniz (min 6)..."
-                    className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPass(!showNewPass)}
-                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                    className="absolute right-2.5 top-2.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
                   >
                     {showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -573,19 +573,19 @@ export default function UserProfileView() {
 
               {/* 3. Yeni Şifre Tekrarı */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">Yeni Şifre (Tekrar)</label>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">Yeni Şifre (Tekrar)</label>
                 <div className="relative">
                   <input
                     type={showConfirmPass ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Şifreyi tekrar yazın..."
-                    className="w-full bg-white border border-slate-300 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl pl-3.5 pr-9 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                    className="absolute right-2.5 top-2.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
                   >
                     {showConfirmPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -595,19 +595,19 @@ export default function UserProfileView() {
 
             {/* 📊 Canlı Şifre Güvenlik & Güç Ölçeri */}
             {newPassword.length > 0 && (
-              <div className="p-3 rounded-2xl bg-white border border-slate-200 space-y-2 animate-slide-down">
+              <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2 animate-slide-down">
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-600 flex items-center gap-1.5">
+                  <span className="text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                     <span>Şifre Gücü Seviyesi:</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${strength.textCol} font-extrabold bg-slate-100`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${strength.textCol} font-extrabold bg-slate-100 dark:bg-slate-700`}>
                       {strength.label}
                     </span>
                   </span>
-                  <span className="font-mono text-slate-400 text-[11px]">%{strength.percent}</span>
+                  <span className="font-mono text-slate-400 dark:text-slate-500 text-[11px]">%{strength.percent}</span>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                   <div 
                     className={`h-full rounded-full transition-all duration-300 ${strength.color}`} 
                     style={{ width: `${strength.percent}%` }}
@@ -617,16 +617,16 @@ export default function UserProfileView() {
                 {/* Match Indicator */}
                 {confirmPassword.length > 0 && (
                   <div className={`text-[11px] font-bold flex items-center gap-1.5 pt-1 ${
-                    newPassword === confirmPassword ? 'text-emerald-700' : 'text-rose-600'
+                    newPassword === confirmPassword ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}>
                     {newPassword === confirmPassword ? (
                       <>
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Yeni şifreler eşleşiyor ✓</span>
                       </>
                     ) : (
                       <>
-                        <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+                        <AlertCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
                         <span>Yeni şifreler henüz eşleşmedi!</span>
                       </>
                     )}
@@ -639,28 +639,28 @@ export default function UserProfileView() {
           {/* ══════════════════════════════════════════════════════════════
               📱 2FA GOOGLE AUTHENTICATOR SECURITY CARD
              ══════════════════════════════════════════════════════════════ */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-slate-200/90 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 pb-3">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/40 dark:from-slate-950 dark:to-emerald-950/20 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-2xl border shadow-2xs ${
                   currentUser?.twoFactorEnabled
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                    : 'bg-slate-100 text-slate-600 border-slate-300'
+                    ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                 }`}>
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>Google Authenticator (2FA) Güvenliği</span>
                     <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border ${
                       currentUser?.twoFactorEnabled
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-slate-200 text-slate-600 border-slate-300'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                     }`}>
                       {currentUser?.twoFactorEnabled ? 'Aktif & Korumalı 🛡️' : 'Devre Dışı'}
                     </span>
                   </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     Giriş yaparken şifrenize ek olarak telefonunuzdaki Google Authenticator kodunu zorunlu kılar.
                   </p>
                 </div>
@@ -671,7 +671,7 @@ export default function UserProfileView() {
                   <button
                     type="button"
                     onClick={handleDisableTwoFactor}
-                    className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-all cursor-pointer shadow-2xs hover:scale-102 active:scale-98"
+                    className="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-bold border border-rose-200 dark:border-rose-800 transition-all cursor-pointer shadow-2xs hover:scale-102 active:scale-98"
                   >
                     2FA Korumasını Kapat
                   </button>
@@ -689,13 +689,13 @@ export default function UserProfileView() {
             </div>
 
             {currentUser?.twoFactorEnabled && (
-              <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 flex items-center justify-between text-xs text-emerald-900">
+              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-between text-xs text-emerald-900 dark:text-emerald-200">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Hesabınız iki aşamalı şifreleme ile tam koruma altındadır.</span>
                 </div>
                 {currentUser?.twoFactorBackupCodes?.length > 0 && (
-                  <span className="text-[11px] font-mono font-bold bg-white px-2 py-0.5 rounded-lg border border-emerald-200 text-emerald-800">
+                  <span className="text-[11px] font-mono font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300">
                     {currentUser.twoFactorBackupCodes.length} Kurtarma Kodu Mevcut
                   </span>
                 )}
@@ -706,24 +706,24 @@ export default function UserProfileView() {
           {/* ══════════════════════════════════════════════════════════════
               📄 PDF İNDİRME & SİSTEM DAVRANIŞI TERCİHLERİ KARTI
              ══════════════════════════════════════════════════════════════ */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100/60 border border-slate-200/90 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 pb-3">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100/60 dark:from-slate-950 dark:to-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-white border border-slate-300 text-emerald-700 shadow-2xs">
+                <div className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 shadow-2xs">
                   <FolderDown className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>PDF İndirme & Kayıt Konumu Tercihi</span>
                     <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border ${
                       pdfPref === 'always_ask'
-                        ? 'bg-amber-50 text-amber-800 border-amber-300'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+                        : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                     }`}>
                       {pdfPref === 'always_ask' ? 'Her Defasında Soruyor' : pdfPref === 'picker' ? 'Farklı Kaydet Sabit' : 'Hızlı İndir Sabit'}
                     </span>
                   </h4>
-                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                     "PDF İndir" butonuna bastığınızda sistemin nasıl davranacağını buradan dilediğiniz an değiştirebilirsiniz.
                   </p>
                 </div>
@@ -733,10 +733,10 @@ export default function UserProfileView() {
                 <button
                   type="button"
                   onClick={() => handleUpdatePdfPref('always_ask')}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98 shrink-0"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-300 dark:border-slate-700 transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98 shrink-0"
                   title="Varsayılan duruma sıfırla"
                 >
-                  <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+                  <RotateCcw className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                   <span>Seçimi Sıfırla (Her Zaman Sor)</span>
                 </button>
               )}
@@ -750,21 +750,21 @@ export default function UserProfileView() {
                 onClick={() => handleUpdatePdfPref('always_ask')}
                 className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
                   pdfPref === 'always_ask'
-                    ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
-                    : 'bg-white/70 hover:bg-white border-slate-200'
+                    ? 'bg-white dark:bg-slate-800 border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-white/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/80 flex items-center justify-center">
                     <FolderDown className="h-4 w-4" />
                   </div>
                   {pdfPref === 'always_ask' && (
-                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100 dark:ring-emerald-950/80" />
                   )}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900">Her Defasında Sor</div>
-                  <div className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Her Defasında Sor</div>
+                  <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                     Her butona basıldığında mini modal açılarak seçenek sorulur.
                   </div>
                 </div>
@@ -776,21 +776,21 @@ export default function UserProfileView() {
                 onClick={() => handleUpdatePdfPref('picker')}
                 className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
                   pdfPref === 'picker'
-                    ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
-                    : 'bg-white/70 hover:bg-white border-slate-200'
+                    ? 'bg-white dark:bg-slate-800 border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-white/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center">
                     <FolderDown className="h-4 w-4" />
                   </div>
                   {pdfPref === 'picker' && (
-                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100 dark:ring-emerald-950/80" />
                   )}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900">Her Zaman Farklı Kaydet</div>
-                  <div className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Her Zaman Farklı Kaydet</div>
+                  <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                     Sormadan doğrudan Windows Dosya Gezginini açar, klasör seçtirir.
                   </div>
                 </div>
@@ -802,21 +802,21 @@ export default function UserProfileView() {
                 onClick={() => handleUpdatePdfPref('direct')}
                 className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
                   pdfPref === 'direct'
-                    ? 'bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
-                    : 'bg-white/70 hover:bg-white border-slate-200'
+                    ? 'bg-white dark:bg-slate-800 border-emerald-500 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-white/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/80 flex items-center justify-center">
                     <Download className="h-4 w-4" />
                   </div>
                   {pdfPref === 'direct' && (
-                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100" />
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 ring-4 ring-emerald-100 dark:ring-emerald-950/80" />
                   )}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900">Her Zaman Hızlı İndir</div>
-                  <div className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Her Zaman Hızlı İndir</div>
+                  <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                     Sormadan doğrudan İndirilenler klasörüne kaydeder.
                   </div>
                 </div>
@@ -827,22 +827,22 @@ export default function UserProfileView() {
           {/* ══════════════════════════════════════════════════════════════
               🔔 SES VE CANLI BİLDİRİM TERCİHLERİ & TEST KARTI
              ══════════════════════════════════════════════════════════════ */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/30 border border-slate-200/90 shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 pb-3">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-950 dark:to-emerald-950/20 border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/70 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-white border border-slate-300 text-emerald-700 shadow-2xs">
+                <div className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 shadow-2xs">
                   <Bell className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>Ses ve Canlı Bildirimler</span>
                     <span className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                      soundEnabled ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-200 text-slate-600 border-slate-300'
+                      soundEnabled ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                     }`}>
                       {soundEnabled ? 'Sesler Açık 🔊' : 'Sessiz Mod 🔇'}
                     </span>
                   </h4>
-                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                     Yeni teklif geldiğinde, merkez onayında veya duyurularda çalan sesler ve masaüstü bildirimleri.
                   </p>
                 </div>
@@ -855,11 +855,11 @@ export default function UserProfileView() {
                   onClick={handleToggleSound}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98 ${
                     soundEnabled
-                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-300'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                   }`}
                 >
-                  {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-700" /> : <VolumeX className="h-3.5 w-3.5 text-slate-500" />}
+                  {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" /> : <VolumeX className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />}
                   <span>{soundEnabled ? 'Sesleri Kapat' : 'Sesleri Aç'}</span>
                 </button>
 
@@ -875,15 +875,15 @@ export default function UserProfileView() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-500 bg-white p-3 rounded-2xl border border-slate-200">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>
                 "Test Bildirimi Gönder" butonuna bastığınızda sağ üstte canlı kart çıkar, Windows masaüstü bildirimi tetiklenir ve hoparlörden kristal onay çanı çalar.
               </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="submit"
               className="flex items-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 px-6 py-3 text-xs font-black text-white shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"

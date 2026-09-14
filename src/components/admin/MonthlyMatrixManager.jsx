@@ -804,8 +804,8 @@ export default function MonthlyMatrixManager() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-amber-300 shadow-inner">
-              <span className="text-xs font-black text-amber-950">%</span>
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-600 shadow-inner">
+              <span className="text-xs font-black text-amber-950 dark:text-amber-300">%</span>
               <input
                 type="number"
                 min="0"
@@ -819,7 +819,7 @@ export default function MonthlyMatrixManager() {
                     e.target.blur();
                   }
                 }}
-                className="w-14 bg-transparent font-mono font-black text-center text-amber-950 focus:outline-none text-sm"
+                className="w-14 bg-transparent font-mono font-black text-center text-amber-950 dark:text-white focus:outline-none text-sm"
                 title="Paket Kâr Marjı (%) - Değiştirildiğinde otomatik kaydedilir"
               />
             </div>
@@ -830,7 +830,7 @@ export default function MonthlyMatrixManager() {
 
       {/* 2. Apple-Pill Full-Width Package Ribbon (Ekonomik / Standart / Lüxe/VIP) */}
       <div className="w-full flex items-center justify-center">
-        <div className="w-full p-1.5 bg-slate-100/90 rounded-full border border-slate-200/90 shadow-sm backdrop-blur-md flex items-center gap-2">
+        <div className="w-full p-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-full border border-slate-200/90 dark:border-slate-700 shadow-sm backdrop-blur-md flex items-center gap-2">
           {sortedPackages.map(p => {
             const isSelected = selectedPkgId === p.id;
             return (
@@ -841,7 +841,7 @@ export default function MonthlyMatrixManager() {
                 className={`flex-1 flex items-center justify-center py-3 px-6 rounded-full text-xs sm:text-sm font-black spring-pill transition-all cursor-pointer select-none ${
                   isSelected
                     ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md shadow-emerald-800/30 border border-emerald-600/40 scale-101 ring-2 ring-emerald-600/20'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-white/80'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white/80 dark:hover:bg-slate-700'
                 }`}
               >
                 <span className="whitespace-nowrap">{p.name}</span>
@@ -853,7 +853,7 @@ export default function MonthlyMatrixManager() {
 
       {/* 3. 4-PILL SECTION NAVIGATION RIBBON (Mekke / Medine Monokrom PNG İkonları ile) */}
       <div className="flex justify-center my-4 overflow-visible">
-        <div className="w-full max-w-5xl flex items-center justify-center p-1.5 bg-slate-100/95 rounded-full border border-slate-200/90 shadow-sm backdrop-blur-md gap-1.5 sm:gap-2">
+        <div className="w-full max-w-5xl flex items-center justify-center p-1.5 bg-slate-100/95 dark:bg-slate-800/90 rounded-full border border-slate-200/90 dark:border-slate-700 shadow-sm backdrop-blur-md gap-1.5 sm:gap-2">
           
           {/* 1. Mekke Otelleri */}
           <button
@@ -862,19 +862,19 @@ export default function MonthlyMatrixManager() {
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 sm:px-4 text-[11px] sm:text-xs font-extrabold rounded-full spring-pill transition-all cursor-pointer select-none ${
               activeSection === 'makkah_hotels' 
                 ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md shadow-emerald-800/30 border border-emerald-600/40 scale-101 ring-2 ring-emerald-600/20' 
-                : 'text-slate-600 hover:bg-white/80 hover:text-slate-950'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-950 dark:hover:text-white'
             }`}
           >
             <img 
               src={mekkeIcon} 
               alt="Mekke" 
               className={`h-4 w-4 object-contain transition-all ${
-                activeSection === 'makkah_hotels' ? 'brightness-0 invert' : 'opacity-70'
+                activeSection === 'makkah_hotels' ? 'brightness-0 invert' : 'opacity-70 dark:opacity-90 dark:brightness-0 dark:invert'
               }`} 
             />
             <span className="truncate">Mekke Otelleri</span>
             <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              activeSection === 'makkah_hotels' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-slate-200 text-slate-600'
+              activeSection === 'makkah_hotels' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             }`}>
               {localPkg.makkahHotels?.length || 1}
             </span>
@@ -887,19 +887,19 @@ export default function MonthlyMatrixManager() {
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 sm:px-4 text-[11px] sm:text-xs font-extrabold rounded-full spring-pill transition-all cursor-pointer select-none ${
               activeSection === 'madinah_hotels' 
                 ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md shadow-emerald-800/30 border border-emerald-600/40 scale-101 ring-2 ring-emerald-600/20' 
-                : 'text-slate-600 hover:bg-white/80 hover:text-slate-950'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-950 dark:hover:text-white'
             }`}
           >
             <img 
               src={medineIcon} 
               alt="Medine" 
               className={`h-4 w-4 object-contain transition-all ${
-                activeSection === 'madinah_hotels' ? 'brightness-0 invert' : 'opacity-70'
+                activeSection === 'madinah_hotels' ? 'brightness-0 invert' : 'opacity-70 dark:opacity-90 dark:brightness-0 dark:invert'
               }`} 
             />
             <span className="truncate">Medine Otelleri</span>
             <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              activeSection === 'madinah_hotels' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-slate-200 text-slate-600'
+              activeSection === 'madinah_hotels' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
             }`}>
               {localPkg.madinahHotels?.length || 1}
             </span>
@@ -912,7 +912,7 @@ export default function MonthlyMatrixManager() {
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 sm:px-4 text-[11px] sm:text-xs font-extrabold rounded-full spring-pill transition-all cursor-pointer select-none ${
               activeSection === 'transfers' 
                 ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md shadow-emerald-800/30 border border-emerald-600/40 scale-101 ring-2 ring-emerald-600/20' 
-                : 'text-slate-600 hover:bg-white/80 hover:text-slate-950'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-950 dark:hover:text-white'
             }`}
           >
             <Bus className="h-4 w-4" />
@@ -926,7 +926,7 @@ export default function MonthlyMatrixManager() {
             className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 sm:px-4 text-[11px] sm:text-xs font-extrabold rounded-full spring-pill transition-all cursor-pointer select-none ${
               activeSection === 'expenses' 
                 ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-md shadow-emerald-800/30 border border-emerald-600/40 scale-101 ring-2 ring-emerald-600/20' 
-                : 'text-slate-600 hover:bg-white/80 hover:text-slate-950'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-950 dark:hover:text-white'
             }`}
           >
             <Coins className="h-4 w-4" />
@@ -949,15 +949,15 @@ export default function MonthlyMatrixManager() {
           <div className="space-y-4 animate-fade-scale">
             
             {/* Hotel Selector Pills & Management Bar */}
-            <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+            <div className="pearl-card rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <img src={mekkeIcon} alt="Mekke" className="h-5 w-5 object-contain opacity-80" />
+                  <img src={mekkeIcon} alt="Mekke" className="h-5 w-5 object-contain opacity-80 dark:opacity-90 dark:brightness-0 dark:invert transition-all" />
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900">
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
                       {localPkg.name} - Mekke Otelleri Listesi
                     </h3>
-                    <p className="text-[11px] text-slate-500 font-medium">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                       Genel Merkez tarafından tanımlanan Mekke otelleri. Fiyatlarını düzenlemek istediğiniz oteli seçin.
                     </p>
                   </div>
@@ -982,8 +982,8 @@ export default function MonthlyMatrixManager() {
                       key={hotel.id} 
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all duration-300 cursor-pointer select-none ${
                         isHotelSelected
-                          ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-950 shadow-md scale-[1.03] animate-scale-in'
-                          : 'bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 hover:scale-[1.01]'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/30 text-emerald-950 dark:text-emerald-200 shadow-md scale-[1.03] animate-scale-in'
+                          : 'bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:scale-[1.01]'
                       }`}
                       onClick={() => {
                         setSelectedMakkahHotelId(hotel.id);
@@ -991,25 +991,25 @@ export default function MonthlyMatrixManager() {
                       }}
                     >
                       <div className="relative flex items-center justify-center">
-                        <div className={`h-2.5 w-2.5 rounded-full ${isHotelSelected ? 'bg-emerald-600' : 'bg-slate-300'}`} />
+                        <div className={`h-2.5 w-2.5 rounded-full ${isHotelSelected ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         {isHotelSelected && (
                           <div className="absolute h-4 w-4 rounded-full bg-emerald-400 opacity-75 animate-ping" />
                         )}
                       </div>
                       <div className="text-left">
                         <span className="font-black text-xs block leading-tight">{hotel.name}</span>
-                        <span className="text-[10px] text-slate-500 font-medium">{hotel.distance}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{hotel.distance}</span>
                       </div>
 
                       {/* Action buttons on pill */}
-                      <div className="flex items-center gap-1 pl-2 ml-auto border-l border-slate-200/80">
+                      <div className="flex items-center gap-1 pl-2 ml-auto border-l border-slate-200/80 dark:border-slate-700">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenInlineEdit('makkah', hotel);
                           }}
-                          className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-white rounded-lg transition-all cursor-pointer"
+                          className="p-1 text-slate-400 dark:text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
                           title="Oteli Düzenle"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
@@ -1021,7 +1021,7 @@ export default function MonthlyMatrixManager() {
                               e.stopPropagation();
                               handleDeleteHotel('makkah', hotel.id);
                             }}
-                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                            className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-all cursor-pointer"
                             title="Oteli Sil"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1035,17 +1035,17 @@ export default function MonthlyMatrixManager() {
 
               {/* FERAH INLINE HOTEL FORM (Expandable Card - No blur, no scroll) */}
               {inlineFormOpen && inlineFormCity === 'makkah' && (
-                <div ref={inlineFormRef} className="p-5 bg-gradient-to-br from-emerald-50/90 to-teal-50/70 rounded-2xl border-2 border-emerald-400/80 shadow-md space-y-4 animate-scale-in">
-                  <div className="flex items-center justify-between border-b border-emerald-200/80 pb-3">
+                <div ref={inlineFormRef} className="p-5 bg-gradient-to-br from-emerald-50/90 dark:from-slate-900 to-teal-50/70 dark:to-slate-900 rounded-2xl border-2 border-emerald-400/80 dark:border-emerald-700 shadow-md space-y-4 animate-scale-in">
+                  <div className="flex items-center justify-between border-b border-emerald-200/80 dark:border-emerald-800 pb-3">
                     <div className="flex items-center gap-2">
                       <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
                         {inlineFormMode === 'add' ? <Plus className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-emerald-950">
+                        <h4 className="text-sm font-black text-emerald-950 dark:text-emerald-200">
                           {inlineFormMode === 'add' ? 'Yeni Mekke Oteli Ekle' : `"${inlineFormData.name}" Otelini Düzenle`}
                         </h4>
-                        <p className="text-[11px] text-emerald-800/80">
+                        <p className="text-[11px] text-emerald-800/80 dark:text-emerald-400">
                           Otel adı, mesafesi ve yemek konseptini belirleyin.
                         </p>
                       </div>
@@ -1054,7 +1054,7 @@ export default function MonthlyMatrixManager() {
                     <button
                       type="button"
                       onClick={() => setInlineFormOpen(false)}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white/80 rounded-xl transition-all"
+                      className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-800 rounded-xl transition-all"
                       title="Formu Kapat"
                     >
                       <X className="h-4 w-4" />
@@ -1066,7 +1066,7 @@ export default function MonthlyMatrixManager() {
                       
                       {/* Otel Adı */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-extrabold text-emerald-950">
+                        <label className="block text-xs font-extrabold text-emerald-950 dark:text-emerald-200">
                           Otel Adı *
                         </label>
                         <input
@@ -1075,13 +1075,13 @@ export default function MonthlyMatrixManager() {
                           value={inlineFormData.name}
                           onChange={(e) => setInlineFormData({ ...inlineFormData, name: e.target.value })}
                           placeholder="Örn: Elaf Bakkah / Anjum"
-                          className="w-full bg-white text-slate-900 rounded-xl px-3.5 py-2 border border-emerald-300 focus:outline-none focus:border-emerald-600 text-xs font-bold shadow-2xs"
+                          className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl px-3.5 py-2 border border-emerald-300 dark:border-emerald-700 focus:outline-none focus:border-emerald-600 text-xs font-bold shadow-2xs"
                         />
                       </div>
 
                       {/* Mesafe */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-extrabold text-emerald-950">
+                        <label className="block text-xs font-extrabold text-emerald-950 dark:text-emerald-200">
                           Mesafe & Ulaşım Bilgisi
                         </label>
                         <input
@@ -1089,13 +1089,13 @@ export default function MonthlyMatrixManager() {
                           value={inlineFormData.distance}
                           onChange={(e) => setInlineFormData({ ...inlineFormData, distance: e.target.value })}
                           placeholder="Örn: 1200m (24 Saat Ring Servis)"
-                          className="w-full bg-white text-slate-900 rounded-xl px-3.5 py-2 border border-emerald-300 focus:outline-none focus:border-emerald-600 text-xs font-medium shadow-2xs"
+                          className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl px-3.5 py-2 border border-emerald-300 dark:border-emerald-700 focus:outline-none focus:border-emerald-600 text-xs font-medium shadow-2xs"
                         />
                       </div>
 
                       {/* Yemek Tipi (SELECT) */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-extrabold text-emerald-950">
+                        <label className="block text-xs font-extrabold text-emerald-950 dark:text-emerald-200">
                           Yemek Konsepti
                         </label>
                         <CustomSelect
@@ -1108,11 +1108,11 @@ export default function MonthlyMatrixManager() {
 
                     </div>
 
-                    <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-emerald-200/80">
+                    <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-emerald-200/80 dark:border-emerald-800">
                       <button
                         type="button"
                         onClick={() => setInlineFormOpen(false)}
-                        className="px-4 py-2 rounded-xl text-slate-600 hover:bg-white/80 text-xs font-bold transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
                       >
                         Vazgeç
                       </button>
@@ -1132,29 +1132,29 @@ export default function MonthlyMatrixManager() {
               {currentActiveMakkahHotel && !inlineFormOpen && (
                 <div 
                   key={`makkah_summary_${currentActiveMakkahHotel.id}`} 
-                  className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200/90 flex flex-wrap items-center justify-between gap-3 text-xs animate-scale-in"
+                  className="p-3.5 bg-emerald-50/60 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200/90 dark:border-emerald-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-scale-in"
                 >
                   <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-1.5 text-slate-800 font-bold bg-white px-2.5 py-1 rounded-xl border border-emerald-200">
-                      <span className="text-emerald-700 font-black">Seçili Otel:</span>
-                      <span className="text-slate-900">{currentActiveMakkahHotel.name}</span>
+                    <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-700">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-black">Seçili Otel:</span>
+                      <span className="text-slate-900 dark:text-white">{currentActiveMakkahHotel.name}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <MapPin className="h-4 w-4 text-emerald-600" />
+                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                      <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                       <span className="font-bold">Mesafe:</span>
-                      <span className="text-slate-600">{currentActiveMakkahHotel.distance}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{currentActiveMakkahHotel.distance}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <Utensils className="h-4 w-4 text-emerald-600" />
+                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                      <Utensils className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                       <span className="font-bold">Yemek Konsepti:</span>
-                      <span className="text-slate-600 font-semibold">{currentActiveMakkahHotel.mealType || 'Açık Büfe'} (Sabah & Akşam)</span>
+                      <span className="text-slate-600 dark:text-slate-400 font-semibold">{currentActiveMakkahHotel.mealType || 'Açık Büfe'} (Sabah & Akşam)</span>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => handleOpenInlineEdit('makkah', currentActiveMakkahHotel)}
-                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs hover:scale-102 transition-all"
+                    className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-2xs hover:scale-102 transition-all"
                   >
                     <Edit3 className="h-3.5 w-3.5" />
                     <span>Otel Bilgilerini Değiştir</span>
@@ -1167,29 +1167,29 @@ export default function MonthlyMatrixManager() {
             {currentActiveMakkahHotel && (
               <div 
                 key={`makkah_matrix_${currentActiveMakkahHotel.id}`} 
-                className="pearl-card rounded-3xl bg-white border border-slate-200/90 shadow-sm overflow-hidden animate-fade-scale"
+                className="pearl-card rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-scale"
               >
-                <div className="p-4 bg-slate-50/90 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-4 bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain opacity-70" />
+                    <img src={mekkeIcon} alt="Mekke" className="h-4 w-4 object-contain opacity-70 dark:opacity-90 dark:brightness-0 dark:invert transition-all" />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black text-slate-900">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
                           {currentActiveMakkahHotel.name}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           Tarih Aralığı Fiyat Tarifeleri
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         Otelden alınan tarih aralıklarını, gecelik oda fiyatı ve günlük yemek bedelini ekleyin.
                       </p>
                     </div>
                   </div>
 
                   {/* Currency selector */}
-                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-2xs self-start sm:self-auto">
-                    <span className="text-[11px] font-bold text-slate-500 pl-2 pr-1">Döviz Çevirici:</span>
+                  <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs self-start sm:self-auto">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-2 pr-1">Döviz Çevirici:</span>
                     {['SAR', 'USD', 'TRY', 'EUR'].map(curr => (
                       <button
                         key={curr}
@@ -1198,7 +1198,7 @@ export default function MonthlyMatrixManager() {
                         className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           viewCurrency === curr
                             ? 'bg-emerald-700 text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                       >
                         {curr === 'TRY' ? '₺ TL' : curr === 'USD' ? '$ USD' : curr === 'EUR' ? '€ EUR' : 'SAR'}
@@ -1210,16 +1210,16 @@ export default function MonthlyMatrixManager() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-black text-[11px] uppercase">
+                      <tr className="bg-slate-100/80 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-black text-[11px] uppercase">
                         <th className="py-3 px-3 w-10 text-center">#</th>
                         <th className="py-3 px-3 min-w-[260px]">Tarih Aralığı (Giriş - Çıkış)</th>
-                        <th className="py-3 px-3 bg-emerald-50/50 text-emerald-950">Gecelik Oda Fiyatı (SAR)</th>
-                        <th className="py-3 px-3 bg-emerald-50/50 text-emerald-950">Günlük Yemek Fiyatı (SAR)</th>
-                        <th className="py-3 px-3 text-center bg-slate-50">Günlük Toplam Bedel</th>
+                        <th className="py-3 px-3 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-300">Gecelik Oda Fiyatı (SAR)</th>
+                        <th className="py-3 px-3 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-300">Günlük Yemek Fiyatı (SAR)</th>
+                        <th className="py-3 px-3 text-center bg-slate-50 dark:bg-slate-800/50">Günlük Toplam Bedel</th>
                         <th className="py-3 px-3 text-center w-20">İşlem</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       
                       {/* Existing Saved Date Range Rows */}
                       {(currentActiveMakkahHotel.dateRanges || []).map((range, idx) => {
@@ -1230,9 +1230,9 @@ export default function MonthlyMatrixManager() {
                         return (
                           <tr 
                             key={range.id} 
-                            className="hover:bg-emerald-50/30 transition-colors animate-scale-in"
+                            className="hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 transition-colors animate-scale-in"
                           >
-                            <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">
+                            <td className="py-2.5 px-3 text-center text-slate-400 dark:text-slate-500 font-mono text-[11px]">
                               {idx + 1}
                             </td>
 
@@ -1247,7 +1247,7 @@ export default function MonthlyMatrixManager() {
                               />
                             </td>
 
-                            <td className="py-2 px-3 bg-emerald-50/20">
+                            <td className="py-2 px-3 bg-emerald-50/20 dark:bg-emerald-950/20">
                               <div className="relative w-36">
                                 <input
                                   type="number"
@@ -1256,18 +1256,18 @@ export default function MonthlyMatrixManager() {
                                   value={roomVal}
                                   onFocus={(e) => e.target.select()}
                                   onChange={(e) => handleUpdateDateRange('makkah', currentActiveMakkahHotel.id, range.id, 'roomPriceSAR', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-white font-mono font-bold text-slate-900 rounded-xl px-2.5 py-1 text-xs border border-slate-300 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
+                                  className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white rounded-xl px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
                                 />
-                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                               </div>
                               {viewCurrency !== 'SAR' && (
-                                <div className="text-[10px] font-mono text-emerald-800 text-right pr-1 mt-0.5">
+                                <div className="text-[10px] font-mono text-emerald-800 dark:text-emerald-400 text-right pr-1 mt-0.5">
                                   {formatCurrencyEquivalent(roomVal)}
                                 </div>
                               )}
                             </td>
 
-                            <td className="py-2 px-3 bg-emerald-50/20">
+                            <td className="py-2 px-3 bg-emerald-50/20 dark:bg-emerald-950/20">
                               <div className="relative w-32">
                                 <input
                                   type="number"
@@ -1276,23 +1276,23 @@ export default function MonthlyMatrixManager() {
                                   value={foodVal}
                                   onFocus={(e) => e.target.select()}
                                   onChange={(e) => handleUpdateDateRange('makkah', currentActiveMakkahHotel.id, range.id, 'foodPriceSAR', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-white font-mono font-bold text-emerald-900 rounded-xl px-2.5 py-1 text-xs border border-emerald-300 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
+                                  className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-emerald-900 dark:text-emerald-300 rounded-xl px-2.5 py-1 text-xs border border-emerald-300 dark:border-emerald-700 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
                                 />
-                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                               </div>
                               {viewCurrency !== 'SAR' && (
-                                <div className="text-[10px] font-mono text-emerald-800 text-right pr-1 mt-0.5">
+                                <div className="text-[10px] font-mono text-emerald-800 dark:text-emerald-400 text-right pr-1 mt-0.5">
                                   {formatCurrencyEquivalent(foodVal)}
                                 </div>
                               )}
                             </td>
 
-                            <td className="py-2.5 px-3 text-center bg-slate-50/80 font-mono">
-                              <div className="font-black text-xs text-slate-900">
-                                {totalDaily} <span className="text-[10px] text-slate-400 font-sans">SAR</span>
+                            <td className="py-2.5 px-3 text-center bg-slate-50/80 dark:bg-slate-800/60 font-mono">
+                              <div className="font-black text-xs text-slate-900 dark:text-white">
+                                {totalDaily} <span className="text-[10px] text-slate-400 dark:text-slate-500 font-sans">SAR</span>
                               </div>
                               {viewCurrency !== 'SAR' && (
-                                <div className="text-[10px] font-bold text-emerald-700">
+                                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
                                   {formatCurrencyEquivalent(totalDaily)}
                                 </div>
                               )}
@@ -1302,7 +1302,7 @@ export default function MonthlyMatrixManager() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteDateRange('makkah', currentActiveMakkahHotel.id, range.id)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-all cursor-pointer"
                                 title="Aralığı Sil"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1313,8 +1313,8 @@ export default function MonthlyMatrixManager() {
                       })}
 
                       {/* NEW DRAFT RANGE ROW (Her zaman hazırda bekleyen yeni satır) */}
-                      <tr className="bg-emerald-50/40 border-t-2 border-emerald-200">
-                        <td className="py-3 px-3 text-center text-emerald-600 font-black">
+                      <tr className="bg-emerald-50/40 dark:bg-emerald-950/30 border-t-2 border-emerald-200 dark:border-emerald-800">
+                        <td className="py-3 px-3 text-center text-emerald-600 dark:text-emerald-400 font-black">
                           <Plus className="h-4 w-4 mx-auto animate-bounce" />
                         </td>
 
@@ -1343,9 +1343,9 @@ export default function MonthlyMatrixManager() {
                               placeholder="0"
                               value={newRangeDraft.roomPriceSAR}
                               onChange={(e) => setNewRangeDraft({ ...newRangeDraft, roomPriceSAR: e.target.value })}
-                              className="w-full bg-white font-mono font-bold text-slate-900 rounded-xl px-2.5 py-1 text-xs border border-emerald-300 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
+                              className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white rounded-xl px-2.5 py-1 text-xs border border-emerald-300 dark:border-emerald-700 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
                             />
-                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                           </div>
                         </td>
 
@@ -1358,15 +1358,15 @@ export default function MonthlyMatrixManager() {
                               placeholder="0"
                               value={newRangeDraft.foodPriceSAR}
                               onChange={(e) => setNewRangeDraft({ ...newRangeDraft, foodPriceSAR: e.target.value })}
-                              className="w-full bg-white font-mono font-bold text-emerald-900 rounded-xl px-2.5 py-1 text-xs border border-emerald-300 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
+                              className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-emerald-900 dark:text-emerald-300 rounded-xl px-2.5 py-1 text-xs border border-emerald-300 dark:border-emerald-700 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
                             />
-                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                           </div>
                         </td>
 
                         <td className="py-2.5 px-3 text-center font-mono">
-                          <div className="font-black text-xs text-slate-700">
-                            {(parseFloat(newRangeDraft.roomPriceSAR) || 0) + (parseFloat(newRangeDraft.foodPriceSAR) || 0)} <span className="text-[10px] text-slate-400 font-sans">SAR</span>
+                          <div className="font-black text-xs text-slate-700 dark:text-slate-300">
+                            {(parseFloat(newRangeDraft.roomPriceSAR) || 0) + (parseFloat(newRangeDraft.foodPriceSAR) || 0)} <span className="text-[10px] text-slate-400 dark:text-slate-500 font-sans">SAR</span>
                           </div>
                         </td>
 
@@ -1399,15 +1399,15 @@ export default function MonthlyMatrixManager() {
           <div className="space-y-4 animate-fade-scale">
             
             {/* Hotel Selector Pills & Management Bar */}
-            <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+            <div className="pearl-card rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <img src={medineIcon} alt="Medine" className="h-5 w-5 object-contain opacity-80" />
+                  <img src={medineIcon} alt="Medine" className="h-5 w-5 object-contain opacity-80 dark:opacity-90 dark:brightness-0 dark:invert transition-all" />
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900">
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
                       {localPkg.name} - Medine Otelleri Listesi
                     </h3>
-                    <p className="text-[11px] text-slate-500 font-medium">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                       Genel Merkez tarafından tanımlanan Medine otelleri. Fiyatlarını düzenlemek istediğiniz oteli seçin.
                     </p>
                   </div>
@@ -1432,8 +1432,8 @@ export default function MonthlyMatrixManager() {
                       key={hotel.id} 
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all duration-300 cursor-pointer select-none ${
                         isHotelSelected
-                          ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-500/30 text-amber-950 shadow-md scale-[1.03] animate-scale-in'
-                          : 'bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 hover:scale-[1.01]'
+                          ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-500 dark:border-amber-600 ring-2 ring-amber-500/30 text-amber-950 dark:text-amber-200 shadow-md scale-[1.03] animate-scale-in'
+                          : 'bg-slate-50/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:scale-[1.01]'
                       }`}
                       onClick={() => {
                         setSelectedMadinahHotelId(hotel.id);
@@ -1441,25 +1441,25 @@ export default function MonthlyMatrixManager() {
                       }}
                     >
                       <div className="relative flex items-center justify-center">
-                        <div className={`h-2.5 w-2.5 rounded-full ${isHotelSelected ? 'bg-amber-600' : 'bg-slate-300'}`} />
+                        <div className={`h-2.5 w-2.5 rounded-full ${isHotelSelected ? 'bg-amber-600' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         {isHotelSelected && (
                           <div className="absolute h-4 w-4 rounded-full bg-amber-400 opacity-75 animate-ping" />
                         )}
                       </div>
                       <div className="text-left">
                         <span className="font-black text-xs block leading-tight">{hotel.name}</span>
-                        <span className="text-[10px] text-slate-500 font-medium">{hotel.distance}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{hotel.distance}</span>
                       </div>
 
                       {/* Action buttons on pill */}
-                      <div className="flex items-center gap-1 pl-2 ml-auto border-l border-slate-200/80">
+                      <div className="flex items-center gap-1 pl-2 ml-auto border-l border-slate-200/80 dark:border-slate-700">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenInlineEdit('madinah', hotel);
                           }}
-                          className="p-1 text-slate-400 hover:text-amber-700 hover:bg-white rounded-lg transition-all cursor-pointer"
+                          className="p-1 text-slate-400 dark:text-slate-500 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all cursor-pointer"
                           title="Oteli Düzenle"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
@@ -1471,7 +1471,7 @@ export default function MonthlyMatrixManager() {
                               e.stopPropagation();
                               handleDeleteHotel('madinah', hotel.id);
                             }}
-                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                            className="p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-all cursor-pointer"
                             title="Oteli Sil"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -1485,17 +1485,17 @@ export default function MonthlyMatrixManager() {
 
               {/* FERAH INLINE HOTEL FORM (Expandable Card - No blur, no scroll) */}
               {inlineFormOpen && inlineFormCity === 'madinah' && (
-                <div ref={inlineFormRef} className="p-5 bg-gradient-to-br from-amber-50/90 to-orange-50/70 rounded-2xl border-2 border-amber-400/80 shadow-md space-y-4 animate-scale-in">
-                  <div className="flex items-center justify-between border-b border-amber-200/80 pb-3">
+                <div ref={inlineFormRef} className="p-5 bg-gradient-to-br from-amber-50/90 dark:from-slate-900 to-orange-50/70 dark:to-slate-900 rounded-2xl border-2 border-amber-400/80 dark:border-amber-700 shadow-md space-y-4 animate-scale-in">
+                  <div className="flex items-center justify-between border-b border-amber-200/80 dark:border-amber-800 pb-3">
                     <div className="flex items-center gap-2">
                       <div className="p-2 rounded-xl bg-amber-600 text-white shadow-xs">
                         {inlineFormMode === 'add' ? <Plus className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-amber-950">
+                        <h4 className="text-sm font-black text-amber-950 dark:text-amber-200">
                           {inlineFormMode === 'add' ? 'Yeni Medine Oteli Ekle' : `"${inlineFormData.name}" Otelini Düzenle`}
                         </h4>
-                        <p className="text-[11px] text-amber-800/80">
+                        <p className="text-[11px] text-amber-800/80 dark:text-amber-400">
                           Otel adı, mesafesi ve yemek konseptini belirleyin.
                         </p>
                       </div>
@@ -1504,7 +1504,7 @@ export default function MonthlyMatrixManager() {
                     <button
                       type="button"
                       onClick={() => setInlineFormOpen(false)}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white/80 rounded-xl transition-all"
+                      className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-800 rounded-xl transition-all"
                       title="Formu Kapat"
                     >
                       <X className="h-4 w-4" />
@@ -1516,7 +1516,7 @@ export default function MonthlyMatrixManager() {
                       
                       {/* Otel Adı */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-extrabold text-amber-950">
+                        <label className="block text-xs font-extrabold text-amber-950 dark:text-amber-200">
                           Otel Adı *
                         </label>
                         <input
@@ -1525,13 +1525,13 @@ export default function MonthlyMatrixManager() {
                           value={inlineFormData.name}
                           onChange={(e) => setInlineFormData({ ...inlineFormData, name: e.target.value })}
                           placeholder="Örn: Al Eiman Taibah / Maden"
-                          className="w-full bg-white text-slate-900 rounded-xl px-3.5 py-2 border border-amber-300 focus:outline-none focus:border-amber-600 text-xs font-bold shadow-2xs"
+                          className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl px-3.5 py-2 border border-amber-300 dark:border-amber-700 focus:outline-none focus:border-amber-600 text-xs font-bold shadow-2xs"
                         />
                       </div>
 
                       {/* Mesafe */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-extrabold text-amber-950">
+                        <label className="block text-xs font-extrabold text-amber-950 dark:text-amber-200">
                           Mesafe & Ulaşım Bilgisi
                         </label>
                         <input
@@ -1539,13 +1539,13 @@ export default function MonthlyMatrixManager() {
                           value={inlineFormData.distance}
                           onChange={(e) => setInlineFormData({ ...inlineFormData, distance: e.target.value })}
                           placeholder="Örn: 250m (Yürüme Mesafesi)"
-                          className="w-full bg-white text-slate-900 rounded-xl px-3.5 py-2 border border-amber-300 focus:outline-none focus:border-amber-600 text-xs font-medium shadow-2xs"
+                          className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl px-3.5 py-2 border border-amber-300 dark:border-amber-700 focus:outline-none focus:border-amber-600 text-xs font-medium shadow-2xs"
                         />
                       </div>
 
                       {/* Yemek Tipi (SELECT) */}
                       <div className="space-y-1">
-                        <label className="block text-xs font-extrabold text-amber-950">
+                        <label className="block text-xs font-extrabold text-amber-950 dark:text-amber-200">
                           Yemek Konsepti
                         </label>
                         <CustomSelect
@@ -1558,11 +1558,11 @@ export default function MonthlyMatrixManager() {
 
                     </div>
 
-                    <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-amber-200/80">
+                    <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-amber-200/80 dark:border-amber-800">
                       <button
                         type="button"
                         onClick={() => setInlineFormOpen(false)}
-                        className="px-4 py-2 rounded-xl text-slate-600 hover:bg-white/80 text-xs font-bold transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
                       >
                         Vazgeç
                       </button>
@@ -1582,29 +1582,29 @@ export default function MonthlyMatrixManager() {
               {currentActiveMadinahHotel && !inlineFormOpen && (
                 <div 
                   key={`madinah_summary_${currentActiveMadinahHotel.id}`} 
-                  className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200/90 flex flex-wrap items-center justify-between gap-3 text-xs animate-scale-in"
+                  className="p-3.5 bg-amber-50/60 dark:bg-amber-950/40 rounded-2xl border border-amber-200/90 dark:border-amber-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-scale-in"
                 >
                   <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-1.5 text-slate-800 font-bold bg-white px-2.5 py-1 rounded-xl border border-amber-200">
-                      <span className="text-amber-700 font-black">Seçili Otel:</span>
-                      <span className="text-slate-900">{currentActiveMadinahHotel.name}</span>
+                    <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-xl border border-amber-200 dark:border-amber-700">
+                      <span className="text-amber-700 dark:text-amber-400 font-black">Seçili Otel:</span>
+                      <span className="text-slate-900 dark:text-white">{currentActiveMadinahHotel.name}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <MapPin className="h-4 w-4 text-amber-600" />
+                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                      <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       <span className="font-bold">Mesafe:</span>
-                      <span className="text-slate-600">{currentActiveMadinahHotel.distance}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{currentActiveMadinahHotel.distance}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <Utensils className="h-4 w-4 text-amber-600" />
+                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                      <Utensils className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                       <span className="font-bold">Yemek Konsepti:</span>
-                      <span className="text-slate-600 font-semibold">{currentActiveMadinahHotel.mealType || 'Açık Büfe'} (Sabah & Akşam)</span>
+                      <span className="text-slate-600 dark:text-slate-400 font-semibold">{currentActiveMadinahHotel.mealType || 'Açık Büfe'} (Sabah & Akşam)</span>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => handleOpenInlineEdit('madinah', currentActiveMadinahHotel)}
-                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline flex items-center gap-1 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-amber-200 shadow-2xs hover:scale-102 transition-all"
+                    className="text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-700 shadow-2xs hover:scale-102 transition-all"
                   >
                     <Edit3 className="h-3.5 w-3.5" />
                     <span>Otel Bilgilerini Değiştir</span>
@@ -1617,29 +1617,29 @@ export default function MonthlyMatrixManager() {
             {currentActiveMadinahHotel && (
               <div 
                 key={`madinah_matrix_${currentActiveMadinahHotel.id}`} 
-                className="pearl-card rounded-3xl bg-white border border-slate-200/90 shadow-sm overflow-hidden animate-fade-scale"
+                className="pearl-card rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-scale"
               >
-                <div className="p-4 bg-slate-50/90 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-4 bg-slate-50/90 dark:bg-slate-800/80 border-b border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain opacity-70" />
+                    <img src={medineIcon} alt="Medine" className="h-4 w-4 object-contain opacity-70 dark:opacity-90 dark:brightness-0 dark:invert transition-all" />
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black text-slate-900">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
                           {currentActiveMadinahHotel.name}
                         </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                           Tarih Aralığı Fiyat Tarifeleri
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         Otelden alınan tarih aralıklarını, gecelik oda fiyatı ve günlük yemek bedelini ekleyin.
                       </p>
                     </div>
                   </div>
 
                   {/* Currency selector */}
-                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-2xs self-start sm:self-auto">
-                    <span className="text-[11px] font-bold text-slate-500 pl-2 pr-1">Döviz Çevirici:</span>
+                  <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs self-start sm:self-auto">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-2 pr-1">Döviz Çevirici:</span>
                     {['SAR', 'USD', 'TRY', 'EUR'].map(curr => (
                       <button
                         key={curr}
@@ -1648,7 +1648,7 @@ export default function MonthlyMatrixManager() {
                         className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           viewCurrency === curr
                             ? 'bg-emerald-700 text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                       >
                         {curr === 'TRY' ? '₺ TL' : curr === 'USD' ? '$ USD' : curr === 'EUR' ? '€ EUR' : 'SAR'}
@@ -1660,16 +1660,16 @@ export default function MonthlyMatrixManager() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-black text-[11px] uppercase">
+                      <tr className="bg-slate-100/80 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-black text-[11px] uppercase">
                         <th className="py-3 px-3 w-10 text-center">#</th>
                         <th className="py-3 px-3 min-w-[260px]">Tarih Aralığı (Giriş - Çıkış)</th>
-                        <th className="py-3 px-3 bg-amber-50/50 text-amber-950">Gecelik Oda Fiyatı (SAR)</th>
-                        <th className="py-3 px-3 bg-amber-50/50 text-amber-950">Günlük Yemek Fiyatı (SAR)</th>
-                        <th className="py-3 px-3 text-center bg-slate-50">Günlük Toplam Bedel</th>
+                        <th className="py-3 px-3 bg-amber-50/50 dark:bg-amber-950/30 text-amber-950 dark:text-amber-300">Gecelik Oda Fiyatı (SAR)</th>
+                        <th className="py-3 px-3 bg-amber-50/50 dark:bg-amber-950/30 text-amber-950 dark:text-amber-300">Günlük Yemek Fiyatı (SAR)</th>
+                        <th className="py-3 px-3 text-center bg-slate-50 dark:bg-slate-800/50">Günlük Toplam Bedel</th>
                         <th className="py-3 px-3 text-center w-20">İşlem</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       
                       {/* Existing Saved Date Range Rows */}
                       {(currentActiveMadinahHotel.dateRanges || []).map((range, idx) => {
@@ -1680,9 +1680,9 @@ export default function MonthlyMatrixManager() {
                         return (
                           <tr 
                             key={range.id} 
-                            className="hover:bg-amber-50/30 transition-colors animate-scale-in"
+                            className="hover:bg-amber-50/30 dark:hover:bg-amber-950/30 transition-colors animate-scale-in"
                           >
-                            <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">
+                            <td className="py-2.5 px-3 text-center text-slate-400 dark:text-slate-500 font-mono text-[11px]">
                               {idx + 1}
                             </td>
 
@@ -1697,7 +1697,7 @@ export default function MonthlyMatrixManager() {
                               />
                             </td>
 
-                            <td className="py-2 px-3 bg-amber-50/20">
+                            <td className="py-2 px-3 bg-amber-50/20 dark:bg-amber-950/20">
                               <div className="relative w-36">
                                 <input
                                   type="number"
@@ -1706,18 +1706,18 @@ export default function MonthlyMatrixManager() {
                                   value={roomVal}
                                   onFocus={(e) => e.target.select()}
                                   onChange={(e) => handleUpdateDateRange('madinah', currentActiveMadinahHotel.id, range.id, 'roomPriceSAR', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-white font-mono font-bold text-slate-900 rounded-xl px-2.5 py-1 text-xs border border-slate-300 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
+                                  className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white rounded-xl px-2.5 py-1 text-xs border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
                                 />
-                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                               </div>
                               {viewCurrency !== 'SAR' && (
-                                <div className="text-[10px] font-mono text-amber-800 text-right pr-1 mt-0.5">
+                                <div className="text-[10px] font-mono text-amber-800 dark:text-amber-400 text-right pr-1 mt-0.5">
                                   {formatCurrencyEquivalent(roomVal)}
                                 </div>
                               )}
                             </td>
 
-                            <td className="py-2 px-3 bg-amber-50/20">
+                            <td className="py-2 px-3 bg-amber-50/20 dark:bg-amber-950/20">
                               <div className="relative w-32">
                                 <input
                                   type="number"
@@ -1726,23 +1726,23 @@ export default function MonthlyMatrixManager() {
                                   value={foodVal}
                                   onFocus={(e) => e.target.select()}
                                   onChange={(e) => handleUpdateDateRange('madinah', currentActiveMadinahHotel.id, range.id, 'foodPriceSAR', parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-white font-mono font-bold text-amber-900 rounded-xl px-2.5 py-1 text-xs border border-amber-300 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
+                                  className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-amber-900 dark:text-amber-300 rounded-xl px-2.5 py-1 text-xs border border-amber-300 dark:border-amber-700 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
                                 />
-                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                                <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                               </div>
                               {viewCurrency !== 'SAR' && (
-                                <div className="text-[10px] font-mono text-amber-800 text-right pr-1 mt-0.5">
+                                <div className="text-[10px] font-mono text-amber-800 dark:text-amber-400 text-right pr-1 mt-0.5">
                                   {formatCurrencyEquivalent(foodVal)}
                                 </div>
                               )}
                             </td>
 
-                            <td className="py-2.5 px-3 text-center bg-slate-50/80 font-mono">
-                              <div className="font-black text-xs text-slate-900">
-                                {totalDaily} <span className="text-[10px] text-slate-400 font-sans">SAR</span>
+                            <td className="py-2.5 px-3 text-center bg-slate-50/80 dark:bg-slate-800/60 font-mono">
+                              <div className="font-black text-xs text-slate-900 dark:text-white">
+                                {totalDaily} <span className="text-[10px] text-slate-400 dark:text-slate-500 font-sans">SAR</span>
                               </div>
                               {viewCurrency !== 'SAR' && (
-                                <div className="text-[10px] font-bold text-emerald-700">
+                                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
                                   {formatCurrencyEquivalent(totalDaily)}
                                 </div>
                               )}
@@ -1752,7 +1752,7 @@ export default function MonthlyMatrixManager() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteDateRange('madinah', currentActiveMadinahHotel.id, range.id)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-all cursor-pointer"
                                 title="Aralığı Sil"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1763,8 +1763,8 @@ export default function MonthlyMatrixManager() {
                       })}
 
                       {/* NEW DRAFT RANGE ROW (Her zaman hazırda bekleyen yeni satır) */}
-                      <tr className="bg-amber-50/40 border-t-2 border-amber-200">
-                        <td className="py-3 px-3 text-center text-amber-600 font-black">
+                      <tr className="bg-amber-50/40 dark:bg-amber-950/30 border-t-2 border-amber-200 dark:border-amber-800">
+                        <td className="py-3 px-3 text-center text-amber-600 dark:text-amber-400 font-black">
                           <Plus className="h-4 w-4 mx-auto animate-bounce" />
                         </td>
 
@@ -1793,9 +1793,9 @@ export default function MonthlyMatrixManager() {
                               placeholder="0"
                               value={newRangeDraft.roomPriceSAR}
                               onChange={(e) => setNewRangeDraft({ ...newRangeDraft, roomPriceSAR: e.target.value })}
-                              className="w-full bg-white font-mono font-bold text-slate-900 rounded-xl px-2.5 py-1 text-xs border border-amber-300 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
+                              className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white rounded-xl px-2.5 py-1 text-xs border border-amber-300 dark:border-amber-700 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
                             />
-                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                           </div>
                         </td>
 
@@ -1808,15 +1808,15 @@ export default function MonthlyMatrixManager() {
                               placeholder="0"
                               value={newRangeDraft.foodPriceSAR}
                               onChange={(e) => setNewRangeDraft({ ...newRangeDraft, foodPriceSAR: e.target.value })}
-                              className="w-full bg-white font-mono font-bold text-amber-900 rounded-xl px-2.5 py-1 text-xs border border-amber-300 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
+                              className="w-full bg-white dark:bg-slate-800 font-mono font-bold text-amber-900 dark:text-amber-300 rounded-xl px-2.5 py-1 text-xs border border-amber-300 dark:border-amber-700 focus:outline-none focus:border-emerald-600 text-right pr-8 shadow-3xs"
                             />
-                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
+                            <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono">SAR</span>
                           </div>
                         </td>
 
                         <td className="py-2.5 px-3 text-center font-mono">
-                          <div className="font-black text-xs text-slate-700">
-                            {(parseFloat(newRangeDraft.roomPriceSAR) || 0) + (parseFloat(newRangeDraft.foodPriceSAR) || 0)} <span className="text-[10px] text-slate-400 font-sans">SAR</span>
+                          <div className="font-black text-xs text-slate-700 dark:text-slate-300">
+                            {(parseFloat(newRangeDraft.roomPriceSAR) || 0) + (parseFloat(newRangeDraft.foodPriceSAR) || 0)} <span className="text-[10px] text-slate-400 dark:text-slate-500 font-sans">SAR</span>
                           </div>
                         </td>
 
@@ -1846,14 +1846,14 @@ export default function MonthlyMatrixManager() {
             SECTION 3: TRANSFERS & ROUTES TABLE (İsim ve Fiyat Girişli)
            ═══════════════════════════════════════════════════════════ */}
         {activeSection === 'transfers' && (
-          <div className="pearl-card rounded-3xl bg-white border border-slate-200/90 shadow-sm overflow-hidden animate-fade-scale">
-            <div className="p-4 bg-slate-50/80 border-b border-slate-200/90 flex items-center gap-2">
-              <Bus className="h-4 w-4 text-emerald-600" />
+          <div className="pearl-card rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-scale">
+            <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/90 dark:border-slate-800 flex items-center gap-2">
+              <Bus className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <div>
-                <span className="text-xs font-bold text-slate-800 block">
+                <span className="text-xs font-bold text-slate-800 dark:text-white block">
                   {localPkg.name} • Transfer Güzergâhları, Araç İsimleri & Ücretleri
                 </span>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   Her güzergah için küçük ve büyük araç isimlerini (Örn: Sedan Taksi, VIP GMC, HiAce Minibüs) ve toplam araç ücretlerini belirleyin.
                 </p>
               </div>
@@ -1862,40 +1862,40 @@ export default function MonthlyMatrixManager() {
             <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
               
               {/* 1. Cidde - Mekke */}
-              <div className="p-4 rounded-3xl bg-slate-50/90 border border-slate-200/90 space-y-4 shadow-3xs">
-                <div className="font-extrabold text-xs text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2.5">
-                  <div className="p-1.5 rounded-xl bg-emerald-100 text-emerald-700">
+              <div className="p-4 rounded-3xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 space-y-4 shadow-3xs">
+                <div className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+                  <div className="p-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
                     <Car className="h-4 w-4" />
                   </div>
                   <span>Cidde - Mekke Otel Transferi</span>
                 </div>
 
                 {/* Küçük Araç */}
-                <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-700">Küçük Araç</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">Küçük Araç</span>
                     <span className="text-[10px] text-slate-400 font-medium">Binek / Sedan / GMC</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Modeli / İsmi:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Modeli / İsmi:</label>
                       <input
                         type="text"
                         placeholder="Örn: Sedan Taksi (Camry / Sonata)"
                         value={localPkg.transfers?.jedMekSmallLabel !== undefined ? localPkg.transfers.jedMekSmallLabel : (localPkg.id.includes('luxe') ? 'VIP GMC Yukon / Tahoe' : 'Sedan Taksi (Camry)')}
                         onChange={(e) => handleTransferChange('jedMekSmallLabel', e.target.value, true)}
-                        className="w-full bg-slate-50 text-slate-900 font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-3xs"
+                        className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Toplam Ücreti:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Toplam Ücreti:</label>
                       <div className="relative">
                         <input
                           type="number"
                           value={localPkg.transfers?.jedMekSmall || 200}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => handleTransferChange('jedMekSmall', e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-9 shadow-3xs"
+                          className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
                         />
                         <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                       </div>
@@ -1904,31 +1904,31 @@ export default function MonthlyMatrixManager() {
                 </div>
 
                 {/* Büyük Araç */}
-                <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-700">Büyük Araç</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">Büyük Araç</span>
                     <span className="text-[10px] text-slate-400 font-medium">Minibüs / Otobüs</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Modeli / İsmi:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Modeli / İsmi:</label>
                       <input
                         type="text"
                         placeholder="Örn: HiAce Minibüs (10 Kişilik)"
                         value={localPkg.transfers?.jedMekBigLabel !== undefined ? localPkg.transfers.jedMekBigLabel : (localPkg.id.includes('luxe') ? 'Mercedes VIP Sprinter' : 'HiAce Minibüs / Otobüs')}
                         onChange={(e) => handleTransferChange('jedMekBigLabel', e.target.value, true)}
-                        className="w-full bg-slate-50 text-slate-900 font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-3xs"
+                        className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Toplam Ücreti:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Toplam Ücreti:</label>
                       <div className="relative">
                         <input
                           type="number"
                           value={localPkg.transfers?.jedMekBig || 800}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => handleTransferChange('jedMekBig', e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-9 shadow-3xs"
+                          className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
                         />
                         <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                       </div>
@@ -1939,40 +1939,40 @@ export default function MonthlyMatrixManager() {
               </div>
 
               {/* 2. Mekke - Medine */}
-              <div className="p-4 rounded-3xl bg-slate-50/90 border border-slate-200/90 space-y-4 shadow-3xs">
-                <div className="font-extrabold text-xs text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2.5">
-                  <div className="p-1.5 rounded-xl bg-emerald-100 text-emerald-700">
+              <div className="p-4 rounded-3xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 space-y-4 shadow-3xs">
+                <div className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+                  <div className="p-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
                     <Car className="h-4 w-4" />
                   </div>
                   <span>Mekke - Medine Transfer</span>
                 </div>
 
                 {/* Küçük Araç */}
-                <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-700">Küçük Araç</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">Küçük Araç</span>
                     <span className="text-[10px] text-slate-400 font-medium">Binek / Sedan / GMC</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Modeli / İsmi:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Modeli / İsmi:</label>
                       <input
                         type="text"
                         placeholder="Örn: Sedan Taksi (Camry / Sonata)"
                         value={localPkg.transfers?.mekMedSmallLabel !== undefined ? localPkg.transfers.mekMedSmallLabel : (localPkg.id.includes('luxe') ? 'VIP GMC Yukon / Tahoe' : 'Sedan Taksi (Camry)')}
                         onChange={(e) => handleTransferChange('mekMedSmallLabel', e.target.value, true)}
-                        className="w-full bg-slate-50 text-slate-900 font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-3xs"
+                        className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Toplam Ücreti:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Toplam Ücreti:</label>
                       <div className="relative">
                         <input
                           type="number"
                           value={localPkg.transfers?.mekMedSmall || 500}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => handleTransferChange('mekMedSmall', e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-9 shadow-3xs"
+                          className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
                         />
                         <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                       </div>
@@ -1981,31 +1981,31 @@ export default function MonthlyMatrixManager() {
                 </div>
 
                 {/* Büyük Araç */}
-                <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-700">Büyük Araç</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">Büyük Araç</span>
                     <span className="text-[10px] text-slate-400 font-medium">Minibüs / Otobüs</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Modeli / İsmi:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Modeli / İsmi:</label>
                       <input
                         type="text"
                         placeholder="Örn: HiAce Minibüs (10 Kişilik)"
                         value={localPkg.transfers?.mekMedBigLabel !== undefined ? localPkg.transfers.mekMedBigLabel : (localPkg.id.includes('luxe') ? 'Mercedes VIP Sprinter' : 'HiAce Minibüs / Otobüs')}
                         onChange={(e) => handleTransferChange('mekMedBigLabel', e.target.value, true)}
-                        className="w-full bg-slate-50 text-slate-900 font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-3xs"
+                        className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Toplam Ücreti:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Toplam Ücreti:</label>
                       <div className="relative">
                         <input
                           type="number"
                           value={localPkg.transfers?.mekMedBig || 800}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => handleTransferChange('mekMedBig', e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-9 shadow-3xs"
+                          className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
                         />
                         <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                       </div>
@@ -2016,40 +2016,40 @@ export default function MonthlyMatrixManager() {
               </div>
 
               {/* 3. Medine - Havalimanı */}
-              <div className="p-4 rounded-3xl bg-slate-50/90 border border-slate-200/90 space-y-4 shadow-3xs">
-                <div className="font-extrabold text-xs text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2.5">
-                  <div className="p-1.5 rounded-xl bg-emerald-100 text-emerald-700">
+              <div className="p-4 rounded-3xl bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 space-y-4 shadow-3xs">
+                <div className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+                  <div className="p-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
                     <Car className="h-4 w-4" />
                   </div>
                   <span>Medine - Havalimanı Transferi</span>
                 </div>
 
                 {/* Küçük Araç */}
-                <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-700">Küçük Araç</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">Küçük Araç</span>
                     <span className="text-[10px] text-slate-400 font-medium">Binek / Sedan / GMC</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Modeli / İsmi:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Modeli / İsmi:</label>
                       <input
                         type="text"
                         placeholder="Örn: Sedan Taksi (Camry / Sonata)"
                         value={localPkg.transfers?.medAirSmallLabel !== undefined ? localPkg.transfers.medAirSmallLabel : (localPkg.id.includes('luxe') ? 'VIP GMC Yukon / Tahoe' : 'Sedan Taksi (Camry)')}
                         onChange={(e) => handleTransferChange('medAirSmallLabel', e.target.value, true)}
-                        className="w-full bg-slate-50 text-slate-900 font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-3xs"
+                        className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Toplam Ücreti:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Toplam Ücreti:</label>
                       <div className="relative">
                         <input
                           type="number"
                           value={localPkg.transfers?.medAirSmall || 100}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => handleTransferChange('medAirSmall', e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-9 shadow-3xs"
+                          className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
                         />
                         <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                       </div>
@@ -2058,31 +2058,31 @@ export default function MonthlyMatrixManager() {
                 </div>
 
                 {/* Büyük Araç */}
-                <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-extrabold text-slate-700">Büyük Araç</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300">Büyük Araç</span>
                     <span className="text-[10px] text-slate-400 font-medium">Minibüs / Otobüs</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Modeli / İsmi:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Modeli / İsmi:</label>
                       <input
                         type="text"
                         placeholder="Örn: HiAce Minibüs (10 Kişilik)"
                         value={localPkg.transfers?.medAirBigLabel !== undefined ? localPkg.transfers.medAirBigLabel : (localPkg.id.includes('luxe') ? 'Mercedes VIP Sprinter' : 'HiAce Minibüs / Otobüs')}
                         onChange={(e) => handleTransferChange('medAirBigLabel', e.target.value, true)}
-                        className="w-full bg-slate-50 text-slate-900 font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-3xs"
+                        className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all shadow-3xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-slate-500 block">Araç Toplam Ücreti:</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-400 block">Araç Toplam Ücreti:</label>
                       <div className="relative">
                         <input
                           type="number"
                           value={localPkg.transfers?.medAirBig || 800}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => handleTransferChange('medAirBig', e.target.value)}
-                          className="w-full bg-slate-50 font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-9 shadow-3xs"
+                          className="w-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-xs rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 text-right pr-9 shadow-3xs"
                         />
                         <span className="absolute right-2.5 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                       </div>
@@ -2100,19 +2100,19 @@ export default function MonthlyMatrixManager() {
             SECTION 4: DYNAMIC FIXED EXPENSES (DAHİLİ HİZMETLER HAVUZU)
            ═══════════════════════════════════════════════════════════ */}
         {activeSection === 'expenses' && (
-          <div className="pearl-card rounded-3xl bg-white border border-slate-200/90 shadow-sm overflow-hidden animate-fade-scale">
+          <div className="pearl-card rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-scale">
             
             {/* Header & Add Button */}
-            <div className="p-4 bg-slate-50/80 border-b border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
                   <Coins className="h-4 w-4" />
                 </div>
                 <div>
-                  <span className="text-xs font-black text-slate-900 block">
+                  <span className="text-xs font-black text-slate-900 dark:text-white block">
                     {localPkg.name} • Dahili Hizmetler & Sabit Giderler Havuzu
                   </span>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     Personelin teklif ekranında göreceği dahili hizmetleri yönetin, fiyat belirleyin veya switch ile gösterip gizleyin.
                   </p>
                 </div>
@@ -2142,12 +2142,12 @@ export default function MonthlyMatrixManager() {
               <form
                 ref={expenseFormRef}
                 onSubmit={handleAddNewExpense}
-                className="p-5 bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50 border-b border-emerald-200/80 space-y-4 animate-scale-in"
+                className="p-5 bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border-b border-emerald-200/80 dark:border-emerald-800/80 space-y-4 animate-scale-in"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-emerald-700" />
-                    <span className="text-xs font-extrabold text-emerald-950">Yeni Dahili Hizmet / Sabit Gider Ekle</span>
+                    <Sparkles className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+                    <span className="text-xs font-extrabold text-emerald-950 dark:text-emerald-300">Yeni Dahili Hizmet / Sabit Gider Ekle</span>
                   </div>
                   <span className="text-[10px] text-slate-400 font-medium">* Zorunlu Alanlar</span>
                 </div>
@@ -2155,32 +2155,32 @@ export default function MonthlyMatrixManager() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   {/* Hizmet Adı */}
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Hizmet / Gider Adı *</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Hizmet / Gider Adı *</label>
                     <input
                       type="text"
                       required
                       placeholder="Örn: Hızlı Tren Bileti / Özel Rehber"
                       value={newExpenseDraft.name}
                       onChange={(e) => setNewExpenseDraft({ ...newExpenseDraft, name: e.target.value })}
-                      className="w-full bg-white text-slate-900 font-bold text-xs rounded-xl px-3 py-2 border border-emerald-300 focus:outline-none focus:border-emerald-600 shadow-3xs"
+                      className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs rounded-xl px-3 py-2 border border-emerald-300 dark:border-emerald-700/80 focus:outline-none focus:border-emerald-600 shadow-3xs"
                     />
                   </div>
 
                   {/* Açıklama */}
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Kısa Açıklama</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Kısa Açıklama</label>
                     <input
                       type="text"
                       placeholder="Örn: Mekke - Medine VIP Hızlı Tren Geçişi"
                       value={newExpenseDraft.desc}
                       onChange={(e) => setNewExpenseDraft({ ...newExpenseDraft, desc: e.target.value })}
-                      className="w-full bg-white text-slate-900 font-medium text-xs rounded-xl px-3 py-2 border border-slate-300 focus:outline-none focus:border-emerald-600 shadow-3xs"
+                      className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs rounded-xl px-3 py-2 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 shadow-3xs"
                     />
                   </div>
 
                   {/* Fiyat SAR */}
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Kişi Başı Ücret (SAR) *</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Kişi Başı Ücret (SAR) *</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -2189,7 +2189,7 @@ export default function MonthlyMatrixManager() {
                         placeholder="0"
                         value={newExpenseDraft.priceSAR}
                         onChange={(e) => setNewExpenseDraft({ ...newExpenseDraft, priceSAR: e.target.value })}
-                        className="w-full bg-white font-mono font-black text-xs text-slate-900 rounded-xl px-3 py-2 border border-emerald-300 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
+                        className="w-full bg-white dark:bg-slate-800 font-mono font-black text-xs text-slate-900 dark:text-white rounded-xl px-3 py-2 border border-emerald-300 dark:border-emerald-700/80 focus:outline-none focus:border-emerald-600 text-right pr-9 shadow-3xs"
                       />
                       <span className="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">SAR</span>
                     </div>
@@ -2203,8 +2203,8 @@ export default function MonthlyMatrixManager() {
                       onClick={() => setNewExpenseDraft({ ...newExpenseDraft, isVisible: !newExpenseDraft.isVisible })}
                       className={`flex-1 py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
                         newExpenseDraft.isVisible
-                          ? 'bg-emerald-100 border-emerald-400 text-emerald-800'
-                          : 'bg-slate-100 border-slate-300 text-slate-500'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400'
                       }`}
                       title="Teklif hesaplama formunda checklist olarak gösterilsin mi?"
                     >
@@ -2218,8 +2218,8 @@ export default function MonthlyMatrixManager() {
                       onClick={() => setNewExpenseDraft({ ...newExpenseDraft, showInLetter: newExpenseDraft.showInLetter === false ? true : false })}
                       className={`flex-1 py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-3xs ${
                         newExpenseDraft.showInLetter !== false
-                          ? 'bg-teal-100 border-teal-400 text-teal-800'
-                          : 'bg-slate-100 border-slate-300 text-slate-500'
+                          ? 'bg-teal-100 dark:bg-teal-950/60 border-teal-400 dark:border-teal-700 text-teal-800 dark:text-teal-300'
+                          : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400'
                       }`}
                       title="Teklif mektubu ve PDF'te 'Fiyata Dahil Olanlar' listesinde gösterilsin mi?"
                     >
@@ -2249,34 +2249,34 @@ export default function MonthlyMatrixManager() {
                     key={exp.id}
                     className={`p-4 rounded-3xl border transition-all duration-300 relative group flex flex-col justify-between gap-3 ${
                       isVis
-                        ? 'bg-white border-slate-200/90 shadow-3xs hover:border-emerald-300 hover:shadow-xs'
-                        : 'bg-slate-50/70 border-dashed border-slate-300 opacity-60 hover:opacity-100'
+                        ? 'bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700 shadow-3xs hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-xs'
+                        : 'bg-slate-50/70 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 opacity-60 hover:opacity-100'
                     }`}
                   >
                     {/* Üst Kısım: Başlık, Açıklama ve Sil Butonu */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-1 pr-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-extrabold text-xs text-slate-900 block leading-tight">
+                          <span className="font-extrabold text-xs text-slate-900 dark:text-white block leading-tight">
                             {exp.name}
                           </span>
                           <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
                             isVis
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : 'bg-slate-200 text-slate-600 border border-slate-300'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
                           }`}>
                             {isVis ? 'Formda Açık' : 'Formda Gizli'}
                           </span>
                           <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5 ${
                             isLetterVis
-                              ? 'bg-teal-50 text-teal-800 border border-teal-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                              : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                           }`}>
                             <FileText className="h-2.5 w-2.5 inline" />
                             <span>{isLetterVis ? 'Mektupta' : 'Mektupta Gizli'}</span>
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-400 line-clamp-2 leading-relaxed">
                           {exp.desc}
                         </p>
                       </div>
@@ -2285,7 +2285,7 @@ export default function MonthlyMatrixManager() {
                       <button
                         type="button"
                         onClick={() => handleDeleteExpense(exp.id, exp.name)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer shrink-0 opacity-80 hover:opacity-100"
+                        className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-all cursor-pointer shrink-0 opacity-80 hover:opacity-100"
                         title="Bu Hizmeti Listeden Sil"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -2293,9 +2293,9 @@ export default function MonthlyMatrixManager() {
                     </div>
 
                     {/* Alt Kısım: Fiyat Girişi + Görünürlük Switch'leri */}
-                    <div className="pt-2.5 border-t border-slate-100 space-y-2">
+                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-700 space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold text-slate-500">Kişi Başı Maliyet:</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Kişi Başı Maliyet:</span>
                         {/* Fiyat Giriş Kutusu */}
                         <div className="relative w-28 shrink-0">
                           <input
@@ -2305,22 +2305,22 @@ export default function MonthlyMatrixManager() {
                             value={exp.priceSAR !== undefined ? exp.priceSAR : 0}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => handleUpdateExpensePrice(exp.id, e.target.value)}
-                            className="w-full bg-slate-50 font-mono font-black text-xs text-slate-900 rounded-xl px-2.5 py-1.5 border border-slate-300 focus:outline-none focus:border-emerald-600 focus:bg-white text-right pr-8 shadow-3xs"
+                            className="w-full bg-slate-50 dark:bg-slate-800 font-mono font-black text-xs text-slate-900 dark:text-white rounded-xl px-2.5 py-1.5 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-800 text-right pr-8 shadow-3xs"
                           />
                           <span className="absolute right-2 top-1.5 text-[10px] text-slate-400 font-mono">SAR</span>
                         </div>
                       </div>
 
                       {/* Switchler */}
-                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-700">
                         {/* Switch 1: Teklif Formunda Göster */}
                         <button
                           type="button"
                           onClick={() => handleToggleExpenseVisibility(exp.id)}
                           className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                             isVis 
-                              ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
-                              : 'bg-slate-100 text-slate-500 border-slate-200'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' 
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                           }`}
                           title={isVis ? 'Teklif formunda aktif' : 'Teklif formunda gizli'}
                         >
@@ -2334,8 +2334,8 @@ export default function MonthlyMatrixManager() {
                           onClick={() => handleToggleExpenseShowInLetter(exp.id)}
                           className={`px-2 py-1.5 rounded-xl border text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                             isLetterVis 
-                              ? 'bg-teal-50 text-teal-900 border-teal-200' 
-                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                              ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-900 dark:text-teal-300 border-teal-200 dark:border-teal-800' 
+                              : 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800'
                           }`}
                           title={isLetterVis ? 'Müşteri teklif mektubunda ve PDF dahil hizmetler listesinde görünür' : 'Müşteri teklif mektubu ve PDF dahil hizmetler listesinde GİZLİ (fiyatı toplama yansır ama ismi çıkmaz)'}
                         >

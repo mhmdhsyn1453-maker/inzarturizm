@@ -93,8 +93,8 @@ export function DataProvider({ children }) {
 
   // Listen for Live Updates from Supabase & Broadcast Channel
   useEffect(() => {
-    // Pull fresh data from Supabase immediately on mount
-    syncService.pullLatestFromSupabase();
+    // Pull fresh data from Supabase immediately on mount and when user identity changes
+    syncService.pullLatestFromSupabase(currentUser);
 
     const unsubscribe = syncService.subscribe((event) => {
       setLastSyncTime(new Date());
@@ -154,6 +154,12 @@ export function DataProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (currentUser?.id) {
+      syncService.pullLatestFromSupabase(currentUser);
+    }
+  }, [currentUser?.id]);
+
   const triggerHotReloadAlert = (alertObj) => {
     const formatted = typeof alertObj === 'string' ? {
       id: Date.now(),
@@ -200,7 +206,7 @@ export function DataProvider({ children }) {
     const target = packages.find(p => p.id === pkgId);
     const updated = packages.filter(p => p.id !== pkgId);
     setPackages(updated);
-    syncService.savePackages(updated, currentUser, note || `${target?.name || pkgId} paketi silindi.`);
+    syncService.deletePackage(pkgId, currentUser, note || `${target?.name || pkgId} paketi silindi.`);
   }, [packages, currentUser]);
 
   const updateCurrencies = useCallback((newCurrencies, note = '') => {
@@ -303,11 +309,13 @@ export function DataProvider({ children }) {
     setAuditLogs(syncService.getAuditLogs());
   }, [currentUser]);
 
-  // Track unread announcements per user
+  // Track unread announcements per user (Persisted in localStorage + Supabase profiles.read_announcements)
   const [readAnnouncementIds, setReadAnnouncementIds] = useState(() => {
     try {
       const stored = localStorage.getItem(`inzar_read_ann_${currentUser?.id || 'guest'}`);
-      return stored ? JSON.parse(stored) : [];
+      const parsedStored = stored ? JSON.parse(stored) : [];
+      const userAnn = Array.isArray(currentUser?.readAnnouncements) ? currentUser.readAnnouncements : [];
+      return Array.from(new Set([...parsedStored, ...userAnn]));
     } catch {
       return [];
     }
@@ -317,11 +325,14 @@ export function DataProvider({ children }) {
     if (!currentUser?.id) return;
     try {
       const stored = localStorage.getItem(`inzar_read_ann_${currentUser.id}`);
-      setReadAnnouncementIds(stored ? JSON.parse(stored) : []);
+      const parsedStored = stored ? JSON.parse(stored) : [];
+      const userAnn = Array.isArray(currentUser.readAnnouncements) ? currentUser.readAnnouncements : [];
+      const combined = Array.from(new Set([...parsedStored, ...userAnn]));
+      setReadAnnouncementIds(combined);
     } catch {
       setReadAnnouncementIds([]);
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.readAnnouncements]);
 
   const markAnnouncementsAsRead = useCallback(() => {
     const allIds = announcements.map(a => a.id);
@@ -330,6 +341,11 @@ export function DataProvider({ children }) {
       localStorage.setItem(`inzar_read_ann_${currentUser?.id || 'guest'}`, JSON.stringify(allIds));
     } catch (e) {
       console.error('Error saving read announcements:', e);
+    }
+
+    // 🚀 Canlı Veritabanına (Supabase profiles.read_announcements) Kalıcı Kaydet
+    if (currentUser?.id) {
+      syncService.markAnnouncementsReadInDatabase(currentUser.id, allIds);
     }
   }, [announcements, currentUser?.id]);
 
@@ -385,8 +401,8 @@ export function DataProvider({ children }) {
         setCustomers(updated);
         return updated;
       },
-      deleteCustomer: (customerId) => {
-        const updated = syncService.deleteCustomer(customerId, currentUser);
+      deleteCustomer: async (customerOrId, deleteQuotes = true) => {
+        const updated = await syncService.deleteCustomer(customerOrId, currentUser, deleteQuotes);
         setCustomers(updated);
         return updated;
       },

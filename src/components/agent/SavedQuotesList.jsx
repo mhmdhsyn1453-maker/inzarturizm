@@ -39,7 +39,8 @@ import {
   AlertTriangle,
   MessageSquare,
   Undo2,
-  RotateCcw
+  RotateCcw,
+  Cloud
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -141,9 +142,18 @@ export default function SavedQuotesList({ onEditQuote }) {
   const visibleQuotes = useMemo(() => {
     if (isHqOrAdmin) return savedQuotes;
     return savedQuotes.filter(q => {
+      const qCreatedById = String(q.createdById || q.createdBy || '').trim().toLowerCase();
+      const currentId = String(currentUser?.id || '').trim().toLowerCase();
+      const currentUsername = String(currentUser?.username || '').trim().toLowerCase();
+      const qCreatedByName = String(q.createdByName || q.agentName || '').trim().toLocaleLowerCase('tr-TR');
+      const currentName = String(currentUser?.name || '').trim().toLocaleLowerCase('tr-TR');
+
       const isOwner = 
-        (currentUser?.id && (q.createdById === currentUser.id || q.createdBy === currentUser.id)) ||
-        (currentUser?.name && (q.createdByName === currentUser.name || q.agentName === currentUser.name));
+        (currentId && qCreatedById === currentId) ||
+        (currentUsername && (qCreatedById === currentUsername || qCreatedById.includes(currentUsername))) ||
+        (currentName && qCreatedByName === currentName) ||
+        (currentName && (qCreatedByName.includes(currentName) || currentName.includes(qCreatedByName)));
+
       return isOwner;
     });
   }, [savedQuotes, isHqOrAdmin, currentUser]);
@@ -386,7 +396,7 @@ export default function SavedQuotesList({ onEditQuote }) {
       const finalReason = (typeof result.reason === 'string' && result.reason.trim())
         ? result.reason.trim()
         : 'Genel Merkez tarafından uygun görülmedi / revize istendi.';
-      updateQuoteStatus(quote.id, 'hq_rejected', finalReason);
+      updateQuoteStatus(quote.id, 'hq_rejected', currentUser, finalReason);
       showAlert({
         title: 'Teklif Reddedildi',
         message: `"${quote.customerName || 'Misafir'}" adına olan teklif reddedildi ve ret gerekçesi sisteme işlendi.`,
@@ -410,19 +420,19 @@ export default function SavedQuotesList({ onEditQuote }) {
       <div className={`space-y-6 pb-20 font-sans ${isExiting ? 'animate-page-exit' : 'animate-page-enter'}`}>
         
         {/* Top Control Bar (Signature Pill Form with Rich CSS Micro-interactions) */}
-        <div className="pearl-card rounded-full p-2 sm:px-6 sm:py-2.5 border border-slate-200/90 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-md">
+        <div className="pearl-card rounded-full p-2 sm:px-6 sm:py-2.5 border border-slate-200/90 dark:border-slate-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md">
           <button
             type="button"
             onClick={handleClosePreview}
-            className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95 self-start sm:self-auto"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-900 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95 self-start sm:self-auto"
           >
-            <ArrowLeft className="h-4 w-4 text-emerald-700 transition-transform duration-200 group-hover:-translate-x-1" />
+            <ArrowLeft className="h-4 w-4 text-emerald-700 dark:text-emerald-400 transition-transform duration-200 group-hover:-translate-x-1" />
             <span>Teklifler Listesine Dön</span>
           </button>
 
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-50 via-emerald-100/60 to-emerald-50 border border-emerald-300 text-slate-800 text-xs font-bold self-center shadow-3xs">
-            <FileText className="h-4 w-4 text-emerald-700 shrink-0" />
-            <span>Teklif Mektubu Önizleme: <strong className="text-emerald-900 font-extrabold">{selectedQuoteForPdf.customerName || 'Misafir'}</strong></span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-50 dark:from-emerald-950/60 via-emerald-100/60 dark:via-emerald-900/40 to-emerald-50 dark:to-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-slate-800 dark:text-slate-200 text-xs font-bold self-center shadow-3xs">
+            <FileText className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+            <span>Teklif Mektubu Önizleme: <strong className="text-emerald-900 dark:text-emerald-300 font-extrabold">{selectedQuoteForPdf.customerName || 'Misafir'}</strong></span>
           </div>
 
           <div className="flex items-center flex-wrap gap-2 justify-end">
@@ -430,7 +440,7 @@ export default function SavedQuotesList({ onEditQuote }) {
             <button
               type="button"
               onClick={(e) => handleWhatsApp(selectedQuoteForPdf, e)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold border border-emerald-300 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 text-emerald-800 dark:text-emerald-300 hover:text-white text-xs font-bold border border-emerald-300 dark:border-emerald-700 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
               title="PDF İndir ve WhatsApp ile Paylaş"
             >
               <Send className="h-3.5 w-3.5" />
@@ -457,7 +467,7 @@ export default function SavedQuotesList({ onEditQuote }) {
             <button
               type="button"
               onClick={(e) => handleEditClick(selectedQuoteForPdf, e)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 hover:bg-amber-500 text-amber-900 hover:text-white text-xs font-bold border border-amber-300 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-500 text-amber-900 dark:text-amber-300 hover:text-white text-xs font-bold border border-amber-300 dark:border-amber-700 transition-all duration-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
             >
               <Edit3 className="h-3.5 w-3.5" />
               <span>Teklifi Düzenle</span>
@@ -503,62 +513,62 @@ export default function SavedQuotesList({ onEditQuote }) {
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="pearl-card rounded-3xl p-5 border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+        <div className="pearl-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
             <span>Toplam Teklif</span>
-            <FileText className="h-4 w-4 text-slate-400" />
+            <FileText className="h-4 w-4 text-slate-400 dark:text-slate-500" />
           </div>
-          <div className="text-2xl font-extrabold text-slate-900 font-mono mt-1">
-            {visibleQuotes.length} <span className="text-xs text-slate-400 font-sans">Adet</span>
+          <div className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-1">
+            {visibleQuotes.length} <span className="text-xs text-slate-400 dark:text-slate-500 font-sans">Adet</span>
           </div>
         </div>
 
-        <div className="pearl-card rounded-3xl p-5 border border-amber-300 bg-amber-50/50 shadow-2xs relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+        <div className="pearl-card rounded-3xl p-5 border border-amber-300 dark:border-amber-800/80 bg-amber-50/50 dark:bg-amber-950/30 shadow-2xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-300">
             <span>Merkez Onayı Bekleyen</span>
-            <ShieldCheck className="h-4 w-4 text-amber-700 animate-bounce" />
+            <ShieldCheck className="h-4 w-4 text-amber-700 dark:text-amber-400 animate-bounce" />
           </div>
-          <div className="text-2xl font-extrabold text-amber-950 font-mono mt-1">
-            {pendingHqCount} <span className="text-xs text-amber-800 font-sans">İncelemede</span>
+          <div className="text-2xl font-extrabold text-amber-950 dark:text-amber-200 font-mono mt-1">
+            {pendingHqCount} <span className="text-xs text-amber-800 dark:text-amber-400 font-sans">İncelemede</span>
           </div>
         </div>
 
-        <div className="pearl-card rounded-3xl p-5 border border-emerald-300 bg-emerald-50/50 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-bold text-emerald-800">
+        <div className="pearl-card rounded-3xl p-5 border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-2xs">
+          <div className="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
             <span>Merkez Onayladı (Kesin)</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-extrabold text-emerald-900 font-mono mt-1">
-            {hqApprovedCount} <span className="text-xs text-emerald-700 font-sans">Satış</span>
+          <div className="text-2xl font-extrabold text-emerald-900 dark:text-emerald-200 font-mono mt-1">
+            {hqApprovedCount} <span className="text-xs text-emerald-700 dark:text-emerald-400 font-sans">Satış</span>
           </div>
         </div>
 
-        <div className="pearl-card rounded-3xl p-5 border border-sky-200 bg-sky-50/40 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-bold text-sky-800">
+        <div className="pearl-card rounded-3xl p-5 border border-sky-200 dark:border-sky-800/80 bg-sky-50/40 dark:bg-sky-950/30 shadow-2xs">
+          <div className="flex items-center justify-between text-xs font-bold text-sky-800 dark:text-sky-300">
             <span>Müşteri Bekleyen (7 Gün)</span>
-            <Clock className="h-4 w-4 text-sky-600" />
+            <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />
           </div>
-          <div className="text-2xl font-extrabold text-sky-950 font-mono mt-1">
-            {pendingCustomerCount} <span className="text-xs text-sky-700 font-sans">Görüşmede</span>
+          <div className="text-2xl font-extrabold text-sky-950 dark:text-sky-200 font-mono mt-1">
+            {pendingCustomerCount} <span className="text-xs text-sky-700 dark:text-sky-400 font-sans">Görüşmede</span>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="pearl-card rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-5">
+      <div className="pearl-card rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-5">
         
         {/* Status Filter Tabs & Search Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
           
           {/* Status Filter Buttons (Pill Format) */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-full">
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-full">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'all'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               Tümü ({visibleQuotes.length})
@@ -570,7 +580,7 @@ export default function SavedQuotesList({ onEditQuote }) {
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === 'pending_hq'
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'text-amber-900 hover:bg-amber-100/50'
+                  : 'text-amber-900 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-amber-950/40'
               }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
@@ -584,7 +594,7 @@ export default function SavedQuotesList({ onEditQuote }) {
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'hq_approved'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-emerald-800 hover:bg-emerald-100/50'
+                  : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-950/40'
               }`}
             >
               Merkez Onaylı ({hqApprovedCount})
@@ -596,7 +606,7 @@ export default function SavedQuotesList({ onEditQuote }) {
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'pending_customer'
                   ? 'bg-sky-700 text-white shadow-xs'
-                  : 'text-sky-800 hover:bg-sky-100/50'
+                  : 'text-sky-800 dark:text-sky-300 hover:bg-sky-100/50 dark:hover:bg-sky-950/40'
               }`}
             >
               Müşteri Bekleyenler ({pendingCustomerCount})
@@ -608,7 +618,7 @@ export default function SavedQuotesList({ onEditQuote }) {
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 statusFilter === 'rejected'
                   ? 'bg-rose-600 text-white shadow-xs'
-                  : 'text-rose-700 hover:bg-rose-100/50'
+                  : 'text-rose-700 dark:text-rose-300 hover:bg-rose-100/50 dark:hover:bg-rose-950/40'
               }`}
             >
               Red / Süresi Dolan ({rejectedCount})
@@ -623,17 +633,17 @@ export default function SavedQuotesList({ onEditQuote }) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Misafir, paket, telefon, şube veya personel ara..."
-              className="w-full bg-slate-50 text-slate-800 text-xs rounded-full pl-10 pr-4 py-2.5 border border-slate-200 focus:outline-none focus:border-emerald-600 focus:bg-white shadow-3xs"
+              className="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs rounded-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 shadow-3xs"
             />
           </div>
         </div>
 
         {/* 🗂️ Standalone Teklif Kartları Listesi (Genişletilmiş, Ferah ve Modern Tasarım) */}
         {filteredQuotes.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 space-y-2">
-            <FileText className="h-12 w-12 mx-auto text-slate-300" />
-            <p className="text-sm font-bold text-slate-700">Seçilen filtrelere uygun teklif bulunamadı.</p>
-            <p className="text-xs text-slate-400">Teklif Sihirbazından yeni hesaplama yapıp kaydedebilirsiniz.</p>
+          <div className="py-16 text-center text-slate-400 dark:text-slate-500 space-y-2">
+            <FileText className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600" />
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Seçilen filtrelere uygun teklif bulunamadı.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Teklif Sihirbazından yeni hesaplama yapıp kaydedebilirsiniz.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -656,58 +666,58 @@ export default function SavedQuotesList({ onEditQuote }) {
                 <div
                   key={quote.id}
                   onClick={() => handleOpenPreview(quote)}
-                  className={`quote-card-interactive pearl-card rounded-3xl p-5 sm:p-6 border shadow-sm hover:shadow-xl bg-white/95 backdrop-blur-sm cursor-pointer group relative overflow-hidden transition-all duration-300 ${
+                  className={`quote-card-interactive pearl-card rounded-3xl p-5 sm:p-6 border shadow-sm hover:shadow-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm cursor-pointer group relative overflow-hidden transition-all duration-300 ${
                     isPendingHq 
-                      ? 'border-amber-400 ring-2 ring-amber-400/20 bg-gradient-to-b from-amber-50/30 to-white' 
+                      ? 'border-amber-400 dark:border-amber-600/80 ring-2 ring-amber-400/20 bg-gradient-to-b from-amber-50/30 dark:from-amber-950/20 to-white dark:to-slate-900' 
                       : isHqApproved
-                      ? 'border-emerald-300 hover:border-emerald-500 bg-gradient-to-b from-emerald-50/20 to-white'
+                      ? 'border-emerald-300 dark:border-emerald-700/80 hover:border-emerald-500 dark:hover:border-emerald-600 bg-gradient-to-b from-emerald-50/20 dark:from-emerald-950/20 to-white dark:to-slate-900'
                       : isHqRejected
-                      ? 'border-rose-300 bg-gradient-to-b from-rose-50/20 to-white'
-                      : 'border-slate-200/90 hover:border-emerald-400'
+                      ? 'border-rose-300 dark:border-rose-700/80 bg-gradient-to-b from-rose-50/20 dark:from-rose-950/20 to-white dark:to-slate-900'
+                      : 'border-slate-200/90 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-600'
                   }`}
                 >
                   <div className="space-y-4">
                     
                     {/* 1. KATMAN: Misafir Başlığı, İletişim, Durum & Sayaç Rozetleri */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800">
                       
                       {/* Sol: Misafir İsim, Telefon, Temsilci */}
                       <div className="flex items-center gap-3.5">
                         <div className={`h-13 w-13 rounded-2xl flex items-center justify-center font-black text-base border shadow-xs shrink-0 group-hover:scale-105 transition-all duration-300 ${
                           isPendingHq
-                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700'
                             : isHqApproved
-                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
                             : isHqRejected
-                            ? 'bg-rose-100 text-rose-800 border-rose-300'
-                            : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                            ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
                         }`}>
                           {quote.customerName ? quote.customerName.charAt(0).toUpperCase() : 'M'}
                         </div>
                         
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-extrabold text-base text-slate-900 group-hover:text-emerald-900 transition-colors">
+                            <h3 className="font-extrabold text-base text-slate-900 dark:text-white group-hover:text-emerald-900 dark:group-hover:text-emerald-400 transition-colors">
                               {quote.customerName || 'Misafir'}
                             </h3>
-                            <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                            <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                               #{quote.id?.substring(0, 8)}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-3 text-slate-500 text-xs font-mono mt-1 flex-wrap">
-                            <span className="flex items-center gap-1 font-semibold text-slate-700">
-                              <Phone className="h-3.5 w-3.5 text-emerald-600" />
+                          <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs font-mono mt-1 flex-wrap">
+                            <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                              <Phone className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                               <span>{quote.customerPhone || 'Belirtilmedi'}</span>
                             </span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-[11px] text-slate-600 font-sans font-medium flex items-center gap-1">
-                              <User className="h-3.5 w-3.5 text-slate-400" />
-                              <span>Temsilci: <strong className="text-slate-800">{quote.createdByName || 'Personel'}</strong></span>
-                              {quote.branch && <span className="text-slate-400">({quote.branch})</span>}
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-sans font-medium flex items-center gap-1">
+                              <User className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                              <span>Temsilci: <strong className="text-slate-800 dark:text-slate-200">{quote.createdByName || 'Personel'}</strong></span>
+                              {quote.branch && <span className="text-slate-400 dark:text-slate-500">({quote.branch})</span>}
                             </span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-[11px] text-slate-400 font-sans">
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-sans">
                               {new Date(quote.createdAt || quote.timestamp).toLocaleDateString('tr-TR')}
                             </span>
                           </div>
@@ -726,28 +736,28 @@ export default function SavedQuotesList({ onEditQuote }) {
 
                         {/* 🏷️ DURUM ROZETLERİ */}
                         {isPendingHq ? (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-950 border border-amber-300 shadow-3xs animate-pulse">
-                            <ShieldCheck className="h-4 w-4 text-amber-700" />
+                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-100 dark:bg-amber-950/60 text-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-3xs animate-pulse">
+                            <ShieldCheck className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                             <span>Merkez Onayı Bekleniyor</span>
                           </span>
                         ) : isHqApproved ? (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-3xs">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-3xs">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                             <span>Genel Merkez Onayladı</span>
                           </span>
                         ) : isHqRejected ? (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-rose-100 text-rose-900 border border-rose-300 shadow-3xs" title={getSafeHqNote(quote.hqNote) || 'Gerekçe belirtilmedi'}>
-                            <XCircle className="h-4 w-4 text-rose-700" />
+                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border border-rose-300 dark:border-rose-700 shadow-3xs" title={getSafeHqNote(quote.hqNote) || 'Gerekçe belirtilmedi'}>
+                            <XCircle className="h-4 w-4 text-rose-700 dark:text-rose-400" />
                             <span>Merkez Reddetti</span>
                           </span>
                         ) : isRevised ? (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-3xs">
-                            <Edit3 className="h-4 w-4 text-amber-700" />
+                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-3xs">
+                            <Edit3 className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                             <span>Revize Edildi ({quote.revisionCount || 1}x)</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-sky-100 text-sky-900 border border-sky-200 shadow-3xs">
-                            <Clock className="h-4 w-4 text-sky-700" />
+                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-sky-100 dark:bg-sky-950/60 text-sky-900 dark:text-sky-200 border border-sky-200 dark:border-sky-800 shadow-3xs">
+                            <Clock className="h-4 w-4 text-sky-700 dark:text-sky-400" />
                             <span>Müşteri Kararı Bekleniyor</span>
                           </span>
                         )}
@@ -757,56 +767,56 @@ export default function SavedQuotesList({ onEditQuote }) {
                     {/* 2. KATMAN: Program, Oteller, Yemek ve Konaklama Grid'i */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
                       {/* Paket & Dönem */}
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <Building2 className="h-3 w-3 text-amber-600" />
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <Building2 className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                           <span>Paket & Sezon</span>
                         </div>
-                        <div className="font-extrabold text-slate-900 text-xs truncate">{quote.packageName}</div>
-                        <div className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-emerald-600" />
+                        <div className="font-extrabold text-slate-900 dark:text-white text-xs truncate">{quote.packageName}</div>
+                        <div className="text-[11px] text-emerald-800 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                           <span>{formatTurkishMonth(quote.selectedMonth, quote.selectedMonthName)} ({quote.makkahDays + quote.madinahDays} Gün)</span>
                         </div>
                       </div>
 
                       {/* Mekke Oteli */}
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <img src={mekkeIcon} alt="Mekke" className="h-3 w-3 object-contain opacity-80" />
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <img src={mekkeIcon} alt="Mekke" className="h-3 w-3 object-contain opacity-80 dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
                           <span>Mekke-i Mükerreme ({quote.makkahDays} Gece)</span>
                         </div>
-                        <div className="font-extrabold text-slate-900 text-xs truncate">
+                        <div className="font-extrabold text-slate-900 dark:text-white text-xs truncate">
                           {quote.selectedMakkahHotel?.name || quote.pkgDetails?.hotelMakkah || 'Mekke Oteli'}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
                           {quote.selectedMakkahHotel?.distance || quote.pkgDetails?.distanceMakkah || 'Merkezi / Yürüme'}
                         </div>
                       </div>
 
                       {/* Medine Oteli */}
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <img src={medineIcon} alt="Medine" className="h-3 w-3 object-contain opacity-80" />
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <img src={medineIcon} alt="Medine" className="h-3 w-3 object-contain opacity-80 dark:brightness-0 dark:invert dark:opacity-90 transition-all" />
                           <span>Medine-i Münevvere ({quote.madinahDays} Gece)</span>
                         </div>
-                        <div className="font-extrabold text-slate-900 text-xs truncate">
+                        <div className="font-extrabold text-slate-900 dark:text-white text-xs truncate">
                           {quote.selectedMadinahHotel?.name || quote.pkgDetails?.hotelMadinah || 'Medine Oteli'}
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
                           {quote.selectedMadinahHotel?.distance || quote.pkgDetails?.distanceMadinah || 'Merkezi / Yürüme'}
                         </div>
                       </div>
 
                       {/* Yemek & Kişi Sayısı */}
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                          <Users className="h-3 w-3 text-indigo-600" />
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <Users className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
                           <span>Kişi & Yemek Konsepti</span>
                         </div>
-                        <div className="font-extrabold text-slate-900 text-xs">
+                        <div className="font-extrabold text-slate-900 dark:text-white text-xs">
                           {isMixed ? `Çoklu Oda (${totalPax} Misafir)` : `${quote.paxCount || 1} Kişilik Oda`}
                         </div>
-                        <div className="text-[11px] text-slate-600 font-medium">
+                        <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                           {quote.includeMakkahMeals !== false ? 'Sabah & Akşam Dahil' : 'Yemeksiz (Sadece Oda)'}
                         </div>
                       </div>
@@ -814,8 +824,8 @@ export default function SavedQuotesList({ onEditQuote }) {
 
                     {/* Ret Gerekçesi Varsa Göster */}
                     {isHqRejected && getSafeHqNote(quote.hqNote) && (
-                      <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                         <div>
                           <strong className="font-bold">Genel Merkez Ret Açıklaması:</strong> {getSafeHqNote(quote.hqNote)}
                         </div>
@@ -823,26 +833,26 @@ export default function SavedQuotesList({ onEditQuote }) {
                     )}
 
                     {/* 3. KATMAN: Fiyat Paneli ve Genişletilmiş Eylem Butonları */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-3 border-t border-slate-100 bg-slate-50/60 p-4 rounded-2xl">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 rounded-2xl">
                       
                       {/* Sol: Fiyat Bilgisi */}
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-2xl bg-emerald-700 text-white shadow-xs">
+                        <div className="p-2.5 rounded-2xl bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs">
                           <DollarSign className="h-6 w-6" />
                         </div>
                         <div>
                           <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl sm:text-2xl font-black font-mono text-slate-900">
+                            <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
                               ${isMixed ? totalGroupPrice.toLocaleString('tr-TR') : quote.finalPriceUSD?.toLocaleString('tr-TR')}
                             </span>
-                            <span className="text-xs font-extrabold text-emerald-700 font-sans">USD</span>
+                            <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 font-sans">USD</span>
                             {quote.finalPriceTRY > 0 && (
-                              <span className="text-xs font-bold text-slate-400 font-mono">
+                              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 font-mono">
                                 (~{(quote.finalPriceTRY * totalPax).toLocaleString('tr-TR')} ₺)
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-medium">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                             {isMixed ? `Toplam Grup Tutarı (${totalPax} Kişi)` : quote.paxCount > 1 ? `Kişi Başı: $${quote.finalPriceUSD} | Toplam: $${totalGroupPrice}` : 'Toplam Fiyat (Kişi Başı)'}
                           </div>
                         </div>
@@ -867,7 +877,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                             <button
                               type="button"
                               onClick={(e) => handleCustomerReject(quote, e)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-600 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-300 border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                               title="Müşteri Tekliften Vazgeçti Olarak İşaretle"
                             >
                               <XCircle className="h-3.5 w-3.5" />
@@ -881,10 +891,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                           <button
                             type="button"
                             onClick={(e) => handleCustomerRevoke(quote, e)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                             title="Müşteri Onayını Geri Çek ve Tekrar Değerlendirmeye Al"
                           >
-                            <Undo2 className="h-4 w-4 text-amber-700" />
+                            <Undo2 className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                             <span>Onayı Geri Çek</span>
                           </button>
                         )}
@@ -905,10 +915,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                             <button
                               type="button"
                               onClick={(e) => handleOpenRejectModal(quote, e)}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                               title="Teklifi Reddet"
                             >
-                              <XCircle className="h-4 w-4 text-rose-600" />
+                              <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                               <span>Reddet</span>
                             </button>
                           </>
@@ -919,10 +929,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                           <button
                             type="button"
                             onClick={(e) => handleOpenRejectModal(quote, e)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                             title="Genel Merkez Onayını Geri Çek ve Reddet"
                           >
-                            <XCircle className="h-4 w-4 text-rose-600" />
+                            <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                             <span>Onayı İptal Et / Reddet</span>
                           </button>
                         )}
@@ -932,10 +942,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                           <button
                             type="button"
                             onClick={(e) => handleHqApprove(quote, e)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-850 border border-emerald-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-850 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                             title="Reddedilen Teklifi Şartlar Uygunsa Yeniden Onayla"
                           >
-                            <RotateCcw className="h-4 w-4 text-emerald-700" />
+                            <RotateCcw className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                             <span>Yeniden Onayla</span>
                           </button>
                         )}
@@ -949,10 +959,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                               updateQuoteStatus(quote.id, 'pending', currentUser, 'Teklif tekrar aktife alındı.');
                               showAlert({ title: 'Teklif Aktifleştirildi', message: 'Teklif tekrar müşteri kararı aşamasına alındı.', type: 'info' });
                             }}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-850 border border-sky-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-850 dark:text-sky-300 border border-sky-300 dark:border-sky-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                             title="Teklifi Tekrar Aktif Yap"
                           >
-                            <RotateCcw className="h-4 w-4 text-sky-700" />
+                            <RotateCcw className="h-4 w-4 text-sky-700 dark:text-sky-400" />
                             <span>Tekrar Aktife Al</span>
                           </button>
                         )}
@@ -961,7 +971,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                         <button
                           type="button"
                           onClick={() => handleOpenPreview(quote)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                           title="Teklif Mektubunu Önizle"
                         >
                           <Eye className="h-4 w-4" />
@@ -972,10 +982,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                         <button
                           type="button"
                           onClick={(e) => handleEditClick(quote, e)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                           title="Teklifi Düzenle / Revize Et"
                         >
-                          <Edit3 className="h-3.5 w-3.5 text-amber-700" />
+                          <Edit3 className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />
                           <span className="hidden sm:inline">Düzenle</span>
                         </button>
 
@@ -984,13 +994,19 @@ export default function SavedQuotesList({ onEditQuote }) {
                           type="button"
                           disabled={downloadingId === quote.id}
                           onClick={(e) => handleDirectDownload(quote, e)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs transition-all cursor-pointer shadow-2xs disabled:opacity-50 hover:scale-105 active:scale-95"
-                          title="Doğrudan PDF İndir"
+                          className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-2xs disabled:opacity-50 hover:scale-105 active:scale-95 ${
+                            quote.pdfUrl 
+                              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-850 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700' 
+                              : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700'
+                          }`}
+                          title={quote.pdfUrl ? "PDF İndir (Bulut Depolama / Supabase Storage Arşivli)" : "Doğrudan PDF İndir"}
                         >
                           {downloadingId === quote.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+                          ) : quote.pdfUrl ? (
+                            <Cloud className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                           ) : (
-                            <Download className="h-3.5 w-3.5 text-slate-600" />
+                            <Download className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
                           )}
                           <span className="hidden sm:inline">PDF</span>
                         </button>
@@ -999,10 +1015,10 @@ export default function SavedQuotesList({ onEditQuote }) {
                         <button
                           type="button"
                           onClick={(e) => handleWhatsApp(quote, e)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold text-xs transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                           title="WhatsApp ile Gönder"
                         >
-                          <Send className="h-3.5 w-3.5 text-emerald-700" />
+                          <Send className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
                           <span className="hidden sm:inline">WhatsApp</span>
                         </button>
 
@@ -1024,7 +1040,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                                 deleteQuote(quote.id);
                               }
                             }}
-                            className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                            className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                             title="Teklifi Sil"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1042,11 +1058,11 @@ export default function SavedQuotesList({ onEditQuote }) {
 
         {/* 📑 Sayfalama (Pagination) */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 text-xs">
-            <div className="text-slate-500 font-medium">
-              Toplam <strong className="text-slate-800">{filteredQuotes.length}</strong> tekliften{' '}
-              <strong className="text-slate-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> -{' '}
-              <strong className="text-slate-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredQuotes.length)}</strong> arası gösteriliyor.
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 text-xs">
+            <div className="text-slate-500 dark:text-slate-400 font-medium">
+              Toplam <strong className="text-slate-800 dark:text-slate-200">{filteredQuotes.length}</strong> tekliften{' '}
+              <strong className="text-slate-800 dark:text-slate-200">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> -{' '}
+              <strong className="text-slate-800 dark:text-slate-200">{Math.min(currentPage * ITEMS_PER_PAGE, filteredQuotes.length)}</strong> arası gösteriliyor.
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -1054,7 +1070,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                 type="button"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 transition-all cursor-pointer shadow-3xs disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-900 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer shadow-3xs disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Önceki Sayfa"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -1068,7 +1084,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                   className={`h-8 w-8 rounded-xl font-bold transition-all cursor-pointer ${
                     currentPage === pageNum
                       ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-3xs'
+                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-3xs'
                   }`}
                 >
                   {pageNum}
@@ -1079,7 +1095,7 @@ export default function SavedQuotesList({ onEditQuote }) {
                 type="button"
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 transition-all cursor-pointer shadow-3xs disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-900 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all cursor-pointer shadow-3xs disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Sonraki Sayfa"
               >
                 <ChevronRight className="h-4 w-4" />

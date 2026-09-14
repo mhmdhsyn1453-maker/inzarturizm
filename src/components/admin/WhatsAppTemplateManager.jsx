@@ -253,29 +253,29 @@ export default function WhatsAppTemplateManager() {
               onClick={() => setActiveTab(tab.id)}
               className={`group p-4.5 rounded-3xl text-left cursor-pointer select-none relative overflow-hidden transition-all duration-300 ease-out transform ${
                 isActive
-                  ? `bg-white border-2 ${tab.borderActive} ring-4 ${tab.ringActive} shadow-xl scale-[1.03] -translate-y-1`
-                  : 'bg-white/90 border border-slate-200/90 hover:bg-white hover:border-emerald-400 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.015]'
+                  ? `bg-white dark:bg-slate-800 border-2 ${tab.borderActive} ring-4 ${tab.ringActive} shadow-xl scale-[1.03] -translate-y-1`
+                  : 'bg-white/90 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 hover:border-emerald-400 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.015]'
               }`}
             >
               {/* Arka Plan Zarif Glow Efekti */}
               <div className={`absolute -right-8 -top-8 w-24 h-24 rounded-full transition-all duration-500 pointer-events-none ${
                 isActive 
                   ? 'bg-gradient-to-br ' + tab.accentColor + ' opacity-15 blur-xl scale-125' 
-                  : 'bg-slate-200 opacity-0 group-hover:opacity-40 blur-lg'
+                  : 'bg-slate-200 dark:bg-slate-700 opacity-0 group-hover:opacity-40 blur-lg'
               }`} />
 
               <div className="flex items-center justify-between w-full relative z-10">
                 <div className={`p-3 rounded-2xl transition-all duration-300 transform ${
                   isActive 
                     ? `bg-gradient-to-br ${tab.accentColor} text-white shadow-md scale-105 rotate-1` 
-                    : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200 group-hover:scale-110 group-hover:rotate-3'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 group-hover:scale-110 group-hover:rotate-3'
                 }`}>
                   <Icon className="h-4 w-4 stroke-[2.5]" />
                 </div>
                 <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all duration-300 ${
                   isActive
-                    ? 'bg-emerald-100/90 text-emerald-900 border-emerald-300 shadow-3xs font-extrabold'
-                    : 'bg-slate-100 text-slate-500 border-slate-200/80 group-hover:border-slate-300'
+                    ? 'bg-emerald-100/90 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-3xs font-extrabold'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200/80 dark:border-slate-700 group-hover:border-slate-300'
                 }`}>
                   {tab.badge}
                 </span>
@@ -283,12 +283,12 @@ export default function WhatsAppTemplateManager() {
 
               <div className="mt-3.5 space-y-1 relative z-10">
                 <h4 className={`text-xs font-black transition-colors duration-200 flex items-center justify-between ${
-                  isActive ? 'text-slate-950 font-display' : 'text-slate-700 group-hover:text-slate-900'
+                  isActive ? 'text-slate-950 dark:text-white font-display' : 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
                 }`}>
                   <span>{tab.title}</span>
-                  {isActive && <Check className="h-3.5 w-3.5 text-emerald-600 stroke-[3]" />}
+                  {isActive && <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />}
                 </h4>
-                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-medium">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium">
                   {tab.desc}
                 </p>
               </div>
@@ -297,7 +297,7 @@ export default function WhatsAppTemplateManager() {
               {isActive ? (
                 <div className={`h-1.5 bg-gradient-to-r ${tab.accentColor} rounded-full w-full mt-3.5 shadow-xs`} />
               ) : (
-                <div className="h-1 bg-transparent group-hover:bg-slate-200 rounded-full w-full mt-3.5 transition-colors duration-200" />
+                <div className="h-1 bg-transparent group-hover:bg-slate-200 dark:group-hover:bg-slate-700 rounded-full w-full mt-3.5 transition-colors duration-200" />
               )}
             </button>
           );
@@ -310,13 +310,13 @@ export default function WhatsAppTemplateManager() {
         <div className="lg:col-span-7 space-y-4">
           
           {/* Dinamik Değişken Etiketleri */}
-          <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200/90 shadow-sm space-y-3">
+          <div className="pearl-card rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 font-display">
-                <Sparkles className="h-4 w-4 text-emerald-600" />
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white font-display">
+                <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Bu Şablona Özel Dinamik Etiketler (Tıklayarak Ekleyin)</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/60 dark:border-slate-700">
                 Otomatik Doldurulur
               </span>
             </div>
@@ -327,27 +327,27 @@ export default function WhatsAppTemplateManager() {
                   key={idx}
                   type="button"
                   onClick={() => handleInsertTag(v.tag)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-xs font-semibold transition-all cursor-pointer shadow-3xs flex items-center gap-1.5 hover:scale-105 active:scale-95"
+                  className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 text-slate-700 dark:text-slate-300 hover:text-emerald-900 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 text-xs font-semibold transition-all cursor-pointer shadow-3xs flex items-center gap-1.5 hover:scale-105 active:scale-95"
                 >
-                  <span className="font-mono font-bold text-emerald-700">{v.tag}</span>
-                  <span className="text-[10px] text-slate-400">({v.label})</span>
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{v.tag}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">({v.label})</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Şablon Editör Kutusu */}
-          <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200/90 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div className="pearl-card rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
               <div>
-                <label className="text-xs font-black text-slate-800 block">
+                <label className="text-xs font-black text-slate-800 dark:text-white block">
                   {activeTabObj.title} Metni
                 </label>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {activeTabObj.desc}
                 </p>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+              <span className="text-[11px] text-slate-400 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                 {currentTemplate.length} karakter
               </span>
             </div>
@@ -357,24 +357,24 @@ export default function WhatsAppTemplateManager() {
               value={currentTemplate}
               onChange={(e) => handleTemplateChange(e.target.value)}
               placeholder="WhatsApp mesaj şablonunu buraya yazınız..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-mono font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none shadow-3xs leading-relaxed"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-xs font-mono font-medium text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-600 focus:outline-none shadow-3xs leading-relaxed"
             />
 
-            <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
-              <Info className="h-4 w-4 text-emerald-600 shrink-0" />
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700">
+              <Info className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>Metinde <strong>*yıldız*</strong> içine aldığınız kelimeler WhatsApp mesajında kalın (bold) olarak görünür.</span>
             </div>
 
             {/* 🎯 Eylem Butonları (Doğal ve Şık Tasarım) */}
-            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
               {/* Sol: Varsayılana Sıfırla */}
               <button
                 type="button"
                 onClick={handleResetToFactory}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-300/80 font-bold text-xs transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700 font-bold text-xs transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98"
                 title="Fabrika varsayılanına sıfırla"
               >
-                <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
+                <RotateCcw className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                 <span>Varsayılana Sıfırla</span>
               </button>
 
@@ -383,10 +383,10 @@ export default function WhatsAppTemplateManager() {
                 <button
                   type="button"
                   onClick={handleSaveAsDefault}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100/80 text-amber-900 border border-amber-300 font-bold text-xs transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100/80 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold text-xs transition-all cursor-pointer shadow-3xs hover:scale-102 active:scale-98"
                   title="Bu metni yeni kurumsal varsayılan yap"
                 >
-                  <Star className="h-3.5 w-3.5 text-amber-600 fill-amber-500" />
+                  <Star className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 fill-amber-500" />
                   <span>{isDefaultSaved ? '✓ Varsayılan Oldu' : 'Varsayılan Olarak Kaydet'}</span>
                 </button>
 
@@ -406,54 +406,54 @@ export default function WhatsAppTemplateManager() {
 
         {/* Sağ Kolon: Canlı Müşteri WhatsApp Önizlemesi */}
         <div className="lg:col-span-5 space-y-3 sticky top-4">
-          <div className="pearl-card rounded-3xl p-5 bg-white border border-slate-200/90 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 font-display">
-                <Smartphone className="h-4 w-4 text-emerald-600" />
+          <div className="pearl-card rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white font-display">
+                <Smartphone className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Canlı WhatsApp Görünümü</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleCopyPreview}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border border-slate-200 dark:border-slate-700"
               >
-                {copied ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                {copied ? <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3 w-3" />}
                 <span>{copied ? 'Kopyalandı' : 'Kopyala'}</span>
               </button>
             </div>
 
             {/* WhatsApp Chat UI */}
-            <div className="rounded-2xl border border-slate-200 bg-[#efeae2] p-4 space-y-3 shadow-inner relative">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-[#efeae2] dark:bg-[#0b141a] p-4 space-y-3 shadow-inner relative">
               
               {/* WhatsApp Başlık Çubuğu */}
-              <div className="flex items-center justify-between bg-emerald-900 text-white p-2.5 rounded-xl shadow-xs text-xs font-bold">
+              <div className="flex items-center justify-between bg-emerald-900 dark:bg-[#1f2c34] text-white p-2.5 rounded-xl shadow-xs text-xs font-bold border border-emerald-800/60 dark:border-slate-700/60">
                 <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-emerald-700 flex items-center justify-center text-[10px] font-black">
+                  <div className="h-6 w-6 rounded-full bg-emerald-700 dark:bg-emerald-600 flex items-center justify-center text-[10px] font-black">
                     İZ
                   </div>
                   <div>
-                    <div className="text-[11px] font-black leading-tight">İnzar Turizm Genel Merkez</div>
-                    <div className="text-[9px] text-emerald-300 font-normal">Çevrimiçi</div>
+                    <div className="text-[11px] font-black leading-tight text-white">İnzar Turizm Genel Merkez</div>
+                    <div className="text-[9px] text-emerald-300 dark:text-emerald-400 font-normal">Çevrimiçi</div>
                   </div>
                 </div>
-                <span className="text-[10px] bg-emerald-800/80 px-2 py-0.5 rounded-full border border-emerald-700/60">
+                <span className="text-[10px] bg-emerald-800/80 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-emerald-700/60 dark:border-slate-700">
                   {activeTabObj.badge}
                 </span>
               </div>
 
               {/* WhatsApp Balonu */}
-              <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-slate-200/70 max-w-[98%] space-y-2 text-slate-900 text-xs leading-relaxed whitespace-pre-wrap font-sans">
+              <div className="bg-white dark:bg-[#1f2c34] rounded-2xl rounded-tl-none p-4 shadow-sm border border-slate-200/70 dark:border-slate-700/60 max-w-[98%] space-y-2 text-slate-900 dark:text-slate-100 text-xs leading-relaxed whitespace-pre-wrap font-sans">
                 {previewMessage}
-                <div className="text-[9px] text-slate-400 text-right pt-1 font-mono">
+                <div className="text-[9px] text-slate-400 dark:text-slate-400 text-right pt-1 font-mono">
                   14:30 ✓✓
                 </div>
               </div>
 
               {/* Ek Dosya Bildirimi (Sadece Teklif ve Onay için) */}
               {(activeTab === 'quote' || activeTab === 'hq_approved') && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 font-semibold">
-                  <FileText className="h-4 w-4 text-emerald-700 shrink-0" />
+                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/60 rounded-xl border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-300 font-semibold">
+                  <FileText className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
                   <span>Resmi Teklif Mektubu PDF belgesi otomatik olarak eşlik eder</span>
                 </div>
               )}

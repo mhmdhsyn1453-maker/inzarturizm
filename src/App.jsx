@@ -30,7 +30,7 @@ export default function App() {
       {!currentUser ? (
         <LoginScreen />
       ) : (
-        <div className="flex min-h-screen bg-slate-100/70 text-slate-800 antialiased">
+        <div className="flex min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased transition-colors duration-200">
           {/* Auto-Updater Modal for Desktop App */}
           <AppUpdateModal />
 

@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas';
 import inzarLogo from '../assets/inzarturizmlogo.png';
 import { mekkeIcon, medineIcon } from '../assets/icons';
 import { syncService } from './syncService';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -1355,10 +1356,71 @@ export async function generateDirectPdfBlob(quote) {
   }
 }
 
+/**
+ * ☁️ Supabase Storage 'quotations' bucket'ına PDF dosyasını yükler ve quotes tablosuna pdf_url kaydeder.
+ */
+export async function uploadQuotationPdfToStorage(quote, blob) {
+  if (!quote || !blob || !isSupabaseConfigured || !supabase) return null;
+  try {
+    const quoteId = quote.id || quote.quoteId;
+    if (!quoteId) return null;
+
+    const filePath = `${quoteId}.pdf`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('quotations')
+      .upload(filePath, blob, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.warn('Supabase storage upload failed:', uploadError.message || uploadError);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('quotations')
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData?.publicUrl || null;
+    if (publicUrl) {
+      // 1. Supabase quotes tablosunu güncelle
+      await supabase
+        .from('quotes')
+        .update({ pdf_url: publicUrl })
+        .eq('id', quoteId);
+
+      // 2. Yerel teklif nesnesini ve listesini güncelle
+      quote.pdfUrl = publicUrl;
+      quote.pdf_url = publicUrl;
+
+      const localQuotes = syncService.getSavedQuotes();
+      const qIndex = localQuotes.findIndex(q => q.id === quoteId);
+      if (qIndex >= 0) {
+        localQuotes[qIndex].pdfUrl = publicUrl;
+        localQuotes[qIndex].pdf_url = publicUrl;
+        localStorage.setItem('inzar_saved_quotes', JSON.stringify(localQuotes));
+      }
+    }
+    return publicUrl;
+  } catch (err) {
+    console.warn('uploadQuotationPdfToStorage error:', err);
+    return null;
+  }
+}
+
 export async function downloadDirectQuotationPdf(quote, preferredMode = null) {
   try {
     const { pdf, fileName, blob } = await generateDirectPdfBlob(quote);
     
+    // ☁️ Arka planda Supabase Storage'a asenkron yükle (Kullanıcı indirmesini geciktirmez)
+    if (blob && quote?.id) {
+      uploadQuotationPdfToStorage(quote, blob).catch(err => {
+        console.warn('Background Supabase PDF upload error:', err);
+      });
+    }
+
     // Modu belirle ('picker' | 'direct')
     const mode = preferredMode || localStorage.getItem('INZAR_PDF_SAVE_LOCATION_PREF') || 'direct';
 

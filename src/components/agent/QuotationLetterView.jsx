@@ -25,11 +25,11 @@ export default function QuotationLetterView({
 
   if (!quotation) {
     return (
-      <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-        <p className="text-slate-600 font-bold mb-4">Görüntülenecek teklif verisi bulunamadı.</p>
+      <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
+        <p className="text-slate-600 dark:text-slate-300 font-bold mb-4">Görüntülenecek teklif verisi bulunamadı.</p>
         <button
           onClick={onBackToForm}
-          className="px-4 py-2 bg-emerald-700 text-white rounded-xl font-bold cursor-pointer hover:bg-emerald-600 transition-all"
+          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-bold cursor-pointer transition-all shadow-sm"
         >
           Forma Geri Dön
         </button>

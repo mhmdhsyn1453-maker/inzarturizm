@@ -105,12 +105,12 @@ export default function QuotationPdfModal({ quotation, onClose }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-md overflow-y-auto no-print animate-fade-in">
-      <div className="relative w-full max-w-4xl bg-slate-100 rounded-3xl border border-slate-300 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col font-sans">
+      <div className="relative w-full max-w-4xl bg-slate-100 dark:bg-slate-900 rounded-3xl border border-slate-300 dark:border-slate-800 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col font-sans">
         
         {/* Modal Top Action Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
-          <div className="flex items-center gap-2 text-slate-900 font-bold text-base sm:text-lg">
-            <FileText className="h-5 w-5 text-emerald-700" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base sm:text-lg">
+            <FileText className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
             <span>Teklif Mektubu Önizleme</span>
           </div>
 
@@ -118,17 +118,17 @@ export default function QuotationPdfModal({ quotation, onClose }) {
             <button
               type="button"
               onClick={() => shareQuoteOnWhatsApp(quotation)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 transition-all cursor-pointer spring-pill"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-300 dark:border-emerald-700 transition-all cursor-pointer spring-pill"
               title="WhatsApp ile Paylaş"
             >
-              <Send className="h-4 w-4 text-emerald-600" />
+              <Send className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline">WhatsApp</span>
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer spring-pill"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 transition-all cursor-pointer spring-pill"
             >
               <Printer className="h-4 w-4" />
               <span className="hidden sm:inline">Yazdır / PDF</span>
@@ -160,7 +160,7 @@ export default function QuotationPdfModal({ quotation, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer ml-1"
+              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer ml-1"
             >
               <X className="h-5 w-5" />
             </button>
@@ -168,14 +168,14 @@ export default function QuotationPdfModal({ quotation, onClose }) {
         </div>
 
         {errorMsg && (
-          <div className="bg-rose-50 border-b border-rose-200 px-6 py-2.5 text-xs text-rose-700 flex items-center gap-2">
+          <div className="bg-rose-50 dark:bg-rose-950/60 border-b border-rose-200 dark:border-rose-800 px-6 py-2.5 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* PDF Document Paper (Pure Inline Standard Styles for 100% Identical Single Page Output) */}
-        <div className="overflow-y-auto p-4 sm:p-8 bg-slate-300 flex justify-center">
+        <div className="overflow-y-auto p-4 sm:p-8 bg-slate-300 dark:bg-slate-950 flex justify-center">
           <div
             id="inzar-pdf-document"
             style={{

@@ -13,12 +13,16 @@ import {
   Trash2,
   ExternalLink,
   Radio,
-  Volume2
+  Volume2,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 import { notificationService } from '../../services/notificationService';
 import { soundService } from '../../services/soundService';
 
 export default function Topbar({ setActiveTab }) {
+  const { theme, toggleTheme, isDark } = useTheme();
   const { 
     currencies, 
     currencyStatus, 
@@ -89,15 +93,29 @@ export default function Topbar({ setActiveTab }) {
     <header className="relative z-20 bg-transparent border-0 shadow-none px-4 sm:px-6 py-2.5 font-sans">
       <div className="relative flex items-center justify-end gap-2 w-full min-h-9">
         
+        {/* 🌓 Dark / Light Mode Toggle Button */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="relative flex items-center justify-center h-9 w-9 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-500 text-slate-700 dark:text-slate-200 hover:text-emerald-800 dark:hover:text-emerald-400 transition-all duration-200 cursor-pointer shadow-xs select-none backdrop-blur-md group hover:scale-105 active:scale-95"
+          title={isDark ? "Aydınlık Mod'a Geç" : "Karanlık Mod'a Geç"}
+        >
+          {isDark ? (
+            <Sun className="h-4 w-4 text-amber-400 transition-transform duration-300 group-hover:rotate-45" />
+          ) : (
+            <Moon className="h-4 w-4 text-slate-700 transition-transform duration-300 group-hover:-rotate-12" />
+          )}
+        </button>
+
         {/* 🔔 Live Notification Bell Center Button */}
         <div className="relative" ref={notifDropdownRef}>
           <button
             type="button"
             onClick={handleToggleNotifs}
-            className={`relative flex items-center justify-center h-9 w-9 rounded-full bg-white/95 border transition-all duration-200 cursor-pointer shadow-xs select-none backdrop-blur-md ${
+            className={`relative flex items-center justify-center h-9 w-9 rounded-full bg-white/95 dark:bg-slate-900/95 border transition-all duration-200 cursor-pointer shadow-xs select-none backdrop-blur-md ${
               isNotifsOpen || unreadNotifCount > 0 
-                ? 'border-emerald-500 text-emerald-800 bg-emerald-50/90 ring-2 ring-emerald-400/30' 
-                : 'border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-900'
+                ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/70 ring-2 ring-emerald-400/30' 
+                : 'border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-600 text-slate-700 dark:text-slate-200 hover:text-emerald-900 dark:hover:text-emerald-300'
             }`}
             title="Canlı Bildirimler & Akış"
           >
@@ -217,7 +235,7 @@ export default function Topbar({ setActiveTab }) {
           <button
             type="button"
             onClick={() => setIsRatesOpen(true)}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/95 hover:bg-emerald-50 text-emerald-950 border border-emerald-300 transition-all duration-200 cursor-pointer spring-pill shadow-xs select-none backdrop-blur-md h-9"
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/95 dark:bg-slate-900/95 hover:bg-emerald-50 dark:hover:bg-slate-800 text-emerald-950 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700/60 transition-all duration-200 cursor-pointer spring-pill shadow-xs select-none backdrop-blur-md h-9"
             title="Piyasa Kurlarını Görüntüle"
           >
             <span className="relative flex h-2 w-2">
@@ -226,13 +244,13 @@ export default function Topbar({ setActiveTab }) {
             </span>
 
             <span className="text-xs font-bold font-display">Kurlar</span>
-            <ChevronLeft className="h-3.5 w-3.5 text-emerald-700" />
+            <ChevronLeft className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
           </button>
         )}
 
         {/* 💱 Opened State: Full Floating Rates Capsule */}
         {isRatesOpen && (
-          <div className="flex-1 flex items-center justify-between gap-3 animate-fade-scale bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-full px-4 py-1.5 shadow-md overflow-x-auto min-h-9">
+          <div className="flex-1 flex items-center justify-between gap-3 animate-fade-scale bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-full px-4 py-1.5 shadow-md overflow-x-auto min-h-9">
             
             {/* Left Title & Live Indicator */}
             <div className="flex items-center gap-2 shrink-0">
@@ -240,7 +258,7 @@ export default function Topbar({ setActiveTab }) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
               </span>
-              <span className="text-xs font-bold text-emerald-950 font-display hidden sm:inline">
+              <span className="text-xs font-bold text-emerald-950 dark:text-emerald-400 font-display hidden sm:inline">
                 Canlı Piyasa Kurları:
               </span>
             </div>
@@ -248,32 +266,32 @@ export default function Topbar({ setActiveTab }) {
             {/* Currency Values as Clean Inline Typography */}
             <div className="flex items-center gap-3 font-mono text-xs overflow-x-auto py-0.5">
               {/* USD */}
-              <span className="text-slate-600 whitespace-nowrap">
-                1 USD = <strong className="text-emerald-800 font-bold">{currencies.USD_TRY} ₺</strong>
+              <span className="text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                1 USD = <strong className="text-emerald-800 dark:text-emerald-400 font-bold">{currencies.USD_TRY} ₺</strong>
               </span>
 
-              <span className="text-slate-300 select-none">•</span>
+              <span className="text-slate-300 dark:text-slate-700 select-none">•</span>
 
               {/* EUR */}
-              <span className="text-slate-600 whitespace-nowrap">
-                1 EUR = <strong className="text-emerald-800 font-bold">{currencies.EUR_TRY} ₺</strong>
+              <span className="text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                1 EUR = <strong className="text-emerald-800 dark:text-emerald-400 font-bold">{currencies.EUR_TRY} ₺</strong>
               </span>
 
-              <span className="text-slate-300 select-none">•</span>
+              <span className="text-slate-300 dark:text-slate-700 select-none">•</span>
 
               {/* SAR / USD */}
-              <span className="text-slate-600 whitespace-nowrap">
-                1 USD = <strong className="text-amber-900 font-bold">{currencies.SAR_USD} SAR</strong>
+              <span className="text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                1 USD = <strong className="text-amber-900 dark:text-amber-400 font-bold">{currencies.SAR_USD} SAR</strong>
               </span>
 
-              <span className="text-slate-300 select-none">•</span>
+              <span className="text-slate-300 dark:text-slate-700 select-none">•</span>
 
               {/* Countdown Timer */}
               <div 
                 title={`Sonraki otomatik güncellemeye kalan süre: ${formattedCountdown}`}
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 whitespace-nowrap select-none"
+                className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-400 whitespace-nowrap select-none"
               >
-                <Timer className="h-3.5 w-3.5 text-emerald-600" />
+                <Timer className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>{formattedCountdown}</span>
               </div>
 
@@ -294,8 +312,8 @@ export default function Topbar({ setActiveTab }) {
             <button
               type="button"
               onClick={() => setIsRatesOpen(false)}
-              className="flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors cursor-pointer shrink-0"
-              title="Kurları Kapat"
+              className="flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shrink-0"
+              title="Kapat"
             >
               <X className="h-3.5 w-3.5" />
             </button>

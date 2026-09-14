@@ -35,11 +35,18 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = syncService.subscribe((event) => {
       if (event.type === 'USERS_UPDATED' || event.type === 'STORAGE_CHANGE') {
-        setUsers(syncService.getUsers());
+        const freshUsers = syncService.getUsers();
+        setUsers(freshUsers);
+        if (currentUser?.id || currentUser?.username) {
+          const freshMe = freshUsers.find(u => (currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username));
+          if (freshMe) {
+            setCurrentUser(prev => ({ ...prev, ...freshMe }));
+          }
+        }
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.id, currentUser?.username]);
 
   useEffect(() => {
     if (currentUser) {
@@ -87,6 +94,7 @@ export function AuthProvider({ children }) {
               twoFactorEnabled: Boolean(data.two_factor_enabled),
               twoFactorSecret: data.two_factor_secret || null,
               twoFactorBackupCodes: data.two_factor_backup_codes || [],
+              readAnnouncements: Array.isArray(data.read_announcements) ? data.read_announcements : [],
               lastLogin: new Date().toISOString()
             };
 
@@ -293,8 +301,8 @@ export function AuthProvider({ children }) {
     if (isSupabaseConfigured && supabase) {
       const updatedUser = updated.find(u => u.id === staffId);
       if (updatedUser) {
-        supabase.from('profiles').upsert({
-          id: updatedUser.id,
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatedUser.id);
+        const profilePayload = {
           username: updatedUser.username,
           password: updatedUser.password,
           name: updatedUser.name,
@@ -302,13 +310,21 @@ export function AuthProvider({ children }) {
           city: updatedUser.city,
           branch: updatedUser.branch,
           phone: updatedUser.phone,
+          email: updatedUser.email || `${updatedUser.username}@inzarturizm.com`,
           avatar_image: updatedUser.avatarImage,
           is_active: updatedUser.isActive !== false,
           two_factor_enabled: Boolean(updatedUser.twoFactorEnabled),
           two_factor_secret: updatedUser.twoFactorSecret || null,
           two_factor_backup_codes: updatedUser.twoFactorBackupCodes || [],
           updated_at: new Date().toISOString()
-        }).then();
+        };
+        if (isUuid) {
+          profilePayload.id = updatedUser.id;
+        }
+
+        supabase.from('profiles').upsert(profilePayload, { onConflict: 'username' }).then(({ error }) => {
+          if (error) console.error('[Supabase updateStaff profile upsert error]:', error);
+        });
       }
     }
 
