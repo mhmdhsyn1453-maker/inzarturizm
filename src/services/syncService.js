@@ -754,24 +754,29 @@ class SyncService {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, name, role, city, branch, phone, email, avatar_image, is_active, two_factor_enabled, read_announcements, created_at, last_login');
+        .select('id, username, password, name, role, city, branch, phone, email, avatar_image, is_active, two_factor_enabled, read_announcements, created_at, last_login');
       if (!error && data && data.length > 0) {
-        const formatted = data.map(u => ({
-          id: u.id,
-          username: u.username || u.email?.split('@')[0],
-          name: u.name,
-          role: u.role,
-          city: u.city,
-          branch: u.branch,
-          phone: u.phone,
-          email: u.email,
-          avatarImage: u.avatar_image,
-          isActive: u.is_active,
-          twoFactorEnabled: Boolean(u.two_factor_enabled),
-          readAnnouncements: Array.isArray(u.read_announcements) ? u.read_announcements : [],
-          createdAt: u.created_at,
-          lastLogin: u.last_login
-        }));
+        const existingUsers = this.getUsers();
+        const formatted = data.map(u => {
+          const localMatch = existingUsers.find(lu => lu.id === u.id || (lu.username && lu.username.toLowerCase() === u.username?.toLowerCase()));
+          return {
+            id: u.id,
+            username: u.username || u.email?.split('@')[0],
+            password: u.password || localMatch?.password || '',
+            name: u.name,
+            role: u.role,
+            city: u.city,
+            branch: u.branch,
+            phone: u.phone,
+            email: u.email,
+            avatarImage: u.avatar_image,
+            isActive: u.is_active,
+            twoFactorEnabled: Boolean(u.two_factor_enabled),
+            readAnnouncements: Array.isArray(u.read_announcements) ? u.read_announcements : [],
+            createdAt: u.created_at,
+            lastLogin: u.last_login
+          };
+        });
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(formatted));
         this.notifyListeners({ type: 'USERS_UPDATED', payload: formatted });
       }
@@ -2177,6 +2182,9 @@ class SyncService {
             two_factor_enabled: Boolean(u.twoFactorEnabled),
             updated_at: new Date().toISOString()
           };
+          if (u.password) {
+            profilePayload.password = u.password;
+          }
           await supabase.from('profiles').upsert(profilePayload, { onConflict: 'username' });
         } catch (err) {
           console.error('Supabase profile save error:', err);

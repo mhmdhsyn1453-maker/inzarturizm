@@ -428,24 +428,12 @@ export function AuthProvider({ children }) {
   const updateStaff = async (staffId, updatedFields) => {
     let fieldsToApply = { ...updatedFields };
 
-    // 1. If password is being reset, invoke Edge Function reset-password
-    if (fieldsToApply.password && isSupabaseConfigured && supabase) {
-      try {
-        const passToSet = fieldsToApply.password.trim();
-        await supabase.functions.invoke('auth-service', {
-          body: {
-            action: 'reset-password',
-            adminUserId: currentUser?.id || currentUser?.username || 'merkez',
-            targetUserId: staffId,
-            newPassword: passToSet
-          }
-        });
-      } catch (e) {
-        console.warn('[Edge Function reset-password error]:', e);
-      }
+    // 1. Şifre değiştiriliyorsa PBKDF2 ile hash'le
+    if (fieldsToApply.password && !fieldsToApply.password.startsWith('pbkdf2:')) {
+      fieldsToApply.password = await hashPassword(fieldsToApply.password);
     }
 
-    // 2. If 2FA is being reset, invoke Edge Function reset-2fa
+    // 2. 2FA sıfırlanıyorsa Edge Function çağır
     if (fieldsToApply.twoFactorSecret === null && fieldsToApply.twoFactorEnabled === false && isSupabaseConfigured && supabase) {
       try {
         await supabase.functions.invoke('auth-service', {
@@ -458,10 +446,6 @@ export function AuthProvider({ children }) {
       } catch (e) {
         console.warn('[Edge Function reset-2fa error]:', e);
       }
-    }
-
-    if (fieldsToApply.password && !fieldsToApply.password.startsWith('pbkdf2:')) {
-      fieldsToApply.password = await hashPassword(fieldsToApply.password);
     }
 
     const target = users.find(u => u.id === staffId);
@@ -500,13 +484,29 @@ export function AuthProvider({ children }) {
           read_announcements: Array.isArray(updatedUser.readAnnouncements) ? updatedUser.readAnnouncements : [],
           updated_at: new Date().toISOString()
         };
+
+        // 🛡️ ZORUNLU: Şifre Supabase tablosuna mutlaka kaydedilmeli!
+        if (updatedUser.password) {
+          profilePayload.password = updatedUser.password;
+        }
+
         if (isUuid) {
           profilePayload.id = updatedUser.id;
         }
 
-        supabase.from('profiles').upsert(profilePayload, { onConflict: 'username' }).then(({ error }) => {
-          if (error) console.error('[Supabase updateStaff profile upsert error]:', error);
-        });
+        try {
+          const { error: upsertErr } = await supabase.from('profiles').upsert(profilePayload, { onConflict: 'username' });
+          if (upsertErr) {
+            console.warn('[Supabase updateStaff upsert fallback]:', upsertErr);
+            if (updatedUser.id) {
+              await supabase.from('profiles').update(profilePayload).eq('id', updatedUser.id);
+            } else if (updatedUser.username) {
+              await supabase.from('profiles').update(profilePayload).eq('username', updatedUser.username);
+            }
+          }
+        } catch (dbErr) {
+          console.error('[Supabase updateStaff exception]:', dbErr);
+        }
       }
     }
 
@@ -519,9 +519,9 @@ export function AuthProvider({ children }) {
     }
 
     syncService.addAuditLog({
-      action: 'USER_UPDATED',
+      action: fieldsToApply.password ? 'PASSWORD_RESET' : 'USER_UPDATED',
       user: currentUser?.name || 'Genel Merkez',
-      details: `${target?.name || staffId} kullanıcısının bilgileri/yetkileri güncellendi.`,
+      details: `${target?.name || staffId} kullanıcısının ${fieldsToApply.password ? 'şifresi' : 'bilgileri/yetkileri'} güncellendi.`,
       timestamp: new Date().toISOString()
     });
     return updated;

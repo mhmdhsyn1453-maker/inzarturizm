@@ -116,33 +116,47 @@ export default function StaffManager() {
     });
   };
 
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
   const handleConfirmResetPassword = async () => {
-    if (!resetModalState.staff || !resetModalState.newPassword.trim()) return;
+    if (!resetModalState.staff || !resetModalState.newPassword.trim() || isResettingPassword) return;
     const target = resetModalState.staff;
     const passToSet = resetModalState.newPassword.trim();
     
-    await updateStaff(target.id, { password: passToSet });
-    
+    setIsResettingPassword(true);
     try {
-      syncService.addAuditLog({
-        action: 'PASSWORD_RESET',
-        user: currentUser?.name || 'Genel Merkez',
-        details: `${currentUser?.name || 'Genel Merkez'}, ${target.name} (@${target.username}) personeli için yeni geçici şifre tanımladı.`
+      await updateStaff(target.id, { password: passToSet });
+      
+      try {
+        syncService.addAuditLog({
+          action: 'PASSWORD_RESET',
+          user: currentUser?.name || 'Genel Merkez',
+          details: `${currentUser?.name || 'Genel Merkez'}, ${target.name} (@${target.username}) personeli için yeni geçici şifre tanımladı.`
+        });
+      } catch {}
+
+      try {
+        await navigator.clipboard.writeText(passToSet);
+      } catch {}
+
+      soundService.playSuccess();
+      showAlert({
+        title: '✓ Şifre Başarıyla Güncellendi & Kaydedildi',
+        message: `${target.name} (@${target.username}) personeli için yeni şifre Supabase bulut veritabanına ve sisteme başarıyla kaydedildi.\n\nYeni Şifre (Panoya Kopyalandı):\n${passToSet}\n\nLütfen bu şifreyi personele iletiniz. Personel hemen bu şifreyle sisteme giriş yapabilir.`,
+        type: 'success'
       });
-    } catch {}
 
-    try {
-      await navigator.clipboard.writeText(passToSet);
-    } catch {}
-
-    soundService.playSuccess();
-    showAlert({
-      title: 'Yeni Şifre Başarıyla Tanımlandı',
-      message: `${target.name} kullanıcısının yeni şifresi başarıyla tanımlandı ve panoya kopyalandı:\n\n${passToSet}\n\nLütfen bu geçici şifreyi personele iletiniz. Personel giriş yaptıktan sonra kendi profilinden dilediği zaman şifresini değiştirebilir.`,
-      type: 'success'
-    });
-
-    setResetModalState({ isOpen: false, staff: null, newPassword: '' });
+      setResetModalState({ isOpen: false, staff: null, newPassword: '' });
+    } catch (err) {
+      soundService.playWarning();
+      showAlert({
+        title: 'Şifre Kaydedilemedi',
+        message: 'Şifre kaydedilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'),
+        type: 'error'
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   // Create Form State with persistence
@@ -292,7 +306,7 @@ export default function StaffManager() {
   };
 
   // Save Edit in Detail
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editForm.name.trim() || !editForm.username.trim()) return;
 
@@ -307,12 +321,37 @@ export default function StaffManager() {
       avatar: editForm.avatar
     };
 
-    if (editForm.password && editForm.password.trim()) {
+    const hasNewPassword = Boolean(editForm.password && editForm.password.trim());
+    if (hasNewPassword) {
       payload.password = editForm.password.trim();
     }
 
-    updateStaff(selectedStaffId, payload);
-    showAlert({ title: 'Başarılı', message: 'Kullanıcı bilgileri ve yetkileri güncellendi.', type: 'success' });
+    try {
+      await updateStaff(selectedStaffId, payload);
+      soundService.playSuccess();
+      
+      if (hasNewPassword) {
+        showAlert({ 
+          title: '✓ Bilgiler ve Yeni Şifre Kaydedildi', 
+          message: `${editForm.name} kullanıcısının profil bilgileri ve YENİ ŞİFRESİ Supabase bulut veritabanına başarıyla kaydedildi.`, 
+          type: 'success' 
+        });
+        setEditForm(prev => ({ ...prev, password: '' }));
+      } else {
+        showAlert({ 
+          title: '✓ Başarılı', 
+          message: `${editForm.name} kullanıcısının bilgileri ve yetkileri güncellendi.`, 
+          type: 'success' 
+        });
+      }
+    } catch (err) {
+      soundService.playWarning();
+      showAlert({
+        title: 'Güncelleme Hatası',
+        message: 'Kullanıcı bilgileri kaydedilirken bir hata oluştu: ' + (err.message || 'Bilinmeyen hata'),
+        type: 'error'
+      });
+    }
   };
 
   // Toggle Suspend / Active
