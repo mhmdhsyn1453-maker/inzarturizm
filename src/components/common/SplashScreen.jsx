@@ -94,7 +94,7 @@ export default function SplashScreen({ onFinish, minDuration = 1600 }) {
         >
           <span>By <strong className="font-bold text-slate-300">NEXUS</strong> Platforms</span>
           <span className="text-slate-600">•</span>
-          <span className="text-slate-500 font-mono text-[10px]">v{pkg?.version || '1.0.24'}</span>
+          <span className="text-slate-500 font-mono text-[10px]">v{pkg?.version || '1.0.25'}</span>
         </div>
       </div>
     </div>

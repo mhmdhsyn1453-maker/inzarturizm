@@ -3,7 +3,7 @@ import { DownloadCloud, RefreshCw, CheckCircle2, Sparkles, X, ArrowUpRight } fro
 import confetti from 'canvas-confetti';
 import { syncService } from '../../services/syncService';
 
-const CURRENT_APP_VERSION = '1.0.24';
+const CURRENT_APP_VERSION = '1.0.25';
 
 export default function AppUpdateModal() {
   const [updateInfo, setUpdateInfo] = useState(null);
