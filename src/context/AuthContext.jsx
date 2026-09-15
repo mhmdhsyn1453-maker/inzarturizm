@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEFAULT_USERS } from '../data/defaultTariffData';
 import { syncService } from '../services/syncService';
+import { notificationService } from '../services/notificationService';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { verifyTOTPToken } from '../utils/totp';
 
@@ -145,6 +146,7 @@ export function AuthProvider({ children }) {
   }, [currentUser?.id, currentUser?.username]);
 
   useEffect(() => {
+    notificationService.setCurrentUser(currentUser);
     if (currentUser) {
       const safeSession = { ...currentUser };
       delete safeSession.password;

@@ -5,6 +5,7 @@ class NotificationService {
   constructor() {
     this.hasRequestedWebPermission = false;
     this.listeners = new Set();
+    this.currentUser = null;
 
     // Kullanıcının sayfaya ilk tıklamasında ses bağlamını ve tarayıcı bildirim iznini etkinleştir
     if (typeof window !== 'undefined') {
@@ -95,7 +96,12 @@ class NotificationService {
     }
   }
 
+  setCurrentUser(user) {
+    this.currentUser = user || null;
+  }
+
   getCurrentUser() {
+    if (this.currentUser) return this.currentUser;
     try {
       const saved = localStorage.getItem('inzar_auth_user');
       if (saved) return JSON.parse(saved);
@@ -103,78 +109,160 @@ class NotificationService {
     return null;
   }
 
-  // 🎯 Rol & Hedef Kitle Doğrulayıcısı (Kullanıcının İstediği Kurumsal Kurallar)
+  // 🛡️ Teklifi oluşturan personeli güvenli ve kesin olarak doğrula
+  checkIfUserIsCreator(q, user) {
+    if (!q || !user) return false;
+
+    const userId = String(user.id || '').trim().toLowerCase();
+    const username = String(user.username || '').trim().toLowerCase();
+    const userName = String(user.name || '').trim().toLocaleLowerCase('tr-TR');
+
+    const creatorId = String(q.createdById || q.created_by_id || q.createdBy || q.created_by || '').trim().toLowerCase();
+    const creatorName = String(q.createdByName || q.created_by_name || q.agentName || q.agent_name || '').trim().toLocaleLowerCase('tr-TR');
+
+    if (userId && creatorId && userId === creatorId) return true;
+    if (username && creatorId && (username === creatorId || creatorId.includes(username))) return true;
+
+    // Genel fallback isim kontrolü ('personel', 'genel merkez', 'admin' gibi genel isimleri isim benzerliğinden koru)
+    const genericTerms = ['personel', 'genel merkez', 'admin', 'user', 'kullanıcı', 'misafir'];
+    const isGeneric = genericTerms.some(t => creatorName === t);
+
+    if (!isGeneric && userName && creatorName) {
+      if (userName === creatorName) return true;
+      if (creatorName.includes(userName) || userName.includes(creatorName)) return true;
+    }
+
+    return false;
+  }
+
+  // 🎯 Rol & Hedef Kitle Doğrulayıcısı (Genel Merkez, Yardımcısı ve Personel İzolasyonu)
   shouldDeliver(notifPayload) {
-    const { title, type, data, action, subType, force = false } = notifPayload;
+    if (!notifPayload || typeof notifPayload !== 'object') return false;
+    const { title = '', message = '', type = 'info', data = null, action = '', subType = '', force = false } = notifPayload;
+
+    // Test bildirimleri doğrudan geçsin
     if (force || (title && title.includes('Test'))) return true;
 
     const user = this.getCurrentUser();
-    if (!user) return true; // Oturum açılmamışsa engelleme yapma
+    if (!user) return false; // Oturum açık değilse bildirim verme
 
-    const userRole = (user.role || 'STAFF').toUpperCase();
-    const userId = user.id ? String(user.id) : '';
-    const userName = (user.name || '').trim().toLowerCase();
+    const userRole = String(user.role || 'STAFF').toUpperCase();
+    const isHqOrAdmin = userRole === 'ADMIN' || userRole === 'HQ_ASSISTANT';
 
-    // 📢 KURAL 2: Duyuru Bildirimi (Duyuruyu yayınlayan hariç HERKESE gider)
+    // ----------------------------------------------------
+    // 📢 1. DUYURULAR (type === 'announcement')
+    // Genel Merkez tüm şubelere ve personele duyuru geçer.
+    // Duyuruyu yazan kişi hariç HERKESE gider.
+    // ----------------------------------------------------
     if (type === 'announcement') {
       const author = (data?.author || notifPayload.author || '').trim().toLowerCase();
-      const authorId = data?.authorId || notifPayload.authorId;
-      if (authorId && userId && String(authorId) === userId) {
-        return false; // Yayınlayan kendisi, alarm çalma
-      }
-      if (author && userName && (author.includes(userName) || userName.includes(author))) {
-        return false; // Yayınlayan kendisi, alarm çalma
-      }
-      return true; // Yayınlayan hariç herkese gider
+      const authorId = String(data?.authorId || notifPayload.authorId || '');
+      const myId = String(user.id || '');
+      const myName = String(user.name || '').trim().toLowerCase();
+
+      if (authorId && myId && authorId === myId) return false;
+      if (author && myName && (author.includes(myName) || myName.includes(author))) return false;
+      return true;
     }
 
-    // 📋 KURAL 1: Yeni Teklif Bildirimi (A personeli oluşturduğunda sadece Genel Merkez ve Yardımcısına)
-    // "a personeli bir teklif oluştursa bu bildirim diğer personele gitmeyecek, genel merkez ve genel merkez yardımcısına düşecek"
-    const isNewQuote = subType === 'new_quote' || action === 'QUOTE_CREATED' || 
-                       (data && (data.status === 'pending' || !data.status) && (title?.includes('Yeni') || action === 'QUOTE_CREATED'));
-    if (type === 'quote' && isNewQuote) {
-      return userRole === 'ADMIN' || userRole === 'HQ_ASSISTANT';
-    }
-
-    // ⚖️ KURAL 3: Teklif Reddi, Teklif Onayı ve Revizyon
-    // "teklif reddinden de bildirim teklifi oluşturan personele düşer"
-    if (type === 'quote' || type === 'warning') {
-      const q = data;
-      if (q) {
-        const creatorId = q.createdById || q.created_by_id ? String(q.createdById || q.created_by_id) : '';
-        const creatorName = (q.createdByName || q.created_by_name || '').trim().toLowerCase();
-        const isCreator = (creatorId && userId && creatorId === userId) ||
-                          (creatorName && userName && (creatorName.includes(userName) || userName.includes(creatorName)));
-
-        // Teklif Reddedildiğinde: Sadece teklifi oluşturan personele (ve Genel Merkez/Yardımcısına)
-        if (q.status === 'hq_rejected' || title?.includes('Reddedildi')) {
-          return isCreator || userRole === 'ADMIN' || userRole === 'HQ_ASSISTANT';
-        }
-
-        // Teklif Onaylandığında: Teklifi oluşturan personele (ve Genel Merkez/Yardımcısına)
-        if (q.status === 'hq_approved' || q.status === 'approved' || title?.includes('Onaylandı')) {
-          return isCreator || userRole === 'ADMIN' || userRole === 'HQ_ASSISTANT';
-        }
-
-        // Müşteri Onayladığında: Genel Merkez & Yardımcısına (onay vermeleri için) ve personele
-        if (q.status === 'customer_approved' || title?.includes('Müşteri')) {
-          return isCreator || userRole === 'ADMIN' || userRole === 'HQ_ASSISTANT';
-        }
-
-        // Revize Edildiğinde: Genel Merkez & Yardımcısına ve oluşturan personele
-        if (q.status === 'revised' || q.status === 'approved_revised' || title?.includes('Revize')) {
-          return isCreator || userRole === 'ADMIN' || userRole === 'HQ_ASSISTANT';
-        }
-      }
-    }
-
-    // 🏨 KURAL 4: Veri Merkezinde Değişiklik (Otel & Fiyat Tarifesi)
-    // "veri merkezinde değişiklik olduğunda da bu bildirim personele ve genel merkez yardımcısına düşer"
+    // ----------------------------------------------------
+    // 🏨 2. OTEL & FİYAT TARİFESİ (type === 'tariff')
+    // Genel Merkez fiyat değiştirdiğinde şube personeli ve genel merkez yardımcısı haberdar olur.
+    // ----------------------------------------------------
     if (type === 'tariff') {
-      return userRole === 'STAFF' || userRole === 'HQ_ASSISTANT';
+      return true;
     }
 
-    return true;
+    // ----------------------------------------------------
+    // 📋 3. TEKLİF BİLDİRİMLERİ (type === 'quote' veya type === 'warning' ile teklif verisi)
+    // ----------------------------------------------------
+    if (type === 'quote' || (type === 'warning' && (title.includes('Teklif') || data?.packageName))) {
+      const q = data;
+      const isCreator = this.checkIfUserIsCreator(q, user);
+
+      // A) YENİ TEKLİF BİLDİRİMİ
+      // Kural: "A personeli teklif verince bunun bildirimi genel merkeze ve de yardımcısına gider, B personeline de bu bildirim gitmez."
+      // Teklifi açan A personeline de yeni teklif bildirimi gitmez (zaten kendisi oluşturdu).
+      const isNewQuote = subType === 'new_quote' || 
+                         action === 'QUOTE_CREATED' || 
+                         title.includes('Yeni Umre Teklifi') || 
+                         title.includes('Yeni Teklif') ||
+                         message.includes('teklifi oluşturuldu') ||
+                         (q && (q.status === 'pending' || !q.status) && !title.includes('Onay') && !title.includes('Red') && !title.includes('Revize'));
+
+      if (isNewQuote) {
+        // SADECE Genel Merkez ve Genel Merkez Yardımcısına gider! Personellere (B personeli dahil) ASLA GİTMEZ!
+        return isHqOrAdmin;
+      }
+
+      // B) MÜŞTERİ TEKLİFİ KABUL ETTİ (customer_approved)
+      // Genel Merkez ve Genel Merkez Yardımcısı onay vermek için görür.
+      // Teklifi hazırlayan personel de müşterisinin kabul ettiğini görür.
+      // Diğer personeller (B personeli) ASLA GÖRMEZ!
+      const isCustomerApproved = subType === 'customer_approved' || 
+                                 q?.status === 'customer_approved' || 
+                                 title.includes('Müşteri Teklifi Kabul Etti') || 
+                                 title.includes('Müşteri');
+
+      if (isCustomerApproved) {
+        return isHqOrAdmin || isCreator;
+      }
+
+      // C) GENEL MERKEZ ONAYLADI (hq_approved / approved)
+      // Teklifi hazırlayan personele gider ("Teklifiniz onaylandı").
+      // Genel Merkez ve Yardımcısı görür.
+      // Diğer personeller (B personeli) ASLA GÖRMEZ!
+      const isHqApproved = subType === 'quote_approved' || 
+                           q?.status === 'hq_approved' || 
+                           q?.status === 'approved' || 
+                           title.includes('Onaylandı');
+
+      if (isHqApproved) {
+        return isHqOrAdmin || isCreator;
+      }
+
+      // D) GENEL MERKEZ REDDETTİ (hq_rejected)
+      // Teklifi hazırlayan personele gider ("Teklifiniz reddedildi").
+      // Genel Merkez ve Yardımcısı görür.
+      // Diğer personeller (B personeli) ASLA GÖRMEZ!
+      const isHqRejected = subType === 'quote_rejected' || 
+                           q?.status === 'hq_rejected' || 
+                           title.includes('Reddedildi');
+
+      if (isHqRejected) {
+        return isHqOrAdmin || isCreator;
+      }
+
+      // E) TEKLİF REVİZE EDİLDİ (revised / approved_revised)
+      // Genel Merkez ve Yardımcısı teklifin değiştiğini görür.
+      // Teklifi hazırlayan personel görür.
+      // Diğer personeller (B personeli) ASLA GÖRMEZ!
+      const isRevised = subType === 'quote_revised' || 
+                        action === 'QUOTE_REVISED' || 
+                        q?.status === 'revised' || 
+                        q?.status === 'approved_revised' || 
+                        title.includes('Revize');
+
+      if (isRevised) {
+        return isHqOrAdmin || isCreator;
+      }
+
+      // F) DİĞER TÜM TEKLİF DURUM BİLDİRİMLERİ İÇİN KESİN KURAL:
+      // Genel Merkez ve Genel Merkez Yardımcısı görebilir.
+      // Personel SADECE VE SADECE kendisinin oluşturduğu teklifse görebilir!
+      // B personeline veya ilgisiz personele ASLA gitmez!
+      return isHqOrAdmin || isCreator;
+    }
+
+    // ----------------------------------------------------
+    // 👤 4. PERSONEL & YETKİ BİLDİRİMLERİ (type === 'staff')
+    // Sadece Genel Merkez ve Genel Merkez Yardımcısı alır.
+    // ----------------------------------------------------
+    if (type === 'staff') {
+      return isHqOrAdmin;
+    }
+
+    return isHqOrAdmin;
   }
 
   // 🔊 & 🔔 2. Tam Kapsamlı Kullanıcı Uyarısı (Windows Bildirimi + Ses + Arayüz Toast'ı)

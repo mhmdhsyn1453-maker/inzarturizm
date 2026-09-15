@@ -577,6 +577,7 @@ class SyncService {
                   title: '✓ Teklif Onaylandı',
                   message: `${q.customerName || 'Misafir'} teklifi Genel Merkez tarafından ONAYLANDI.`,
                   type: 'quote',
+                  subType: 'quote_approved',
                   sound: 'success',
                   data: q
                 });
@@ -585,6 +586,7 @@ class SyncService {
                   title: '✕ Teklif Reddedildi',
                   message: `${q.customerName || 'Misafir'} teklifi Genel Merkez tarafından reddedildi.`,
                   type: 'warning',
+                  subType: 'quote_rejected',
                   sound: 'urgent',
                   data: q
                 });
@@ -593,6 +595,7 @@ class SyncService {
                   title: '🤝 Müşteri Teklifi Kabul Etti',
                   message: `${q.customerName || 'Misafir'} teklifi kabul etti, Merkez onayı bekleniyor.`,
                   type: 'quote',
+                  subType: 'customer_approved',
                   sound: 'success',
                   data: q
                 });
@@ -955,6 +958,7 @@ class SyncService {
           title: '✓ Teklif Onaylandı',
           message: `${q.customer_name || 'Misafir'} teklifi Genel Merkez tarafından ONAYLANDI.`,
           type: 'quote',
+          subType: 'quote_approved',
           sound: 'success',
           data: q
         });
@@ -963,6 +967,7 @@ class SyncService {
           title: '✕ Teklif Reddedildi',
           message: `${q.customer_name || 'Misafir'} teklifi Genel Merkez tarafından reddedildi.`,
           type: 'warning',
+          subType: 'quote_rejected',
           sound: 'urgent',
           data: q
         });
@@ -971,6 +976,7 @@ class SyncService {
           title: '🤝 Müşteri Teklifi Kabul Etti',
           message: `${q.customer_name || 'Misafir'} teklifi kabul etti, Merkez onayı bekleniyor.`,
           type: 'quote',
+          subType: 'customer_approved',
           sound: 'success',
           data: q
         });
@@ -979,6 +985,7 @@ class SyncService {
           title: '✏️ Teklif Revize Edildi',
           message: `${q.customer_name || 'Misafir'} teklifinde değişiklik yapıldı (${q.final_price_usd} USD • ${q.created_by_name || 'Personel'}).`,
           type: 'quote',
+          subType: 'quote_revised',
           sound: 'default',
           data: q
         });
@@ -1469,11 +1476,15 @@ class SyncService {
 
     const quoteNotifTitle = existingIndex >= 0 ? '✏️ Teklif Revize Edildi' : '📋 Yeni Umre Teklifi';
     const quoteNotifMsg = `${quoteToSave.customerName || 'Misafir'} adına ${quoteToSave.packageName || ''} teklifi ${existingIndex >= 0 ? 'revize edildi' : 'oluşturuldu'} (${quoteToSave.finalPriceUSD} USD • ${quoteToSave.createdByName || 'Personel'})`;
+    const quoteSubType = existingIndex >= 0 ? 'quote_revised' : 'new_quote';
+    const quoteAction = existingIndex >= 0 ? 'QUOTE_REVISED' : 'QUOTE_CREATED';
 
     this.broadcast('QUOTES_UPDATED', updated, {
       title: quoteNotifTitle,
       message: quoteNotifMsg,
       type: 'quote',
+      subType: quoteSubType,
+      action: quoteAction,
       sound: 'default',
       data: quoteToSave
     });
@@ -1482,6 +1493,8 @@ class SyncService {
       title: quoteNotifTitle,
       message: quoteNotifMsg,
       type: 'quote',
+      subType: quoteSubType,
+      action: quoteAction,
       sound: 'default',
       refreshType: 'quotes',
       data: quoteToSave
@@ -1992,7 +2005,7 @@ class SyncService {
     });
 
     localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(updated));
-    const target = current.find(q => q.id === quoteId);
+    const target = updated.find(q => q.id === quoteId) || current.find(q => q.id === quoteId);
     this.addAuditLog({
       action: newStatus === 'customer_approved' ? 'QUOTE_CUSTOMER_APPROVED' : newStatus === 'hq_approved' ? 'QUOTE_HQ_APPROVED' : newStatus === 'hq_rejected' ? 'QUOTE_HQ_REJECTED' : 'QUOTE_STATUS_CHANGED',
       user: user?.name || 'Personel',
@@ -2008,11 +2021,15 @@ class SyncService {
     const statusNotifMsg = `${target?.customerName || 'Misafir'} teklifinin durumu "${getStatusLabel(newStatus)}" olarak güncellendi.`;
     const statusNotifType = isApprove || isCustApprove ? 'quote' : isReject ? 'warning' : 'info';
     const statusNotifSound = isApprove || isCustApprove ? 'success' : isReject ? 'urgent' : 'default';
+    const statusSubType = isCustApprove ? 'customer_approved' : isApprove ? 'quote_approved' : isReject ? 'quote_rejected' : 'quote_status';
+    const statusAction = isCustApprove ? 'QUOTE_CUSTOMER_APPROVED' : isApprove ? 'QUOTE_HQ_APPROVED' : isReject ? 'QUOTE_HQ_REJECTED' : 'QUOTE_STATUS_CHANGED';
 
     this.broadcast('QUOTES_UPDATED', updated, {
       title: statusNotifTitle,
       message: statusNotifMsg,
       type: statusNotifType,
+      subType: statusSubType,
+      action: statusAction,
       sound: statusNotifSound,
       data: target
     });
@@ -2021,6 +2038,8 @@ class SyncService {
       title: statusNotifTitle,
       message: statusNotifMsg,
       type: statusNotifType,
+      subType: statusSubType,
+      action: statusAction,
       sound: statusNotifSound,
       refreshType: 'quotes',
       data: target
