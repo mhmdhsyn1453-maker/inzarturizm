@@ -1,5 +1,6 @@
-// Inzar Turizm - Modern Responsive Sidebar v1.0.12
+// Inzar Turizm - Modern Responsive Sidebar
 import React, { useState } from 'react';
+import pkg from '../../../package.json';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useModal } from '../../context/ModalContext';
@@ -159,7 +160,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 </h1>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
                   <span>UTH&TP</span>
-                  <span className="text-[8.5px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/70 px-1 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">v1.0.18</span>
+                  <span className="text-[8.5px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/70 px-1 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
+                    v{pkg?.version || '1.0.24'}
+                  </span>
                 </p>
               </div>
             </div>

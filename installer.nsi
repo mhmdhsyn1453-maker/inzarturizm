@@ -5,7 +5,7 @@
 Unicode true
 
 !define PRODUCT_NAME "Inzar Turizm Umre Platformu"
-!define PRODUCT_VERSION "1.0.1"
+!define PRODUCT_VERSION "1.0.24"
 !define PRODUCT_PUBLISHER "Inzar Turizm"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\Inzar Turizm.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
@@ -16,7 +16,7 @@ Unicode true
 SetCompress off
 
 Name "${PRODUCT_NAME} v${PRODUCT_VERSION}"
-OutFile "d:\inzartarifehesap\dist-app\Inzar_Turizm_Kurulum_v1.0.1.exe"
+OutFile "d:\inzartarifehesap\dist-app\Inzar_Turizm_Kurulum_v1.0.24.exe"
 InstallDir "$LOCALAPPDATA\Programs\Inzar Turizm"
 InstallDirRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails nevershow
