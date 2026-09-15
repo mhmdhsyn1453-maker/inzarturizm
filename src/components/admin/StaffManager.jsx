@@ -34,10 +34,13 @@ import {
   Camera,
   Eye,
   EyeOff,
-  Copy
+  Copy,
+  X,
+  RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatPhoneNumber } from '../../utils/phoneUtils';
+import { soundService } from '../../services/soundService';
 import ImageCropModal from '../common/ImageCropModal';
 import ImageLightboxModal from '../common/ImageLightboxModal';
 
@@ -59,7 +62,6 @@ export default function StaffManager() {
   });
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [visiblePasswords, setVisiblePasswords] = useState({});
 
   // Modals state
   const [lightboxState, setLightboxState] = useState({
@@ -87,15 +89,47 @@ export default function StaffManager() {
     } catch {}
   }, [viewMode, selectedStaffId]);
 
-  const togglePasswordVisibility = (userId, e) => {
-    if (e) e.stopPropagation();
-    setVisiblePasswords(prev => ({ ...prev, [userId]: !prev[userId] }));
+  const [resetModalState, setResetModalState] = useState({
+    isOpen: false,
+    staff: null,
+    newPassword: ''
+  });
+
+  const generateSecurePassword = () => {
+    const randBytes = new Uint8Array(4);
+    window.crypto.getRandomValues(randBytes);
+    const randNum = ((randBytes[0] << 24) | (randBytes[1] << 16) | (randBytes[2] << 8) | randBytes[3]) >>> 0;
+    return `Inzar@${(randNum % 900000) + 100000}!`;
   };
 
-  const copyPasswordToClipboard = (password, e) => {
+  const handleOpenResetPassword = (user, e) => {
     if (e) e.stopPropagation();
-    navigator.clipboard.writeText(password || '');
-    showAlert({ title: 'Kopyalandı', message: 'Kullanıcı şifresi panoya kopyalandı.', type: 'success' });
+    setResetModalState({
+      isOpen: true,
+      staff: user,
+      newPassword: generateSecurePassword()
+    });
+  };
+
+  const handleConfirmResetPassword = async () => {
+    if (!resetModalState.staff || !resetModalState.newPassword.trim()) return;
+    const target = resetModalState.staff;
+    const passToSet = resetModalState.newPassword.trim();
+    
+    await updateStaff(target.id, { password: passToSet });
+    
+    try {
+      await navigator.clipboard.writeText(passToSet);
+    } catch {}
+
+    soundService.playSuccess();
+    showAlert({
+      title: 'Yeni Şifre Başarıyla Tanımlandı',
+      message: `${target.name} kullanıcısının yeni şifresi başarıyla tanımlandı ve panoya kopyalandı:\n\n${passToSet}\n\nLütfen bu geçici şifreyi personele iletiniz. Personel giriş yaptıktan sonra kendi profilinden dilediği zaman şifresini değiştirebilir.`,
+      type: 'success'
+    });
+
+    setResetModalState({ isOpen: false, staff: null, newPassword: '' });
   };
 
   // Create Form State with persistence
@@ -806,32 +840,33 @@ export default function StaffManager() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 space-y-2">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
-                      <span>Kullanıcının Mevcut Aktif Şifresi (Genel Merkez Görünümü)</span>
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Lock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Kullanıcı Şifre Güvenliği</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={(e) => togglePasswordVisibility(selectedStaff.id, e)}
-                      className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-3xs cursor-pointer"
-                    >
-                      {visiblePasswords[selectedStaff.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                      <span>{visiblePasswords[selectedStaff.id] ? 'Gizle' : 'Şifreyi Gör'}</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2">
-                    <span className="font-mono text-sm font-bold text-slate-900 dark:text-white tracking-wider">
-                      {visiblePasswords[selectedStaff.id] ? (selectedStaff.password || 'Inzar2026!') : '••••••••••••'}
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                      <ShieldCheck className="h-3 w-3" />
+                      PBKDF2 Korumalı
                     </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 shadow-3xs">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Şifreler tek yönlü PBKDF2 hash ile şifrelenmiştir.
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Yöneticiler dahil kimse eski şifreyi göremez. Gerektiğinde personele yeni bir geçici şifre atayabilirsiniz.
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      onClick={(e) => copyPasswordToClipboard(selectedStaff.password || 'Inzar2026!', e)}
-                      className="p-1.5 text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer"
-                      title="Şifreyi Kopyala"
+                      onClick={(e) => handleOpenResetPassword(selectedStaff, e)}
+                      className="shrink-0 flex items-center justify-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-xs cursor-pointer hover:scale-102"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Key className="h-3.5 w-3.5" />
+                      <span>Yeni Şifre Belirle</span>
                     </button>
                   </div>
                 </div>
@@ -1084,32 +1119,16 @@ export default function StaffManager() {
                             </div>
                           )}
 
-                          {/* Şifre Rozeti */}
-                          <div 
-                            className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl px-2.5 py-1 shadow-3xs" 
-                            onClick={(e) => e.stopPropagation()}
+                          {/* Şifre Sıfırlama Butonu */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenResetPassword(user, e)}
+                            className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 border border-slate-200/90 hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all shadow-3xs cursor-pointer active:scale-95"
+                            title="Personele Yeni Geçici Şifre Tanımla"
                           >
-                            <Lock className="h-3 w-3 text-slate-400 dark:text-slate-500" />
-                            <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wider">
-                              {visiblePasswords[user.id] ? (user.password || 'Inzar2026!') : '••••••••'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => togglePasswordVisibility(user.id, e)}
-                              className="p-1 text-slate-400 dark:text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer"
-                              title={visiblePasswords[user.id] ? "Şifreyi Gizle" : "Şifreyi Göster"}
-                            >
-                              {visiblePasswords[user.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => copyPasswordToClipboard(user.password || 'Inzar2026!', e)}
-                              className="p-1 text-slate-400 dark:text-slate-500 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors cursor-pointer"
-                              title="Şifreyi Kopyala"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
+                            <Key className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Şifre Sıfırla</span>
+                          </button>
 
                           {/* Durum Rozeti */}
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold shadow-3xs ${
@@ -1153,6 +1172,118 @@ export default function StaffManager() {
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 🔑 Şifre Sıfırlama ve Geçici Şifre Atama Modal'ı */}
+      {resetModalState.isOpen && resetModalState.staff && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setResetModalState({ isOpen: false, staff: null, newPassword: '' })}
+        >
+          <div 
+            className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shadow-3xs">
+                  <Key className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Şifre Sıfırla & Yeni Şifre Ata
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                    {resetModalState.staff.name} (@{resetModalState.staff.username})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetModalState({ isOpen: false, staff: null, newPassword: '' })}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Açıklama Banner */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-900 dark:text-emerald-200 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Kriptografik Güvenlik Standardı</span>
+              </div>
+              <p className="text-[11px] text-emerald-800 dark:text-emerald-300/90 leading-relaxed">
+                Şifreler sistemde tek yönlü PBKDF2 hash ile saklandığı için mevcut eski şifre geri okunamaz. Buradan personele yeni bir şifre tanımlayabilir ve kendisine iletebilirsiniz.
+              </p>
+            </div>
+
+            {/* Yeni Şifre Kutusu */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Atanacak Yeni Geçici Şifre
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={resetModalState.newPassword}
+                    onChange={(e) => setResetModalState(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl px-3.5 py-2.5 font-mono text-sm font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:border-emerald-600 focus:outline-none"
+                    placeholder="Yeni şifre..."
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setResetModalState(prev => ({ ...prev, newPassword: generateSecurePassword() }))}
+                  className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shadow-3xs"
+                  title="Yeni Rastgele Güvenli Şifre Üret"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!resetModalState.newPassword) return;
+                    try {
+                      await navigator.clipboard.writeText(resetModalState.newPassword);
+                      soundService.playSuccess();
+                      showAlert({ title: 'Kopyalandı', message: 'Şifre panoya kopyalandı.', type: 'info' });
+                    } catch {}
+                  }}
+                  className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shadow-3xs"
+                  title="Panoya Kopyala"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                Personel bu şifreyle sisteme girdikten sonra profil ekranından kendi kalıcı şifresini belirleyebilir.
+              </p>
+            </div>
+
+            {/* Aksiyon Butonları */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setResetModalState({ isOpen: false, staff: null, newPassword: '' })}
+                className="px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetPassword}
+                disabled={!resetModalState.newPassword.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 transition-all cursor-pointer shadow-xs hover:scale-102 active:scale-95"
+              >
+                <Key className="h-4 w-4" />
+                <span>Şifreyi Güncelle & Kopyala</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
