@@ -416,6 +416,11 @@ export function DataProvider({ children }) {
         setCustomers(updated);
         return updated;
       },
+      clearAllCustomers: async () => {
+        const updated = await syncService.clearAllCustomers(currentUser);
+        setCustomers(updated);
+        return updated;
+      },
       updatePackage,
       updateAllPackages,
       addPackage,

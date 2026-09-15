@@ -656,16 +656,20 @@ class SyncService {
           createdAt: c.created_at,
           updatedAt: c.updated_at
         }));
-        const localCustomers = this.getCustomers().filter(lc => !this.deletedCustomerIds?.has(lc.id));
+        // Supabase is the single source of truth.
+        // Only re-add purely local customers if they were created offline very recently (< 15 mins) and NOT in deletedCustomerIds
+        const localCustomers = this.getCustomers();
         const remoteIds = new Set(formatted.map(c => c.id));
-        // Only re-add locals that are genuinely active and NOT deleted
+        const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
+
         const unsyncedLocals = localCustomers.filter(lc => {
           if (remoteIds.has(lc.id)) return false;
           if (this.deletedCustomerIds?.has(lc.id)) return false;
           if (this.recentlyDeletedCustomerKeys.has(`id:${lc.id}`)) return false;
           const lcTc = (lc.tcNo || '').replace(/\D/g, '');
           if (lcTc && this.recentlyDeletedCustomerKeys.has(`tc:${lcTc}`)) return false;
-          return true;
+          const createdTime = new Date(lc.createdAt || 0).getTime();
+          return createdTime > fifteenMinutesAgo;
         });
 
         const mergedCustomers = [...formatted, ...unsyncedLocals]
@@ -1644,10 +1648,11 @@ class SyncService {
   async deleteCustomer(targetInfo, user = null, deleteQuotes = true) {
     const current = this.getCustomers();
     
-    // targetInfo can be a string customerId or an object { id, tcNo, phone, fullName }
+    // targetInfo can be a string customerId or an object { id, tcNo, phone, originalPhone, fullName }
     let targetId = typeof targetInfo === 'string' ? targetInfo : targetInfo?.id;
     let targetTc = typeof targetInfo === 'object' ? (targetInfo?.tcNo || '').replace(/\D/g, '') : '';
     let targetPhone = typeof targetInfo === 'object' ? (targetInfo?.phone || '').replace(/\D/g, '') : '';
+    let targetOriginalPhone = typeof targetInfo === 'object' ? (targetInfo?.originalPhone || targetInfo?.phone || '') : '';
     let targetName = typeof targetInfo === 'object' ? (targetInfo?.fullName || `${targetInfo?.firstName || ''} ${targetInfo?.lastName || ''}`).trim() : '';
 
     // If targetId is provided, enrich from current list if missing
@@ -1656,9 +1661,12 @@ class SyncService {
       if (found) {
         if (!targetTc) targetTc = (found.tcNo || '').replace(/\D/g, '');
         if (!targetPhone) targetPhone = (found.phone || '').replace(/\D/g, '');
+        if (!targetOriginalPhone) targetOriginalPhone = found.phone || '';
         if (!targetName) targetName = (found.fullName || `${found.firstName || ''} ${found.lastName || ''}`).trim();
       }
     }
+
+    const last10 = (targetPhone || '').slice(-10);
 
     // Match all duplicate/same customer records in local pool
     const updated = current.filter(c => {
@@ -1669,7 +1677,8 @@ class SyncService {
 
       if (targetTc && cTc && targetTc === cTc) return false;
       if (targetPhone && cPhone && (targetPhone.endsWith(cPhone) || cPhone.endsWith(targetPhone))) return false;
-      if (targetName && cName && targetName.toLocaleLowerCase('tr-TR') === cName) return false;
+      if (last10 && last10.length >= 7 && cPhone.includes(last10)) return false;
+      if (targetName && cName && (targetName.toLocaleLowerCase('tr-TR') === cName || cName.includes(targetName.toLocaleLowerCase('tr-TR')))) return false;
       return true;
     });
 
@@ -1683,14 +1692,16 @@ class SyncService {
     }
     if (targetTc) this.recentlyDeletedCustomerKeys.add(`tc:${targetTc}`);
     if (targetPhone) this.recentlyDeletedCustomerKeys.add(`phone:${targetPhone}`);
+    if (last10) this.recentlyDeletedCustomerKeys.add(`phone:${last10}`);
     if (targetName) this.recentlyDeletedCustomerKeys.add(`name:${targetName.toLocaleLowerCase('tr-TR')}`);
-    // Auto-cleanup after 15 seconds (enough time for Supabase delete to propagate)
+    // Auto-cleanup after 30 seconds
     setTimeout(() => {
       if (targetId) this.recentlyDeletedCustomerKeys.delete(`id:${targetId}`);
       if (targetTc) this.recentlyDeletedCustomerKeys.delete(`tc:${targetTc}`);
       if (targetPhone) this.recentlyDeletedCustomerKeys.delete(`phone:${targetPhone}`);
+      if (last10) this.recentlyDeletedCustomerKeys.delete(`phone:${last10}`);
       if (targetName) this.recentlyDeletedCustomerKeys.delete(`name:${targetName.toLocaleLowerCase('tr-TR')}`);
-    }, 15000);
+    }, 30000);
 
     localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updated));
     this.addAuditLog({
@@ -1715,7 +1726,8 @@ class SyncService {
 
         if (targetTc && qTc && targetTc === qTc) return false;
         if (targetPhone && qPhone && (targetPhone.endsWith(qPhone) || qPhone.endsWith(targetPhone))) return false;
-        if (targetName && qName && targetName.toLocaleLowerCase('tr-TR') === qName) return false;
+        if (last10 && last10.length >= 7 && qPhone.includes(last10)) return false;
+        if (targetName && qName && (targetName.toLocaleLowerCase('tr-TR') === qName || qName.includes(targetName.toLocaleLowerCase('tr-TR')))) return false;
         return true;
       });
 
@@ -1723,16 +1735,22 @@ class SyncService {
       this.broadcast('QUOTES_UPDATED', updatedQuotes);
       this.notifyListeners({ type: 'QUOTES_UPDATED', payload: updatedQuotes });
 
-      if (this.isSupabaseReady) {
+      if (this.isSupabaseReady && supabase) {
         try {
-          if (targetTc) {
+          if (targetTc && targetTc.length >= 5) {
             await supabase.from('quotes').delete().eq('tc_no', targetTc);
           }
           if (targetPhone) {
             await supabase.from('quotes').delete().eq('customer_phone', targetPhone);
           }
-          if (targetName) {
-            await supabase.from('quotes').delete().ilike('customer_name', targetName);
+          if (targetOriginalPhone) {
+            await supabase.from('quotes').delete().eq('customer_phone', targetOriginalPhone);
+          }
+          if (last10 && last10.length >= 7) {
+            await supabase.from('quotes').delete().ilike('customer_phone', `%${last10}%`);
+          }
+          if (targetName && targetName.length >= 3) {
+            await supabase.from('quotes').delete().ilike('customer_name', `%${targetName}%`);
           }
         } catch (e) {
           console.warn('Supabase customer quotes delete error:', e);
@@ -1740,19 +1758,25 @@ class SyncService {
       }
     }
 
-    if (this.isSupabaseReady) {
+    if (this.isSupabaseReady && supabase) {
       try {
         if (targetId) {
           await supabase.from('customers').delete().eq('id', targetId);
         }
-        if (targetTc) {
+        if (targetTc && targetTc.length >= 5) {
           await supabase.from('customers').delete().eq('tc_no', targetTc);
         }
         if (targetPhone) {
           await supabase.from('customers').delete().eq('phone', targetPhone);
         }
-        if (targetName) {
-          await supabase.from('customers').delete().ilike('full_name', targetName);
+        if (targetOriginalPhone) {
+          await supabase.from('customers').delete().eq('phone', targetOriginalPhone);
+        }
+        if (last10 && last10.length >= 7) {
+          await supabase.from('customers').delete().ilike('phone', `%${last10}%`);
+        }
+        if (targetName && targetName.length >= 3) {
+          await supabase.from('customers').delete().ilike('full_name', `%${targetName}%`);
         }
       } catch (err) {
         console.error('Supabase customer delete error:', err);
@@ -1760,6 +1784,33 @@ class SyncService {
     }
 
     return updated;
+  }
+
+  async clearAllCustomers(user = null) {
+    localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
+    localStorage.removeItem('inzar_deleted_customer_ids_v1');
+    localStorage.removeItem('inzar_wizard_draft_v2');
+    this.deletedCustomerIds.clear();
+    this.recentlyDeletedCustomerKeys.clear();
+
+    if (this.isSupabaseReady && supabase) {
+      try {
+        await supabase.from('customers').delete().neq('id', '___NEVER_MATCH___');
+      } catch (err) {
+        console.error('Supabase clear customers error:', err);
+      }
+    }
+
+    this.addAuditLog({
+      action: 'CUSTOMERS_CLEARED',
+      user: user?.name || 'Genel Merkez',
+      details: 'Müşteri havuzu veritabanından tamamen sıfırlandı.',
+      timestamp: new Date().toISOString()
+    });
+
+    this.broadcast('CUSTOMERS_UPDATED', []);
+    this.notifyListeners({ type: 'CUSTOMERS_UPDATED', payload: [] });
+    return [];
   }
 
   async searchCustomersLive({ name = '', tcNo = '', phone = '' }) {

@@ -412,6 +412,7 @@ export default function AgentQuotationWizard({ setActiveTab = () => {} }) {
       id: matchedCustomerProfile?.id || null,
       tcNo: cleanTc,
       phone: rawPhone,
+      originalPhone: customerPhone,
       fullName: custName,
       firstName: customerFirstName.trim(),
       lastName: customerLastName.trim()
