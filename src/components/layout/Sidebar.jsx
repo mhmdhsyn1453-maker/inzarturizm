@@ -161,7 +161,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider mt-1 flex items-center gap-1">
                   <span>UTH&TP</span>
                   <span className="text-[8.5px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/70 px-1 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                    v{pkg?.version || '1.0.25'}
+                    v{pkg?.version || '1.0.26'}
                   </span>
                 </p>
               </div>

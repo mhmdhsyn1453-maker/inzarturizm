@@ -892,7 +892,7 @@ class SyncService {
   async publishAppVersion(versionData, user = null) {
     const payload = {
       id: versionData.id || 'latest_release',
-      version: versionData.version || '1.0.25',
+      version: versionData.version || '1.0.26',
       release_notes: versionData.releaseNotes || versionData.release_notes || '',
       download_url: versionData.downloadUrl || versionData.download_url || '',
       is_mandatory: Boolean(versionData.isMandatory || versionData.is_mandatory),
