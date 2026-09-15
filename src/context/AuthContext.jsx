@@ -156,81 +156,56 @@ export function AuthProvider({ children }) {
     }
   }, [currentUser]);
 
-  const login = async (inputIdentifier, password, commit = true, skip2FACheck = false) => {
+  const login = async (inputIdentifier, password, commit = true, skip2FACheck = false, totpCode = null) => {
     const trimmedInput = inputIdentifier.trim().toLowerCase();
     const trimmedPass = password.trim();
 
-    // 1. Try local memory/localStorage matching first
     let user = null;
-    for (const u of users) {
-      const uMatch = u.username.toLowerCase() === trimmedInput || 
-                     (u.email && u.email.toLowerCase() === trimmedInput) ||
-                     (u.email && u.email.toLowerCase().startsWith(trimmedInput + '@'));
-      if (uMatch) {
-        const isMatch = await verifyPassword(trimmedPass, u.password);
-        if (isMatch) {
-          user = { ...u };
-          // Auto-upgrade legacy password to secure PBKDF2 hash
-          if (user.password && !user.password.startsWith('pbkdf2:')) {
-            const secureHash = await hashPassword(trimmedPass);
-            user.password = secureHash;
-            const updatedUsers = users.map(item => item.id === user.id ? { ...item, password: secureHash } : item);
-            setUsers(updatedUsers);
-            syncService.saveUsers(updatedUsers);
+
+    // 1. Primary: Server-Side Authentication via Supabase Edge Function (auth-service)
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: edgeRes, error: edgeErr } = await supabase.functions.invoke('auth-service', {
+          body: {
+            action: 'login',
+            username: trimmedInput,
+            password: trimmedPass,
+            totpCode: totpCode || null
           }
-          break;
+        });
+
+        if (!edgeErr && edgeRes) {
+          if (edgeRes.requires2FA) {
+            return {
+              success: true,
+              requires2FA: true,
+              tempUser: edgeRes.tempUser
+            };
+          }
+          if (edgeRes.success && edgeRes.user) {
+            user = edgeRes.user;
+          } else if (edgeRes.message) {
+            return { success: false, message: edgeRes.message };
+          }
         }
+      } catch (edgeError) {
+        console.warn('Edge Function auth-service error, falling back to cached auth:', edgeError);
       }
     }
 
-    // 2. If not matched locally, query Supabase profiles table directly
-    if (!user && isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .ilike('username', trimmedInput)
-          .maybeSingle();
-
-        if (data && !error) {
-          const isMatch = await verifyPassword(trimmedPass, data.password);
+    // 2. Secondary Fallback: Cached memory / local users (offline mode)
+    if (!user) {
+      for (const u of users) {
+        const uMatch = u.username.toLowerCase() === trimmedInput || 
+                       (u.email && u.email.toLowerCase() === trimmedInput) ||
+                       (u.email && u.email.toLowerCase().startsWith(trimmedInput + '@'));
+        if (uMatch && u.password) {
+          const isMatch = await verifyPassword(trimmedPass, u.password);
           if (isMatch) {
-            let passwordToStore = data.password;
-            if (!passwordToStore || !passwordToStore.startsWith('pbkdf2:')) {
-              passwordToStore = await hashPassword(trimmedPass);
-              // Update hash in Supabase profiles
-              supabase.from('profiles').update({ 
-                password: passwordToStore,
-                updated_at: new Date().toISOString()
-              }).eq('id', data.id).then();
-            }
-
-            user = {
-              id: data.id,
-              username: data.username,
-              password: passwordToStore,
-              name: data.name,
-              role: (data.role || 'STAFF').toUpperCase(),
-              city: data.city || 'İstanbul',
-              branch: data.branch || 'Genel Merkez',
-              phone: data.phone || '',
-              avatarImage: data.avatar_image || null,
-              isActive: data.is_active !== false,
-              twoFactorEnabled: Boolean(data.two_factor_enabled),
-              twoFactorSecret: data.two_factor_secret || null,
-              twoFactorBackupCodes: data.two_factor_backup_codes || [],
-              readAnnouncements: Array.isArray(data.read_announcements) ? data.read_announcements : [],
-              lastLogin: new Date().toISOString()
-            };
-
-            // Merge user into local state & storage
-            const updatedList = [user, ...users.filter(u => u.username.toLowerCase() !== trimmedInput)];
-            setUsers(updatedList);
-            syncService.saveUsers(updatedList);
+            user = { ...u };
+            break;
           }
         }
-      } catch (err) {
-        console.warn('Supabase live auth check failed, using local cache:', err);
       }
     }
 
@@ -242,7 +217,7 @@ export function AuthProvider({ children }) {
       return { success: false, message: 'Bu kullanıcı hesabı merkez tarafından askıya alınmıştır/pasiftir!' };
     }
 
-    // Check if user has Google Authenticator 2FA Enabled
+    // Check if user has Google Authenticator 2FA Enabled (offline fallback check)
     if (!skip2FACheck && user.twoFactorEnabled && user.twoFactorSecret) {
       return { 
         success: true, 
@@ -269,7 +244,6 @@ export function AuthProvider({ children }) {
 
     if (commit) {
       setCurrentUser(sessionUser);
-      // update last login on user model
       const updatedUsers = users.map(u => u.id === user.id ? { ...u, lastLogin: new Date().toISOString() } : u);
       setUsers(updatedUsers);
       syncService.saveUsers(updatedUsers);
@@ -291,28 +265,67 @@ export function AuthProvider({ children }) {
     }
 
     const cleanInput = String(codeOrBackupCode).trim().toUpperCase();
-    let isValid = false;
-    let usedBackupCode = false;
 
-    // 1. Try TOTP code first
-    if (/^\d{6}$/.test(cleanInput)) {
-      isValid = await verifyTOTPToken(tempUser.twoFactorSecret, cleanInput);
+    // 1. Primary: Server-Side 2FA Verification via Supabase Edge Function
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: edgeRes, error: edgeErr } = await supabase.functions.invoke('auth-service', {
+          body: {
+            action: 'verify-2fa',
+            userId: tempUser.id || tempUser.username,
+            totpCode: cleanInput
+          }
+        });
+
+        if (!edgeErr && edgeRes && edgeRes.success && edgeRes.user) {
+          const sessionUser = {
+            id: edgeRes.user.id,
+            username: edgeRes.user.username,
+            name: edgeRes.user.name,
+            role: (edgeRes.user.role || 'STAFF').toUpperCase(),
+            city: edgeRes.user.city || 'İstanbul',
+            branch: edgeRes.user.branch || 'Genel Merkez',
+            phone: edgeRes.user.phone || '',
+            email: edgeRes.user.email || `${edgeRes.user.username}@inzarturizm.com`,
+            avatar: edgeRes.user.avatar || '',
+            avatarImage: edgeRes.user.avatarImage || null,
+            twoFactorEnabled: true,
+            lastLogin: new Date().toISOString(),
+            sessionToken: generateSecureSessionToken()
+          };
+
+          if (commit) {
+            setCurrentUser(sessionUser);
+            syncService.addAuditLog({
+              action: 'USER_LOGIN_2FA',
+              user: sessionUser.name,
+              details: `${sessionUser.name} (@${sessionUser.username}) 2FA doğrulaması ile sisteme güvenli giriş yaptı.`,
+              timestamp: new Date().toISOString()
+            });
+          }
+
+          return { success: true, user: sessionUser };
+        } else if (edgeRes && edgeRes.message) {
+          return { success: false, message: edgeRes.message };
+        }
+      } catch (err) {
+        console.warn('Edge Function verify-2fa fallback:', err);
+      }
     }
 
-    // 2. Try Backup Codes if not matched
-    if (!isValid && Array.isArray(tempUser.twoFactorBackupCodes)) {
-      const backupIndex = tempUser.twoFactorBackupCodes.findIndex(
-        b => b.toUpperCase().replace(/\s|-/g, '') === cleanInput.replace(/\s|-/g, '')
-      );
-      if (backupIndex >= 0) {
-        isValid = true;
-        usedBackupCode = true;
-        // Consume backup code
-        const updatedBackupCodes = tempUser.twoFactorBackupCodes.filter((_, idx) => idx !== backupIndex);
-        tempUser.twoFactorBackupCodes = updatedBackupCodes;
-        const updatedUsers = users.map(u => u.id === tempUser.id ? { ...u, twoFactorBackupCodes: updatedBackupCodes } : u);
-        setUsers(updatedUsers);
-        syncService.saveUsers(updatedUsers);
+    // 2. Offline fallback: local 2FA verification if secret is available
+    let isValid = false;
+    if (tempUser.twoFactorSecret) {
+      if (/^\d{6}$/.test(cleanInput)) {
+        isValid = await verifyTOTPToken(tempUser.twoFactorSecret, cleanInput);
+      }
+      if (!isValid && Array.isArray(tempUser.twoFactorBackupCodes)) {
+        const backupIndex = tempUser.twoFactorBackupCodes.findIndex(
+          b => b.toUpperCase().replace(/\s|-/g, '') === cleanInput.replace(/\s|-/g, '')
+        );
+        if (backupIndex >= 0) {
+          isValid = true;
+        }
       }
     }
 
@@ -371,10 +384,14 @@ export function AuthProvider({ children }) {
     const email = sanitizeInput(newStaff.email || `${cleanUsername}@inzarturizm.com`).toLowerCase();
     let rawPassword = newStaff.password?.trim();
     if (!rawPassword) {
-      const randBytes = new Uint8Array(4);
+      const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%*';
+      const randBytes = new Uint8Array(8);
       window.crypto.getRandomValues(randBytes);
-      const randNum = ((randBytes[0] << 24) | (randBytes[1] << 16) | (randBytes[2] << 8) | randBytes[3]) >>> 0;
-      rawPassword = `Inzar@${(randNum % 900000) + 100000}!`;
+      let randStr = '';
+      for (let i = 0; i < randBytes.length; i++) {
+        randStr += chars[randBytes[i] % chars.length];
+      }
+      rawPassword = `Inzar@${randStr}!`;
     }
     const finalPassword = (rawPassword.startsWith('pbkdf2:') || rawPassword.startsWith('sha256:')) ? rawPassword : await hashPassword(rawPassword);
 
@@ -408,6 +425,39 @@ export function AuthProvider({ children }) {
 
   const updateStaff = async (staffId, updatedFields) => {
     let fieldsToApply = { ...updatedFields };
+
+    // 1. If password is being reset, invoke Edge Function reset-password
+    if (fieldsToApply.password && isSupabaseConfigured && supabase) {
+      try {
+        const passToSet = fieldsToApply.password.trim();
+        await supabase.functions.invoke('auth-service', {
+          body: {
+            action: 'reset-password',
+            adminUserId: currentUser?.id || currentUser?.username || 'merkez',
+            targetUserId: staffId,
+            newPassword: passToSet
+          }
+        });
+      } catch (e) {
+        console.warn('[Edge Function reset-password error]:', e);
+      }
+    }
+
+    // 2. If 2FA is being reset, invoke Edge Function reset-2fa
+    if (fieldsToApply.twoFactorSecret === null && fieldsToApply.twoFactorEnabled === false && isSupabaseConfigured && supabase) {
+      try {
+        await supabase.functions.invoke('auth-service', {
+          body: {
+            action: 'reset-2fa',
+            adminUserId: currentUser?.id || currentUser?.username || 'merkez',
+            targetUserId: staffId
+          }
+        });
+      } catch (e) {
+        console.warn('[Edge Function reset-2fa error]:', e);
+      }
+    }
+
     if (fieldsToApply.password && !fieldsToApply.password.startsWith('pbkdf2:')) {
       fieldsToApply.password = await hashPassword(fieldsToApply.password);
     }
@@ -436,7 +486,6 @@ export function AuthProvider({ children }) {
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatedUser.id);
         const profilePayload = {
           username: updatedUser.username,
-          password: updatedUser.password,
           name: updatedUser.name,
           role: updatedUser.role,
           city: updatedUser.city,
@@ -446,8 +495,7 @@ export function AuthProvider({ children }) {
           avatar_image: updatedUser.avatarImage,
           is_active: updatedUser.isActive !== false,
           two_factor_enabled: Boolean(updatedUser.twoFactorEnabled),
-          two_factor_secret: updatedUser.twoFactorSecret || null,
-          two_factor_backup_codes: updatedUser.twoFactorBackupCodes || [],
+          read_announcements: Array.isArray(updatedUser.readAnnouncements) ? updatedUser.readAnnouncements : [],
           updated_at: new Date().toISOString()
         };
         if (isUuid) {
@@ -481,28 +529,22 @@ export function AuthProvider({ children }) {
     const target = users.find(u => u.id === staffId);
     const updated = users.filter(u => u.id !== staffId);
     setUsers(updated);
+    syncService.saveUsers(updated);
     syncService.deleteUser(staffId, target?.username, target?.email);
+
     syncService.addAuditLog({
-      action: 'STAFF_DELETED',
+      action: 'USER_DELETED',
       user: currentUser?.name || 'Genel Merkez',
-      details: `Kullanıcı hesabı silindi: ${target?.name || staffId} (@${target?.username || ''})`,
+      details: `${target?.name || staffId} kullanıcısı sistemden silindi.`,
       timestamp: new Date().toISOString()
     });
   };
 
   const toggleStaffStatus = (staffId) => {
     const target = users.find(u => u.id === staffId);
-    const willBeActive = target?.isActive === false;
-    const updated = users.map(u => u.id === staffId ? { ...u, isActive: willBeActive } : u);
-    setUsers(updated);
-    syncService.saveUsers(updated);
-
-    syncService.addAuditLog({
-      action: willBeActive ? 'STAFF_ACTIVATED' : 'STAFF_SUSPENDED',
-      user: currentUser?.name || 'Genel Merkez',
-      details: `${target?.name} kullanıcısının yetkisi ${willBeActive ? 'AKTİF EDİLDİ' : 'DURAKLATILDI (ASKIYA ALINDI)'}.`,
-      timestamp: new Date().toISOString()
-    });
+    if (!target) return;
+    const newStatus = target.isActive === false ? true : false;
+    updateStaff(staffId, { isActive: newStatus });
   };
 
   const changePassword = async (oldPassword, newPassword) => {
@@ -519,82 +561,36 @@ export function AuthProvider({ children }) {
       return { success: false, message: 'Yeni şifreniz en az 6 karakter olmalıdır.' };
     }
 
-    // 1. Fetch current user's stored password from Supabase
-    let storedPass = null;
+    // 1. Primary: Secure Server-Side Password Change via Supabase Edge Function
     if (isSupabaseConfigured && supabase) {
       try {
-        let query = supabase.from('profiles').select('id, password');
-        if (currentUser.id && currentUser.id.includes('-')) {
-          query = query.eq('id', currentUser.id);
-        } else {
-          query = query.eq('username', currentUser.username);
-        }
-        const { data, error } = await query.maybeSingle();
-        if (!error && data?.password) {
-          storedPass = data.password;
-        }
-      } catch (e) {}
-    }
-
-    // Fallback: check in-memory or DEFAULT_USERS
-    if (!storedPass) {
-      const found = users.find(u => (currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username)) ||
-                    DEFAULT_USERS.find(u => (currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username));
-      storedPass = found?.password;
-    }
-
-    if (!storedPass) {
-      return { success: false, message: 'Kullanıcı hesabı doğrulanamadı.' };
-    }
-
-    // 2. Verify old password using verifyPassword (handles pbkdf2, sha256, and plaintext)
-    const isMatch = await verifyPassword(cleanOld, storedPass);
-    if (!isMatch) {
-      return { success: false, message: 'Girdiğiniz mevcut (eski) şifre doğru değil.' };
-    }
-
-    // 3. Hash new password with PBKDF2 (100,000 rounds + 16-byte random salt)
-    const newPbkdf2Hash = await hashPassword(cleanNew);
-
-    // 4. Update in Supabase profiles
-    if (isSupabaseConfigured && supabase) {
-      try {
-        let updateQuery = supabase.from('profiles').update({
-          password: newPbkdf2Hash,
-          updated_at: new Date().toISOString()
+        const { data: edgeRes, error: edgeErr } = await supabase.functions.invoke('auth-service', {
+          body: {
+            action: 'change-password',
+            userId: currentUser.id || currentUser.username,
+            oldPassword: cleanOld,
+            newPassword: cleanNew
+          }
         });
-        if (currentUser.id && currentUser.id.includes('-')) {
-          updateQuery = updateQuery.eq('id', currentUser.id);
-        } else {
-          updateQuery = updateQuery.eq('username', currentUser.username);
-        }
-        const { error: upErr } = await updateQuery;
-        if (upErr) {
-          console.error('Supabase password change error:', upErr);
-          return { success: false, message: 'Veritabanı güncelleme hatası: ' + upErr.message };
+
+        if (!edgeErr && edgeRes) {
+          if (edgeRes.success) {
+            syncService.addAuditLog({
+              action: 'PASSWORD_CHANGED',
+              user: currentUser.name,
+              details: `${currentUser.name} (@${currentUser.username}) şifresini başarıyla güncelledi.`
+            });
+            return { success: true, message: edgeRes.message || 'Şifreniz başarıyla değiştirildi.' };
+          } else if (edgeRes.message) {
+            return { success: false, message: edgeRes.message };
+          }
         }
       } catch (err) {
-        return { success: false, message: 'Bağlantı hatası oluştu.' };
+        console.warn('Edge Function changePassword error:', err);
       }
     }
 
-    // 5. Update local users list if present
-    const updatedUsers = users.map(u => {
-      if ((currentUser.id && u.id === currentUser.id) || (currentUser.username && u.username === currentUser.username)) {
-        return { ...u, password: newPbkdf2Hash };
-      }
-      return u;
-    });
-    setUsers(updatedUsers);
-
-    syncService.addAuditLog({
-      action: 'USER_UPDATED',
-      user: currentUser.name || currentUser.username,
-      details: `${currentUser.name || currentUser.username} hesap şifresini başarıyla değiştirdi.`,
-      timestamp: new Date().toISOString()
-    });
-
-    return { success: true, message: 'Şifreniz başarıyla güncellendi.' };
+    return { success: false, message: 'Şifre güncellenirken bir hata oluştu.' };
   };
 
   const isAdmin = currentUser?.role?.toUpperCase() === 'ADMIN';

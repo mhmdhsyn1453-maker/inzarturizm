@@ -220,3 +220,33 @@ CREATE POLICY "Profiles update allowed" ON public.profiles FOR ALL USING (true);
 CREATE POLICY "Months update allowed" ON public.months_config FOR ALL USING (true);
 CREATE POLICY "Settings update allowed" ON public.app_settings FOR ALL USING (true);
 CREATE POLICY "Versions update allowed" ON public.app_versions FOR ALL USING (true);
+
+-- ==============================================================================
+-- 5. SÜTUN SEVİYESİ GÜVENLİK (COLUMN-LEVEL SECURITY & SECRET HARDENING)
+-- ==============================================================================
+-- Anon ve authenticated rollerinin hassas sütunlara (password, two_factor_secret)
+-- doğrudan REST API üzerinden erişmesi engellenmiştir.
+-- Kimlik doğrulama, şifre değişikliği ve sıfırlama işlemleri Supabase Edge Function
+-- ('auth-service') üzerinden service_role yetkisiyle sunucu tarafında yürütülür.
+REVOKE SELECT, INSERT, UPDATE ON public.profiles FROM anon, authenticated;
+
+GRANT SELECT (
+  id, username, name, role, city, branch, phone, email, 
+  avatar_image, is_active, two_factor_enabled, read_announcements, 
+  created_at, updated_at, last_login
+) ON public.profiles TO anon, authenticated;
+
+GRANT UPDATE (
+  id, username, name, role, city, branch, phone, email, 
+  avatar_image, is_active, two_factor_enabled, read_announcements, 
+  updated_at, last_login
+) ON public.profiles TO anon, authenticated;
+
+GRANT INSERT (
+  id, username, name, role, city, branch, phone, email, 
+  avatar_image, is_active, two_factor_enabled, read_announcements, 
+  created_at, updated_at, last_login
+) ON public.profiles TO anon, authenticated;
+
+GRANT DELETE ON public.profiles TO anon, authenticated;
+

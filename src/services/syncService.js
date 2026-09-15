@@ -880,7 +880,7 @@ class SyncService {
   async publishAppVersion(versionData, user = null) {
     const payload = {
       id: versionData.id || 'latest_release',
-      version: versionData.version || '1.0.23',
+      version: versionData.version || '1.0.24',
       release_notes: versionData.releaseNotes || versionData.release_notes || '',
       download_url: versionData.downloadUrl || versionData.download_url || '',
       is_mandatory: Boolean(versionData.isMandatory || versionData.is_mandatory),
@@ -2107,15 +2107,6 @@ class SyncService {
             two_factor_enabled: Boolean(u.twoFactorEnabled),
             updated_at: new Date().toISOString()
           };
-          if (u.password) {
-            profilePayload.password = u.password;
-          }
-          if (u.twoFactorSecret !== undefined) {
-            profilePayload.two_factor_secret = u.twoFactorSecret;
-          }
-          if (u.twoFactorBackupCodes !== undefined) {
-            profilePayload.two_factor_backup_codes = Array.isArray(u.twoFactorBackupCodes) ? u.twoFactorBackupCodes : [];
-          }
           await supabase.from('profiles').upsert(profilePayload, { onConflict: 'username' });
         } catch (err) {
           console.error('Supabase profile save error:', err);

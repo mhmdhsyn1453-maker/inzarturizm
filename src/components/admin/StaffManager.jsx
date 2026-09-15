@@ -41,6 +41,7 @@ import {
 import confetti from 'canvas-confetti';
 import { formatPhoneNumber } from '../../utils/phoneUtils';
 import { soundService } from '../../services/soundService';
+import { syncService } from '../../services/syncService';
 import ImageCropModal from '../common/ImageCropModal';
 import ImageLightboxModal from '../common/ImageLightboxModal';
 
@@ -96,10 +97,14 @@ export default function StaffManager() {
   });
 
   const generateSecurePassword = () => {
-    const randBytes = new Uint8Array(4);
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%*';
+    const randBytes = new Uint8Array(8);
     window.crypto.getRandomValues(randBytes);
-    const randNum = ((randBytes[0] << 24) | (randBytes[1] << 16) | (randBytes[2] << 8) | randBytes[3]) >>> 0;
-    return `Inzar@${(randNum % 900000) + 100000}!`;
+    let randStr = '';
+    for (let i = 0; i < randBytes.length; i++) {
+      randStr += chars[randBytes[i] % chars.length];
+    }
+    return `Inzar@${randStr}!`;
   };
 
   const handleOpenResetPassword = (user, e) => {
@@ -118,6 +123,14 @@ export default function StaffManager() {
     
     await updateStaff(target.id, { password: passToSet });
     
+    try {
+      syncService.addAuditLog({
+        action: 'PASSWORD_RESET',
+        user: currentUser?.name || 'Genel Merkez',
+        details: `${currentUser?.name || 'Genel Merkez'}, ${target.name} (@${target.username}) personeli için yeni geçici şifre tanımladı.`
+      });
+    } catch {}
+
     try {
       await navigator.clipboard.writeText(passToSet);
     } catch {}
